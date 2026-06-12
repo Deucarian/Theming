@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Added first-class UI Toolkit theming support in `Deucarian.Theming.UIToolkit`.
+- Added `DeucarianUIToolkitThemeApplier` for UIDocument and VisualElement binding support.
+- Added background, text, border, image tint, selector/name/class/root bindings, and safe missing-element handling.
+- Added `DeucarianUIToolkitThemeVariables` for previewing and generating USS custom variable values. Runtime USS variable assignment is documented as a Unity 2022.3 limitation.
+- Organized runtime/editor code into Core, UGUI, TMP, Rendering, and UIToolkit folders while keeping existing public component names.
+- Added UI Toolkit demo asset creation, sample docs, and editor inspectors.
+- Added UI Toolkit utility/editor tests and additional adapter documentation.
+
 ## 0.1.0
 
 - Initial release of `com.deucarian.theming`.

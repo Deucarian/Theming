@@ -87,6 +87,7 @@ namespace Deucarian.Theming.Tests
             DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
 
             GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
             targetObject.SetActive(false);
             Button button = targetObject.AddComponent<Button>();
             DeucarianSelectableThemeColors target = targetObject.AddComponent<DeucarianSelectableThemeColors>();

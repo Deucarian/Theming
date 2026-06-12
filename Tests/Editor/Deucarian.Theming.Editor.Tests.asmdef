@@ -3,7 +3,8 @@
   "rootNamespace": "Deucarian.Theming.Editor.Tests",
   "references": [
     "Deucarian.Theming",
-    "Deucarian.Theming.Editor"
+    "Deucarian.Theming.Editor",
+    "UnityEngine.UIElementsModule"
   ],
   "includePlatforms": [
     "Editor"

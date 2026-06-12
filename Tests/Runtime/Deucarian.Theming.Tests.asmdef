@@ -3,9 +3,13 @@
   "rootNamespace": "Deucarian.Theming.Tests",
   "references": [
     "Deucarian.Theming",
-    "UnityEngine.UI"
+    "UnityEngine.UI",
+    "Unity.TextMeshPro",
+    "UnityEngine.UIElementsModule"
   ],
-  "includePlatforms": [],
+  "includePlatforms": [
+    "Editor"
+  ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,

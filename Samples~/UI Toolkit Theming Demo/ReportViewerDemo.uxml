@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <Style src="ReportViewerDemo.uss" />
+  <ui:VisualElement class="viewer-root">
+    <ui:VisualElement class="viewer-panel">
+      <ui:Label name="viewer-title" class="viewer-title" text="3D Report Viewer" />
+      <ui:Label class="viewer-body" text="Theme this UIDocument with DeucarianUIToolkitThemeApplier." />
+      <ui:Button name="viewer-button" class="viewer-button" text="Open Report" />
+      <ui:Label class="viewer-error" text="No report selected" />
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>
