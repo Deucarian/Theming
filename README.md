@@ -74,6 +74,8 @@ public sealed class LabelSetup : MonoBehaviour
 
 Add `DeucarianGraphicThemeColor` to any object with a `UnityEngine.UI.Graphic`, then assign a role asset. The component applies the resolved palette color to `Graphic.color`.
 
+For buttons, toggles, dropdowns, input fields, scrollbars, sliders, and other `UnityEngine.UI.Selectable` components, add `DeucarianSelectableThemeColors` and assign UI state roles for normal, highlighted, pressed, selected, and disabled colors. The component preserves `ColorBlock.colorMultiplier` and `ColorBlock.fadeDuration`.
+
 ## Runtime Theme Switching
 
 ```csharp
@@ -93,6 +95,7 @@ public sealed class ThemeSwitcher : MonoBehaviour
 ```
 
 `DeucarianThemeProvider.SetTheme` reapplies the theme to child components that implement `IDeucarianThemeTarget`.
+Theme target components also listen to their nearest provider while enabled, so they reapply automatically when the provider theme changes.
 
 ## Renderer Colors
 

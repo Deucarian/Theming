@@ -11,7 +11,7 @@ namespace Deucarian.Theming
     {
         [SerializeField] private string id = DeucarianBuiltinColorRoleIds.Primary;
         [SerializeField] private string displayName = "Primary";
-        [SerializeField] private string category = "Semantic";
+        [SerializeField] private string category = DeucarianColorRoleCategories.Semantic;
         [SerializeField] private string description = string.Empty;
         [SerializeField] private Color defaultColor = Color.white;
         [SerializeField] private bool isCoreRole;

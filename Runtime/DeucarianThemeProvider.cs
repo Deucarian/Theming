@@ -48,7 +48,13 @@ namespace Deucarian.Theming
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
         public void ApplyThemeToChildren()
         {
-            MonoBehaviour[] behaviours = GetComponentsInChildren<MonoBehaviour>(includeInactiveChildren);
+            ApplyThemeToChildren(includeInactiveChildren);
+        }
+
+        /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
+        public void ApplyThemeToChildren(bool includeInactive)
+        {
+            MonoBehaviour[] behaviours = GetComponentsInChildren<MonoBehaviour>(includeInactive);
             for (int i = 0; i < behaviours.Length; i++)
             {
                 MonoBehaviour behaviour = behaviours[i];

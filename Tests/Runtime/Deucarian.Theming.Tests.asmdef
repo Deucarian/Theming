@@ -2,7 +2,8 @@
   "name": "Deucarian.Theming.Tests",
   "rootNamespace": "Deucarian.Theming.Tests",
   "references": [
-    "Deucarian.Theming"
+    "Deucarian.Theming",
+    "UnityEngine.UI"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

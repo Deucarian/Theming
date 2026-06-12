@@ -27,5 +27,16 @@ namespace Deucarian.Theming
         public const string Neutral = "deucarian.game.neutral";
         public const string Interactable = "deucarian.semantic.interactable";
         public const string Highlight = "deucarian.semantic.highlight";
+        public const string UiNormal = "deucarian.ui.normal";
+        public const string UiHighlighted = "deucarian.ui.highlighted";
+        public const string UiPressed = "deucarian.ui.pressed";
+        public const string UiSelected = "deucarian.ui.selected";
+        public const string UiDisabled = "deucarian.ui.disabled";
+        public const string UiFocused = "deucarian.ui.focused";
+        public const string ItemCommon = "deucarian.item.common";
+        public const string ItemUncommon = "deucarian.item.uncommon";
+        public const string ItemRare = "deucarian.item.rare";
+        public const string ItemEpic = "deucarian.item.epic";
+        public const string ItemLegendary = "deucarian.item.legendary";
     }
 }

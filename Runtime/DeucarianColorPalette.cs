@@ -153,6 +153,41 @@ namespace Deucarian.Theming
             RebuildCache();
         }
 
+        /// <summary>Removes null entries or entries with no role and returns how many were removed.</summary>
+        public int RemoveNullEntries()
+        {
+            EnsureEntryList();
+
+            int removed = entries.RemoveAll(entry => entry == null || entry.Role == null);
+            if (removed > 0)
+            {
+                RebuildCache();
+            }
+
+            return removed;
+        }
+
+        /// <summary>Resets one palette entry to its role's default color.</summary>
+        public bool ResetEntryToRoleDefault(int index)
+        {
+            EnsureEntryList();
+
+            if (index < 0 || index >= entries.Count)
+            {
+                return false;
+            }
+
+            DeucarianColorEntry entry = entries[index];
+            if (entry == null || entry.Role == null)
+            {
+                return false;
+            }
+
+            entry.Configure(entry.Role, entry.Role.DefaultColor, entry.Note);
+            RebuildCache();
+            return true;
+        }
+
         /// <summary>Adds missing entries for roles from the assigned library, using each role's default color.</summary>
         public int AddMissingRolesFromLibrary()
         {

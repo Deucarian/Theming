@@ -31,11 +31,14 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.NotNull(assets.RoleLibrary);
             Assert.NotNull(assets.Palette);
             Assert.NotNull(assets.Theme);
-            Assert.GreaterOrEqual(assets.Roles.Count, 21);
+            Assert.GreaterOrEqual(assets.Roles.Count, 32);
             Assert.IsTrue(AssetDatabase.Contains(assets.RoleLibrary));
             Assert.IsTrue(AssetDatabase.Contains(assets.Palette));
             Assert.IsTrue(AssetDatabase.Contains(assets.Theme));
             Assert.IsTrue(AssetDatabase.IsValidFolder(TestRoot + "/Defaults/Roles"));
+            Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.UiNormal, out _));
+            Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.UiDisabled, out _));
+            Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.ItemLegendary, out _));
         }
 
         [Test]
