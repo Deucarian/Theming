@@ -1,0 +1,28 @@
+{
+  "name": "com.deucarian.theming",
+  "displayName": "Deucarian Theming",
+  "version": "0.1.0",
+  "unity": "2022.3",
+  "description": "Designer-friendly ScriptableObject theming for Deucarian Unity projects.",
+  "keywords": [
+    "deucarian",
+    "theme",
+    "theming",
+    "palette",
+    "color"
+  ],
+  "author": {
+    "name": "Deucarian"
+  },
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.ugui": "1.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Basic Theming Demo",
+      "description": "Basic setup notes for role assets, palettes, and theme adapters.",
+      "path": "Samples~/Basic Theming Demo"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "Deucarian.Theming.Tests",
+  "rootNamespace": "Deucarian.Theming.Tests",
+  "references": [
+    "Deucarian.Theming"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}

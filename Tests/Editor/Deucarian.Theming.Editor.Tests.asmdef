@@ -1,0 +1,22 @@
+{
+  "name": "Deucarian.Theming.Editor.Tests",
+  "rootNamespace": "Deucarian.Theming.Editor.Tests",
+  "references": [
+    "Deucarian.Theming",
+    "Deucarian.Theming.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "noEngineReferences": false
+}
