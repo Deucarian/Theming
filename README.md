@@ -1,10 +1,48 @@
-# Deucarian Theming
+# Quick Start (Recommended)
 
-## Overview
+Deucarian Theming is a Unity UPM package for designer-friendly color themes.
 
-Deucarian Theming is a Unity UPM package for designer-friendly color themes. It uses `ScriptableObject` color role assets as the source of truth, so new roles can be created in the Unity Editor without changing C#.
+Most users only need a **Palette**.
 
-## Installation
+You do **not** need to manually create:
+
+- Color Roles
+- Color Role Libraries
+- Theme assets
+
+The package can create and maintain those automatically.
+
+Recommended workflow:
+
+1. In Unity, choose `Deucarian > Theming > Create Minimal Palette`.
+2. Edit the colors in the generated palette asset.
+3. Open `Deucarian > Theming > Open Theme Manager` and click `Apply Theme To Scene` when you are ready to apply the active theme.
+
+Done.
+
+The simple mental model is:
+
+```text
+Palette
+  -> Theme
+      -> UI
+```
+
+The palette is the main asset. Theme and role library assets are support assets.
+
+The top menu is intentionally limited to quick entry points:
+
+- `Deucarian/Theming/Open Theme Manager`
+- `Deucarian/Theming/Create Minimal Palette`
+
+`Tools > Deucarian > Theming` exposes the same two entries. Use the Theme Manager for the full workflow and actions:
+
+- Find, select, and ping theme assets.
+- Create missing defaults.
+- Repair palette setup.
+- Create game theme assets.
+- Open theme folders.
+- Apply the active theme to the open scene.
 
 Install from Git URL in Unity Package Manager:
 
@@ -24,106 +62,76 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.4.0"
+    "com.deucarian.theming": "0.4.1"
   }
 }
 ```
 
 TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.editor` are declared as package dependencies. No third-party UI Toolkit package is required.
 
-## Deucarian Menu Workflow
+# What Gets Created Automatically
 
-The package exposes high-level Unity Editor entries under both `Tools > Deucarian > Theming` and `Deucarian > Theming`:
+`Create Minimal Palette` creates everything needed to start editing colors:
 
-- `Open Theme Manager` opens `DeucarianThemeManagerWindow`.
-- `Create Minimal Palette` creates a palette-first setup for normal use.
-- `Repair Palette Setup` repairs support role, library, palette-entry, and theme links for the active palette.
-- `Create Palette From Active Theme` copies the active theme palette into a new editable palette.
-- `Create Missing Default Theme Assets` creates the minimal generic Deucarian defaults.
-- `Create Game Theme Assets` creates optional gameplay, faction, and item rarity presets.
-- `Repair Generated Asset Names` fixes Unity main-object names to match asset filenames.
-- `Open Theme Assets Folder` selects `Assets/Deucarian/Theming/Defaults/` in the Project window.
+- A `DeucarianColorPalette` asset for the colors you edit.
+- A `DeucarianTheme` asset that points to the palette.
+- A `DeucarianColorRoleLibrary` asset used by the palette.
+- Built-in role assets for common UI concepts such as background, surface, primary text, error, and button states.
 
-Use the Theme Manager for package workflows:
+These are support assets. Normal users mostly edit the palette.
 
-- Create or reuse one main palette asset, then let the package create or repair required support assets.
-- Set active palette, theme, and role library assets, with the palette shown first.
-- Create or repair a theme from the active palette.
-- Apply the active theme to open-scene `DeucarianThemeProvider` components, asking before creating one when the scene has none.
-- Create optional game theme assets under `Assets/Deucarian/Theming/Game/`.
-- Create the existing UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
+Palette-first support assets are generated beside the palette under a `<PaletteName> Support/` folder. If anything is missing later, use `Repair Palette Setup`. It repairs required roles, role library links, palette entries, and theme links without overwriting user-chosen colors unless an entry is missing, null, or still using the package missing-color fallback.
 
-Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`. The editor UI uses `com.deucarian.editor` for fixed Deucarian chrome, icons, status badges, and inline asset field controls. Palette-first support assets are generated beside the palette under a `<PaletteName> Support/` folder. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
+Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
 
-Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select button stay on the same row.
+# Why Color Roles Exist
 
-## Core Concept
+Color roles let UI code and prefabs ask for meaning instead of exact colors.
 
-- `DeucarianColorRole`: designer-authored role asset with a stable ID, display name, category string, and default color.
-- `DeucarianColorRoleLibrary`: designer-maintained list of roles with duplicate/null validation.
-- `DeucarianColorPalette`: maps role assets to concrete `UnityEngine.Color` values.
-- `DeucarianTheme`: references the active palette for a visual style.
-- `DeucarianThemeProvider`: scene component that applies themes to child `IDeucarianThemeTarget` components and notifies targets when the theme changes.
+Examples:
 
-Enums make every new color role a code change. This package keeps roles as assets with stable string IDs such as `deucarian.primary`, `deucarian.ui.normal`, or `reportviewer.text.primary`. Code can use optional constants from `DeucarianBuiltinColorRoleIds`, but designers can add new roles without modifying or recompiling C#.
+- `deucarian.background`
+- `deucarian.surface`
+- `deucarian.text.primary`
+- `deucarian.error`
+- `deucarian.ui.normal`
+- `deucarian.ui.pressed`
 
-## Default Theme Presets
+This makes themes reusable across scenes, packages, and projects. A button can bind to the `deucarian.ui.normal` role once, while each palette decides what that color actually is.
 
-Minimal Default Theme Assets are generic and brand-aligned. They include only core, text, status, and UI state roles, so new projects do not start with gameplay assumptions.
+Advanced users can create custom concepts such as:
 
-Game Theme Assets are optional. They add gameplay resource roles, faction roles, item rarity roles, and a couple of game-specific highlight/interactable roles. Designers can still create custom roles at any time by adding role assets to their own libraries and palettes.
+- `reportviewer.navigation.active`
+- `inventory.item.legendary`
+- `dialogue.speaker.npc`
 
-The minimal default palette uses the Deucarian brand palette:
+Most projects can start with the built-in minimal roles and add custom roles only when a new semantic concept appears.
 
-| Role | Color |
-| --- | --- |
-| `deucarian.background` | `#0D1218` |
-| `deucarian.surface` | `#1A2330` |
-| `deucarian.surface.raised` | `#2C3A4D` |
-| `deucarian.primary` | `#5A6FA0` |
-| `deucarian.secondary` | `#3BA69A` |
-| `deucarian.accent` | `#276065` |
-| `deucarian.text.primary` | `#C4CAD1` |
-| `deucarian.text.secondary` | `#A8B0BA` |
-| `deucarian.text.muted` | `#6F7A86` |
-| `deucarian.text.disabled` | `#3C444F` |
-| `deucarian.success` | `#3BA69A` |
-| `deucarian.warning` | `#A87932` |
-| `deucarian.error` | `#A04444` |
-| `deucarian.info` | `#5A6FA0` |
-| `deucarian.ui.normal` | `#1A2330` |
-| `deucarian.ui.highlighted` | `#2C3A4D` |
-| `deucarian.ui.pressed` | `#276065` |
-| `deucarian.ui.selected` | `#3BA69A` |
-| `deucarian.ui.disabled` | `#3C444F` |
-| `deucarian.ui.focused` | `#5A6FA0` |
+# UI Toolkit
 
-## Simple Palette Workflow
+Add `DeucarianUIToolkitThemeApplier` to the same GameObject as a `UIDocument`, or assign a UIDocument explicitly.
 
-Most users should start with one palette asset:
+Each binding resolves elements in this priority:
 
-1. Open `Tools > Deucarian > Theming > Open Theme Manager`.
-2. Click `Create Minimal Palette`.
-3. Edit colors on the generated `DeucarianColorPalette` asset.
-4. Click `Create Theme From Active Palette` or `Repair Palette Setup` if support assets need repair.
-5. Click `Apply To Scene` to assign the active theme to open-scene `DeucarianThemeProvider` components.
+1. `ussSelector`
+2. `elementName`
+3. `elementClass`
+4. UIDocument root when all selector fields are empty
 
-The generated roles, role library, and theme exist to support semantic theming. Normal palette editing usually happens on the palette asset; users do not need to manage every generated role asset directly.
+Supported style targets include background color, text color, all border colors, individual border side colors, and Unity background image tint. Simple USS selectors such as `.viewer-root`, `#viewer-title`, `Button.viewer-button`, and type names are supported.
 
-## Advanced Workflow
+Example bindings:
 
-Advanced users can still work directly with the full asset model:
+- `.viewer-panel` -> `BackgroundColor`
+- `.viewer-title` -> `TextColor`
+- `.viewer-button` -> `BackgroundColor`
+- `.viewer-error` -> `TextColor`
 
-1. Create or refine color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
-2. Add role assets to a `DeucarianColorRoleLibrary`.
-3. Add roles to a `DeucarianColorPalette` and choose the colors.
-4. Link a `DeucarianTheme` to the palette.
-5. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
-6. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+Use palette roles for binding colors. The UI Toolkit applier updates when the active provider theme changes.
 
-Game-specific roles are optional. Use `Create Game Theme Assets` only when gameplay, faction, and item rarity roles are useful for the project.
+`DeucarianUIToolkitThemeVariables` can preview variable names and generate USS text from a role library and theme. Unity 2022.3 does not expose a stable runtime API for assigning USS custom variables directly, so direct style bindings are the recommended runtime path.
 
-## uGUI Usage
+# TMP
 
 Use `DeucarianTMPThemeColor` with any `TMP_Text`, including TextMeshProUGUI and world-space TextMesh Pro.
 
@@ -145,34 +153,23 @@ public sealed class LabelSetup : MonoBehaviour
 }
 ```
 
+# uGUI
+
 Use `DeucarianGraphicThemeColor` with `UnityEngine.UI.Graphic` components such as `Image`, `RawImage`, and legacy `Text`.
 
 Use `DeucarianSelectableThemeColors` with any `UnityEngine.UI.Selectable`, including Button, Toggle, Dropdown, InputField, Scrollbar, Slider, and custom Selectables. It applies normal, highlighted, pressed, selected, and disabled role colors while preserving `ColorBlock.colorMultiplier` and `ColorBlock.fadeDuration`.
 
-## UI Toolkit Usage
+Typical selectable bindings:
 
-Add `DeucarianUIToolkitThemeApplier` to the same GameObject as a `UIDocument`, or assign a UIDocument explicitly. Each binding resolves elements in this priority:
+- Normal -> `deucarian.ui.normal`
+- Highlighted -> `deucarian.ui.highlighted`
+- Pressed -> `deucarian.ui.pressed`
+- Selected -> `deucarian.ui.selected`
+- Disabled -> `deucarian.ui.disabled`
 
-1. `ussSelector`
-2. `elementName`
-3. `elementClass`
-4. UIDocument root when all selector fields are empty
+# Runtime Theme Switching
 
-Supported style targets include background color, text color, all border colors, individual border side colors, and Unity background image tint. Simple USS selectors such as `.viewer-root`, `#viewer-title`, `Button.viewer-button`, and type names are supported.
-
-Example bindings:
-
-- `.viewer-root` -> `BackgroundColor`
-- `.viewer-panel` -> `BackgroundColor`
-- `.viewer-title` -> `TextColor`
-- `.viewer-button` -> `BackgroundColor`
-- `.viewer-error` -> `TextColor`
-
-`DeucarianUIToolkitThemeVariables` can preview variable names and generate USS text from a role library and theme. Unity 2022.3 does not expose a stable runtime API for assigning USS custom variables directly, so this package does not silently fake that behavior. Use generated USS text or bind concrete style properties with `DeucarianUIToolkitThemeApplier`.
-
-UXML factories are intentionally not part of this pass. The supported v0 path is MonoBehaviour appliers on a `UIDocument`.
-
-## Runtime Theme Switching
+Use `DeucarianThemeProvider.SetTheme` to switch themes at runtime.
 
 ```csharp
 using Deucarian.Theming;
@@ -192,13 +189,32 @@ public sealed class ThemeSwitcher : MonoBehaviour
 
 `DeucarianThemeProvider.SetTheme` reapplies the theme to child components that implement `IDeucarianThemeTarget`. Theme target components listen to their nearest provider while enabled, so they reapply automatically when the provider theme changes.
 
-## Renderer Colors
+# Advanced Workflow
 
-`DeucarianRendererThemeColor` uses `MaterialPropertyBlock` and does not instantiate materials. The default property is `_BaseColor`; change it to `_Color` for legacy shaders or to another shader color property when needed.
+The palette-first workflow is recommended, but the full asset model remains available.
 
-## Recommended Package Architecture
+Advanced users can manually create and manage:
 
-Adapters currently live in this same repo/package to keep setup simple. Runtime code is organized so adapters can later move into separate packages without rewriting core data APIs:
+- `DeucarianColorRole`
+- `DeucarianColorRoleLibrary`
+- `DeucarianColorPalette`
+- `DeucarianTheme`
+- `DeucarianThemeProvider`
+
+Manual workflow:
+
+1. Create or refine color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
+2. Add role assets to a `DeucarianColorRoleLibrary`.
+3. Add roles to a `DeucarianColorPalette` and choose the colors.
+4. Link a `DeucarianTheme` to the palette.
+5. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
+6. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+
+Game-specific roles are optional. Use the Theme Manager's `Create Game Theme Assets` action only when gameplay, faction, and item rarity roles are useful for the project.
+
+Renderer adapters are also available. `DeucarianRendererThemeColor` uses `MaterialPropertyBlock` and does not instantiate materials. The default property is `_BaseColor`; change it to `_Color` for legacy shaders or to another shader color property when needed.
+
+Runtime code is organized so adapters can later move into separate packages without rewriting core data APIs:
 
 - `Runtime/Core`: role assets, libraries, palettes, themes, providers, and target contracts.
 - `Runtime/UGUI`: uGUI Graphic and Selectable adapters.
@@ -211,37 +227,8 @@ Future adapter packages could be:
 - `com.deucarian.theming.ugui`
 - `com.deucarian.theming.uitoolkit`
 
-The core role, palette, and theme types do not depend on adapter-specific behavior.
+Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select button stay on the same row.
 
-## Report Viewer Example
+Run the package's EditMode tests in Unity. Runtime tests cover palette/theme behavior, and editor tests cover palette-first creation, repair, default asset creation, active asset settings, and manager workflows.
 
-For the Simultria 3D Report Viewer, create project-specific roles such as:
-
-- `reportviewer.background`
-- `reportviewer.panel`
-- `reportviewer.text.primary`
-- `reportviewer.text.secondary`
-- `reportviewer.button.normal`
-- `reportviewer.button.hover`
-- `reportviewer.button.pressed`
-- `reportviewer.error`
-- `reportviewer.loading`
-- `reportviewer.navigation.active`
-
-Example UI Toolkit bindings:
-
-- `.viewer-root` -> `BackgroundColor`
-- `.viewer-panel` -> `BackgroundColor`
-- `.viewer-title` -> `TextColor`
-- `.viewer-button` -> `BackgroundColor`
-- `.viewer-error` -> `TextColor`
-
-Use a `DeucarianThemeProvider` at the viewer root so uGUI, TMP, renderer, and UI Toolkit theme targets all update when the report viewer switches theme.
-
-## Tests
-
-Run the package's EditMode tests in Unity. Runtime tests cover palette/theme behavior, and editor tests cover default asset creation, active asset settings, and manager workflows.
-
-## License
-
-See [LICENSE.md](LICENSE.md).
+License: see [LICENSE.md](LICENSE.md).

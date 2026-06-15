@@ -67,7 +67,7 @@ namespace Deucarian.Theming.Editor
             DrawDefaultAssetsSection();
             DrawAssetSummary();
             DrawAdvancedSection();
-            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.0");
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.1");
 
             EditorGUILayout.EndScrollView();
         }
@@ -139,7 +139,7 @@ namespace Deucarian.Theming.Editor
 
             using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveTheme == null))
             {
-                if (GUILayout.Button("Apply To Scene", GUILayout.Width(132)))
+                if (GUILayout.Button("Apply Theme To Scene", GUILayout.Width(168)))
                 {
                     DeucarianThemingMenuActions.ApplyActiveThemeToOpenScene();
                 }

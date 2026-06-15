@@ -1,8 +1,8 @@
 # Basic Theming Demo
 
-This sample is intentionally lightweight for v0.4.0.
+This sample is intentionally lightweight for v0.4.1.
 
-Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Minimal Palette**, then apply the active theme to your scene. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
+Open `Deucarian/Theming/Open Theme Manager` and use **Create Minimal Palette**, then **Apply Theme To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
 
 ## Demo Hierarchy
 

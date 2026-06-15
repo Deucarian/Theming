@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.1
+
+- Reworked README onboarding around the palette-first quick-start path.
+- Made it explicit that most users do not need to manually create color roles, role libraries, or theme assets.
+- Aligned Theme Manager and menu wording around `Create Minimal Palette`, `Repair Palette Setup`, and `Apply Theme To Scene`.
+- Simplified the Theming top menu to the Theme Manager and minimal palette quick entries.
+- Kept setup, repair, selection, folder, and scene-apply workflows available inside Theme Manager.
+
 ## 0.4.0
 
 - Added a palette-first workflow that creates or repairs support role, library, and theme assets from one editable palette.

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Reflection;
 using Deucarian.Theming.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -37,6 +39,33 @@ namespace Deucarian.Theming.Editor.Tests
             DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
             DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
             DeucarianThemingEditorSettings.DefaultAssetFolder = previousDefaultAssetFolder;
+        }
+
+        [Test]
+        public void TopMenuContainsOnlyQuickEntryPoints()
+        {
+            string[] expectedMenuItems =
+            {
+                "Tools/Deucarian/Theming/Open Theme Manager",
+                "Deucarian/Theming/Open Theme Manager",
+                "Tools/Deucarian/Theming/Create Minimal Palette",
+                "Deucarian/Theming/Create Minimal Palette"
+            };
+
+            List<string> actualMenuItems = new List<string>();
+            MethodInfo[] methods = typeof(DeucarianThemingMenu).GetMethods(
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+
+            for (int i = 0; i < methods.Length; i++)
+            {
+                object[] attributes = methods[i].GetCustomAttributes(typeof(MenuItem), false);
+                for (int j = 0; j < attributes.Length; j++)
+                {
+                    actualMenuItems.Add(((MenuItem)attributes[j]).menuItem);
+                }
+            }
+
+            CollectionAssert.AreEquivalent(expectedMenuItems, actualMenuItems);
         }
 
         [Test]
