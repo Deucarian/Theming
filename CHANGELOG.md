@@ -5,6 +5,9 @@
 - Kept only high-level Theming entries under `Tools > Deucarian > Theming`.
 - Moved default asset creation, UI Toolkit demo asset creation, active asset selection, and scene-apply workflows into `DeucarianThemeManagerWindow`.
 - Renamed visible `Ping` editor buttons to `Select`.
+- Cleaned up the Theme Manager active asset rows to use inline Select/Ping buttons beside object fields.
+- Added a reusable `DrawAssetFieldWithSelectButton<T>()` editor IMGUI helper for future Deucarian tooling windows.
+- Documented the Deucarian editor tooling guideline against separate Select button rows for assets already shown in object fields.
 
 ## 0.2.1
 

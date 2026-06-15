@@ -42,9 +42,11 @@ Use the Theme Manager for package workflows:
 - Create the existing UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
 - Set active theme, palette, and role library assets.
 - Select saved theme, palette, and role library assets.
-- Apply the active theme to open-scene `DeucarianThemeProvider` components, creating one provider when the scene has none.
+- Apply the active theme to open-scene `DeucarianThemeProvider` components, asking before creating one when the scene has none.
 
 Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`; no other Deucarian package is required to use these menu items. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
+
+Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use an inline Select/Ping button next to the field instead, following the shared `DrawAssetFieldWithSelectButton<T>()` pattern.
 
 ## Core Concept
 

@@ -70,6 +70,11 @@ namespace Deucarian.Theming.Editor.Tests
         [Test]
         public void ThemeManagerWindowCanOpen()
         {
+            if (Application.isBatchMode)
+            {
+                Assert.Pass("EditorWindow display checks are skipped in batch mode.");
+            }
+
             DeucarianThemeManagerWindow.OpenWindow();
 
             DeucarianThemeManagerWindow[] windows =
