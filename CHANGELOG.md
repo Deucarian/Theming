@@ -2,12 +2,12 @@
 
 ## 0.2.1
 
-- Added the package-local `Deucarian > Theming` editor menu group.
-- Added `DeucarianThemeManagerWindow` for active theme, palette, and role library selection.
-- Added GUID-backed active theme, palette, and role library editor selections.
-- Renamed the default asset menu item to `Create Missing Default Theme Assets`.
-- Added menu actions to select active assets, open the default theme assets folder, and apply the active theme to open scenes.
-- Moved the existing UI Toolkit demo asset menu item under `Deucarian > Theming`.
+- Added top-level `Deucarian/Theming` menu tools for finding, selecting, creating, and applying theme assets.
+- Added `DeucarianThemeManagerWindow` with active theme, palette, role library, asset counts, and scene-apply actions.
+- Added GUID-backed editor settings for active theme, palette, role library, and the default theme asset folder.
+- Kept existing `Tools/Deucarian/Theming` compatibility menu items working.
+- Moved the UI Toolkit demo asset menu item under `Deucarian/Theming`.
+- Added editor tests for menu settings, asset discovery, default creation, active theme creation, and provider assignment.
 
 ## 0.2.0
 

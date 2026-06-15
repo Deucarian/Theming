@@ -31,7 +31,7 @@ Example bindings:
 - `.viewer-button` -> `BackgroundColor`
 - `.viewer-error` -> `TextColor`
 
-Create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/` with `Tools/Deucarian/Theming/Create UI Toolkit Demo Assets`.
+Create default theme assets with `Deucarian/Theming/Create Missing Default Theme Assets`. Create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/` with `Tools/Deucarian/Theming/Create UI Toolkit Demo Assets`.
 
 ## Designer Workflow
 

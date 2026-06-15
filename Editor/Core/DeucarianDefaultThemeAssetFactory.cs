@@ -35,14 +35,13 @@ namespace Deucarian.Theming.Editor
     {
         public const string DefaultRootFolder = "Assets/Deucarian/Theming/Defaults";
 
-        [MenuItem("Deucarian/Theming/Create Missing Default Theme Assets")]
+        [MenuItem("Tools/Deucarian/Theming/Create Default Theme Assets")]
         public static void CreateDefaultThemeAssetsFromMenu()
         {
-            DeucarianDefaultThemeAssets assets =
-                DeucarianThemingEditorAssetUtility.CreateMissingDefaultThemeAssets(DefaultRootFolder);
+            DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(DefaultRootFolder);
             if (assets.Theme != null)
             {
-                DeucarianThemingEditorAssetUtility.SelectAndPing(assets.Theme);
+                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
             }
         }
 

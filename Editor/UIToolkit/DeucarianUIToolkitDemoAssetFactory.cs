@@ -12,6 +12,7 @@ namespace Deucarian.Theming.Editor
         private const string DemoRoot = "Assets/Deucarian/Theming/UIToolkitDemo";
 
         [MenuItem("Deucarian/Theming/Create UI Toolkit Demo Assets")]
+        [MenuItem("Tools/Deucarian/Theming/Create UI Toolkit Demo Assets")]
         public static void CreateDemoAssets()
         {
             EnsureFolder(DemoRoot);

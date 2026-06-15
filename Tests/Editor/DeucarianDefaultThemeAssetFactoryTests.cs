@@ -10,9 +10,19 @@ namespace Deucarian.Theming.Editor.Tests
     {
         private const string TestRoot = "Assets/DeucarianThemingEditorTests";
 
+        private string previousThemeGuid;
+        private string previousPaletteGuid;
+        private string previousRoleLibraryGuid;
+        private string previousDefaultAssetFolder;
+
         [SetUp]
         public void SetUp()
         {
+            previousThemeGuid = DeucarianThemingEditorSettings.ActiveThemeGuid;
+            previousPaletteGuid = DeucarianThemingEditorSettings.ActivePaletteGuid;
+            previousRoleLibraryGuid = DeucarianThemingEditorSettings.ActiveRoleLibraryGuid;
+            previousDefaultAssetFolder = DeucarianThemingEditorSettings.DefaultAssetFolder;
+
             AssetDatabase.DeleteAsset(TestRoot);
             ClearActiveSelections();
         }
@@ -21,7 +31,10 @@ namespace Deucarian.Theming.Editor.Tests
         public void TearDown()
         {
             AssetDatabase.DeleteAsset(TestRoot);
-            ClearActiveSelections();
+            DeucarianThemingEditorSettings.ActiveThemeGuid = previousThemeGuid;
+            DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
+            DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
+            DeucarianThemingEditorSettings.DefaultAssetFolder = previousDefaultAssetFolder;
         }
 
         [Test]
@@ -47,11 +60,11 @@ namespace Deucarian.Theming.Editor.Tests
         public void DefaultAssetCreationStoresActiveAssetGuids()
         {
             DeucarianDefaultThemeAssets assets =
-                DeucarianThemingEditorAssetUtility.CreateMissingDefaultThemeAssets(TestRoot + "/Defaults");
+                DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(TestRoot + "/Defaults");
 
-            Assert.AreEqual(assets.Theme, DeucarianThemingEditorAssetUtility.GetActiveTheme());
-            Assert.AreEqual(assets.Palette, DeucarianThemingEditorAssetUtility.GetActivePalette());
-            Assert.AreEqual(assets.RoleLibrary, DeucarianThemingEditorAssetUtility.GetActiveRoleLibrary());
+            Assert.AreEqual(assets.Theme, DeucarianThemingEditorSettings.ActiveTheme);
+            Assert.AreEqual(assets.Palette, DeucarianThemingEditorSettings.ActivePalette);
+            Assert.AreEqual(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
         }
 
         [Test]
@@ -81,9 +94,7 @@ namespace Deucarian.Theming.Editor.Tests
 
         private static void ClearActiveSelections()
         {
-            DeucarianThemingEditorAssetUtility.SetActiveTheme(null);
-            DeucarianThemingEditorAssetUtility.SetActivePalette(null);
-            DeucarianThemingEditorAssetUtility.SetActiveRoleLibrary(null);
+            DeucarianThemingEditorSettings.ClearActiveAssets();
         }
     }
 }

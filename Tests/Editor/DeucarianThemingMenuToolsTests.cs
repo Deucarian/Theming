@@ -1,0 +1,129 @@
+using Deucarian.Theming.Editor;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+
+namespace Deucarian.Theming.Editor.Tests
+{
+    public sealed class DeucarianThemingMenuToolsTests
+    {
+        private const string TestRoot = "Assets/DeucarianThemingMenuEditorTests";
+
+        private string previousThemeGuid;
+        private string previousPaletteGuid;
+        private string previousRoleLibraryGuid;
+        private string previousDefaultAssetFolder;
+
+        [SetUp]
+        public void SetUp()
+        {
+            previousThemeGuid = DeucarianThemingEditorSettings.ActiveThemeGuid;
+            previousPaletteGuid = DeucarianThemingEditorSettings.ActivePaletteGuid;
+            previousRoleLibraryGuid = DeucarianThemingEditorSettings.ActiveRoleLibraryGuid;
+            previousDefaultAssetFolder = DeucarianThemingEditorSettings.DefaultAssetFolder;
+
+            AssetDatabase.DeleteAsset(TestRoot);
+            DeucarianThemingEditorSettings.ClearActiveAssets();
+            DeucarianThemingEditorSettings.DefaultAssetFolder = TestRoot + "/Defaults";
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            AssetDatabase.DeleteAsset(TestRoot);
+            DeucarianThemingEditorSettings.ActiveThemeGuid = previousThemeGuid;
+            DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
+            DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
+            DeucarianThemingEditorSettings.DefaultAssetFolder = previousDefaultAssetFolder;
+        }
+
+        [Test]
+        public void SettingsStoreAndResolveActiveThemeGuid()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
+
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+
+            Assert.IsNotEmpty(DeucarianThemingEditorSettings.ActiveThemeGuid);
+            Assert.AreSame(theme, DeucarianThemingEditorSettings.ActiveTheme);
+        }
+
+        [Test]
+        public void FindExistingAssetsReturnsThemesPalettesAndRoleLibraries()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(TestRoot + "/Palette.asset");
+            DeucarianColorRoleLibrary roleLibrary = CreateAsset<DeucarianColorRoleLibrary>(TestRoot + "/Role Library.asset");
+
+            DeucarianThemingMenuActions.AssetSearchResult result =
+                DeucarianThemingMenuActions.FindExistingAssets(new[] { TestRoot });
+
+            CollectionAssert.Contains(result.Themes, theme);
+            CollectionAssert.Contains(result.Palettes, palette);
+            CollectionAssert.Contains(result.RoleLibraries, roleLibrary);
+        }
+
+        [Test]
+        public void CreateMissingDefaultsCreatesScriptableObjectAssets()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(TestRoot + "/Defaults");
+
+            Assert.NotNull(assets.Theme);
+            Assert.NotNull(assets.Palette);
+            Assert.NotNull(assets.RoleLibrary);
+            Assert.IsTrue(AssetDatabase.Contains(assets.Theme));
+            Assert.IsTrue(AssetDatabase.Contains(assets.Palette));
+            Assert.IsTrue(AssetDatabase.Contains(assets.RoleLibrary));
+            Assert.AreSame(assets.Theme, DeucarianThemingEditorSettings.ActiveTheme);
+            Assert.AreSame(assets.Palette, DeucarianThemingEditorSettings.ActivePalette);
+            Assert.AreSame(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+        }
+
+        [Test]
+        public void SelectActiveThemeCreatesDefaultsWhenNoThemeExistsInSearch()
+        {
+            DeucarianTheme theme = DeucarianThemingMenuActions.ResolveOrCreateActiveTheme(
+                false,
+                new[] { TestRoot + "/EmptySearch" },
+                TestRoot + "/Defaults");
+
+            Assert.NotNull(theme);
+            Assert.IsTrue(AssetDatabase.Contains(theme));
+            Assert.AreSame(theme, DeucarianThemingEditorSettings.ActiveTheme);
+        }
+
+        [Test]
+        public void ApplyingActiveThemeAssignsItToProviders()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            GameObject gameObject = new GameObject("Theme Provider Test");
+            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
+
+            try
+            {
+                int applied = DeucarianThemingMenuActions.ApplyActiveThemeToOpenScene(false, false);
+
+                Assert.GreaterOrEqual(applied, 1);
+                Assert.AreSame(theme, provider.CurrentTheme);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        private static T CreateAsset<T>(string path)
+            where T : ScriptableObject
+        {
+            string folder = path.Substring(0, path.LastIndexOf('/'));
+            DeucarianThemingMenuActions.EnsureAssetFolder(folder);
+            T asset = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return asset;
+        }
+    }
+}

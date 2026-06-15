@@ -29,18 +29,18 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
 
 TextMesh Pro, uGUI, and Unity's built-in UIElements module are declared as package dependencies. No third-party UI Toolkit package is required.
 
-## Deucarian Menu
+## Deucarian Menu Workflow
 
-The package owns its Unity Editor tools under `Deucarian > Theming`:
+Use the Unity top menu at `Deucarian/Theming` for common setup tasks:
 
-- `Open Theme Manager` opens `DeucarianThemeManagerWindow` for selecting active theme, palette, and role library assets.
-- `Create Missing Default Theme Assets` creates or reuses default roles, a role library, a palette, and a theme under `Assets/Deucarian/Theming/Defaults/`.
-- `Select Active Theme`, `Select Active Palette`, and `Select Role Library` select the only matching asset, create defaults when none exist, or open the Theme Manager when multiple choices exist.
-- `Open Theme Assets Folder` selects and pings `Assets/Deucarian/Theming/Defaults/`.
-- `Apply Active Theme To Open Scene` assigns the active theme to open-scene `DeucarianThemeProvider` components, creating one provider when the scene has none.
+- `Open Theme Manager`: opens a window showing the active theme, palette, role library, default asset folder, and how many matching assets were found in the project.
+- `Create Missing Default Theme Assets`: creates or reuses the built-in role library, role assets, default palette, and default theme.
+- `Select Active Theme`, `Select Active Palette`, and `Select Role Library`: selects and pings the active asset. If none is active and one matching asset exists, it becomes active. If none exist, default assets are created first. If several exist, the Theme Manager opens so you can choose.
+- `Open Theme Assets Folder`: selects the configured theme asset folder in the Project window.
+- `Apply Active Theme To Open Scene`: assigns the active theme to every `DeucarianThemeProvider` in open scenes and reapplies it to child targets. If no provider exists, Unity asks before creating a `Deucarian Theme Provider` object.
 - `Create UI Toolkit Demo Assets` creates the existing package-local UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
 
-Active theme, palette, and role library selections are stored by asset GUID in `EditorPrefs`; no other Deucarian package is required to use these menu items.
+Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`; no other Deucarian package is required to use these menu items. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
 
 ## Core Concept
 

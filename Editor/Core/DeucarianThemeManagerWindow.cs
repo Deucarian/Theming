@@ -1,169 +1,231 @@
-using System;
 using System.Collections.Generic;
+using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Deucarian.Theming.Editor
 {
     /// <summary>
-    /// Package-local manager window for selecting and applying Deucarian theme assets.
+    /// Editor window for discovering, creating, selecting, and applying Deucarian theme assets.
     /// </summary>
     public sealed class DeucarianThemeManagerWindow : EditorWindow
     {
-        private const string WindowTitle = "Theme Manager";
-        private const float MinWidth = 520f;
-        private const float MinHeight = 420f;
-
+        private DeucarianThemingMenuActions.AssetSearchResult searchResult;
         private Vector2 scrollPosition;
 
-        [MenuItem("Deucarian/Theming/Open Theme Manager")]
-        public static void Open()
+        public static void OpenWindow()
         {
-            DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>();
-            window.titleContent = new GUIContent(WindowTitle);
-            window.minSize = new Vector2(MinWidth, MinHeight);
+            DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
+            window.minSize = new Vector2(420f, 360f);
+            window.RefreshAssets(true);
             window.Show();
+        }
+
+        private void OnEnable()
+        {
+            RefreshAssets(false);
         }
 
         private void OnGUI()
         {
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
-            EditorGUILayout.LabelField("Deucarian Theme Manager", EditorStyles.boldLabel);
+            DrawActiveAssetFields();
             EditorGUILayout.Space();
-
-            DrawActiveAssetField(
-                "Active Theme",
-                DeucarianThemingEditorAssetUtility.GetActiveTheme(),
-                DeucarianThemingEditorAssetUtility.SetActiveTheme);
-            DrawActiveAssetField(
-                "Active Palette",
-                DeucarianThemingEditorAssetUtility.GetActivePalette(),
-                DeucarianThemingEditorAssetUtility.SetActivePalette);
-            DrawActiveAssetField(
-                "Active Role Library",
-                DeucarianThemingEditorAssetUtility.GetActiveRoleLibrary(),
-                DeucarianThemingEditorAssetUtility.SetActiveRoleLibrary);
-
+            DrawFolderField();
             EditorGUILayout.Space();
-            DrawActions();
-
+            DrawAssetSummary();
+            DrawAssetPickers();
             EditorGUILayout.Space();
-            DrawAssetList(
-                "Themes",
-                DeucarianThemingEditorAssetUtility.GetActiveTheme(),
-                DeucarianThemingEditorAssetUtility.SetActiveTheme);
-            DrawAssetList(
-                "Palettes",
-                DeucarianThemingEditorAssetUtility.GetActivePalette(),
-                DeucarianThemingEditorAssetUtility.SetActivePalette);
-            DrawAssetList(
-                "Role Libraries",
-                DeucarianThemingEditorAssetUtility.GetActiveRoleLibrary(),
-                DeucarianThemingEditorAssetUtility.SetActiveRoleLibrary);
+            DrawActionButtons();
 
             EditorGUILayout.EndScrollView();
         }
 
-        private static void DrawActions()
+        private void DrawActiveAssetFields()
         {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Create Missing Default Theme Assets"))
-                {
-                    DeucarianDefaultThemeAssets assets =
-                        DeucarianThemingEditorAssetUtility.CreateMissingDefaultThemeAssets(
-                            DeucarianDefaultThemeAssetFactory.DefaultRootFolder);
-                    DeucarianThemingEditorAssetUtility.SelectAndPing(assets.Theme);
-                }
+            EditorGUILayout.LabelField("Active Assets", EditorStyles.boldLabel);
 
-                if (GUILayout.Button("Open Theme Assets Folder"))
-                {
-                    DeucarianThemingEditorAssetUtility.OpenThemeAssetsFolder();
-                }
+            EditorGUI.BeginChangeCheck();
+            DeucarianTheme theme = (DeucarianTheme)EditorGUILayout.ObjectField(
+                "Active Theme",
+                DeucarianThemingEditorSettings.ActiveTheme,
+                typeof(DeucarianTheme),
+                false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                DeucarianThemingEditorSettings.ActiveTheme = theme;
             }
 
-            using (new EditorGUILayout.HorizontalScope())
+            EditorGUI.BeginChangeCheck();
+            DeucarianColorPalette palette = (DeucarianColorPalette)EditorGUILayout.ObjectField(
+                "Active Palette",
+                DeucarianThemingEditorSettings.ActivePalette,
+                typeof(DeucarianColorPalette),
+                false);
+            if (EditorGUI.EndChangeCheck())
             {
-                if (GUILayout.Button("Apply Active Theme To Open Scene"))
-                {
-                    DeucarianThemingEditorAssetUtility.ApplyActiveThemeToOpenSceneFromMenu();
-                }
+                DeucarianThemingEditorSettings.ActivePalette = palette;
             }
-        }
 
-        private static void DrawActiveAssetField<T>(string label, T current, Action<T> setActive)
-            where T : Object
-        {
-            using (new EditorGUILayout.HorizontalScope())
+            EditorGUI.BeginChangeCheck();
+            DeucarianColorRoleLibrary roleLibrary = (DeucarianColorRoleLibrary)EditorGUILayout.ObjectField(
+                "Role Library",
+                DeucarianThemingEditorSettings.ActiveRoleLibrary,
+                typeof(DeucarianColorRoleLibrary),
+                false);
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUI.BeginChangeCheck();
-                T next = (T)EditorGUILayout.ObjectField(label, current, typeof(T), false);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    setActive(next);
-                }
-
-                using (new EditorGUI.DisabledScope(current == null))
-                {
-                    if (GUILayout.Button("Ping", GUILayout.Width(56f)))
-                    {
-                        DeucarianThemingEditorAssetUtility.SelectAndPing(current);
-                    }
-                }
+                DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary;
             }
         }
 
-        private static void DrawAssetList<T>(string title, T activeAsset, Action<T> setActive)
-            where T : Object
+        private void DrawFolderField()
         {
-            IReadOnlyList<T> assets = DeucarianThemingEditorAssetUtility.FindAssets<T>();
+            EditorGUILayout.LabelField("Default Asset Folder", EditorStyles.boldLabel);
 
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField(title + " (" + assets.Count + ")", EditorStyles.boldLabel);
-
-            if (assets.Count == 0)
+            EditorGUI.BeginChangeCheck();
+            string folder = EditorGUILayout.TextField("Path", DeucarianThemingEditorSettings.DefaultAssetFolder);
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUILayout.LabelField("No saved assets found.", EditorStyles.miniLabel);
+                DeucarianThemingEditorSettings.DefaultAssetFolder = folder;
+            }
+        }
+
+        private void DrawAssetSummary()
+        {
+            EnsureSearchResult();
+
+            EditorGUILayout.LabelField("Found Assets", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Theme Assets Count", searchResult.Themes.Count.ToString());
+            EditorGUILayout.LabelField("Palette Assets Count", searchResult.Palettes.Count.ToString());
+            EditorGUILayout.LabelField("Role Library Assets Count", searchResult.RoleLibraries.Count.ToString());
+
+            if (searchResult.Themes.Count == 0 && searchResult.Palettes.Count == 0 && searchResult.RoleLibraries.Count == 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "No Deucarian theme assets were found in this project. Create the default assets to get started.",
+                    MessageType.Info);
+            }
+        }
+
+        private void DrawAssetPickers()
+        {
+            EnsureSearchResult();
+
+            DrawAssetPopup(
+                "Found Theme",
+                searchResult.Themes,
+                DeucarianThemingEditorSettings.ActiveTheme,
+                theme => DeucarianThemingEditorSettings.ActiveTheme = theme);
+            DrawAssetPopup(
+                "Found Palette",
+                searchResult.Palettes,
+                DeucarianThemingEditorSettings.ActivePalette,
+                palette => DeucarianThemingEditorSettings.ActivePalette = palette);
+            DrawAssetPopup(
+                "Found Role Library",
+                searchResult.RoleLibraries,
+                DeucarianThemingEditorSettings.ActiveRoleLibrary,
+                roleLibrary => DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary);
+        }
+
+        private void DrawActionButtons()
+        {
+            EditorGUILayout.LabelField("Actions", EditorStyles.boldLabel);
+
+            if (GUILayout.Button("Find Existing Assets"))
+            {
+                RefreshAssets(true);
+            }
+
+            if (GUILayout.Button("Create Missing Default Assets"))
+            {
+                DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
+                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+                RefreshAssets(true);
+            }
+
+            using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveTheme == null))
+            {
+                if (GUILayout.Button("Select/Ping Active Theme"))
+                {
+                    DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActiveTheme);
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActivePalette == null))
+            {
+                if (GUILayout.Button("Select/Ping Active Palette"))
+                {
+                    DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActivePalette);
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveRoleLibrary == null))
+            {
+                if (GUILayout.Button("Select/Ping Role Library"))
+                {
+                    DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActiveRoleLibrary);
+                }
+            }
+
+            if (GUILayout.Button("Apply Active Theme To Open Scene"))
+            {
+                DeucarianThemingMenuActions.ApplyActiveThemeToOpenScene();
+            }
+
+            if (GUILayout.Button("Open Theme Assets Folder"))
+            {
+                DeucarianThemingMenuActions.OpenThemeAssetsFolder();
+            }
+        }
+
+        private void RefreshAssets(bool autoSelectSingles)
+        {
+            searchResult = DeucarianThemingMenuActions.FindExistingAssets(null, autoSelectSingles);
+            Repaint();
+        }
+
+        private void EnsureSearchResult()
+        {
+            if (searchResult == null)
+            {
+                RefreshAssets(false);
+            }
+        }
+
+        private static void DrawAssetPopup<T>(
+            string label,
+            IReadOnlyList<T> assets,
+            T activeAsset,
+            System.Action<T> setActiveAsset)
+            where T : UnityEngine.Object
+        {
+            if (assets.Count <= 1)
+            {
                 return;
             }
 
+            string[] options = new string[assets.Count + 1];
+            options[0] = "None";
+            int selectedIndex = 0;
+
             for (int i = 0; i < assets.Count; i++)
             {
-                DrawAssetRow(assets[i], activeAsset, setActive);
+                T asset = assets[i];
+                options[i + 1] = asset.name + " (" + AssetDatabase.GetAssetPath(asset) + ")";
+                if (asset == activeAsset)
+                {
+                    selectedIndex = i + 1;
+                }
             }
-        }
 
-        private static void DrawAssetRow<T>(T asset, T activeAsset, Action<T> setActive)
-            where T : Object
-        {
-            string path = AssetDatabase.GetAssetPath(asset);
-            bool isActive = asset == activeAsset;
-
-            using (new EditorGUILayout.HorizontalScope())
+            EditorGUI.BeginChangeCheck();
+            int newIndex = EditorGUILayout.Popup(label, selectedIndex, options);
+            if (EditorGUI.EndChangeCheck())
             {
-                EditorGUILayout.LabelField(
-                    new GUIContent(asset.name, path),
-                    GUILayout.MinWidth(140f));
-                EditorGUILayout.LabelField(
-                    new GUIContent(path, path),
-                    EditorStyles.miniLabel,
-                    GUILayout.MinWidth(160f));
-
-                using (new EditorGUI.DisabledScope(isActive))
-                {
-                    if (GUILayout.Button(isActive ? "Active" : "Set Active", GUILayout.Width(82f)))
-                    {
-                        setActive(asset);
-                        DeucarianThemingEditorAssetUtility.SelectAndPing(asset);
-                    }
-                }
-
-                if (GUILayout.Button("Ping", GUILayout.Width(56f)))
-                {
-                    DeucarianThemingEditorAssetUtility.SelectAndPing(asset);
-                }
+                setActiveAsset(newIndex == 0 ? null : assets[newIndex - 1]);
             }
         }
     }
