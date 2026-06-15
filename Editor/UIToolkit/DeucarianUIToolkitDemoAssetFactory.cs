@@ -11,7 +11,7 @@ namespace Deucarian.Theming.Editor
     {
         private const string DemoRoot = "Assets/Deucarian/Theming/UIToolkitDemo";
 
-        [MenuItem("Tools/Deucarian/Theming/Create UI Toolkit Demo Assets")]
+        [MenuItem("Deucarian/Theming/Create UI Toolkit Demo Assets")]
         public static void CreateDemoAssets()
         {
             EnsureFolder(DemoRoot);
@@ -122,7 +122,7 @@ namespace Deucarian.Theming.Editor
         {
             return @"# UI Toolkit Theming Demo
 
-1. Create default theme assets with `Tools/Deucarian/Theming/Create Default Theme Assets`.
+1. Create default theme assets with `Deucarian/Theming/Create Missing Default Theme Assets`.
 2. Create a scene object with `UIDocument`.
 3. Assign `ReportViewerDemo.uxml` to the UIDocument.
 4. Add `DeucarianUIToolkitThemeApplier`.

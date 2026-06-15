@@ -14,12 +14,14 @@ namespace Deucarian.Theming.Editor.Tests
         public void SetUp()
         {
             AssetDatabase.DeleteAsset(TestRoot);
+            ClearActiveSelections();
         }
 
         [TearDown]
         public void TearDown()
         {
             AssetDatabase.DeleteAsset(TestRoot);
+            ClearActiveSelections();
         }
 
         [Test]
@@ -39,6 +41,17 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.UiNormal, out _));
             Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.UiDisabled, out _));
             Assert.IsTrue(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.ItemLegendary, out _));
+        }
+
+        [Test]
+        public void DefaultAssetCreationStoresActiveAssetGuids()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianThemingEditorAssetUtility.CreateMissingDefaultThemeAssets(TestRoot + "/Defaults");
+
+            Assert.AreEqual(assets.Theme, DeucarianThemingEditorAssetUtility.GetActiveTheme());
+            Assert.AreEqual(assets.Palette, DeucarianThemingEditorAssetUtility.GetActivePalette());
+            Assert.AreEqual(assets.RoleLibrary, DeucarianThemingEditorAssetUtility.GetActiveRoleLibrary());
         }
 
         [Test]
@@ -64,6 +77,13 @@ namespace Deucarian.Theming.Editor.Tests
                 UnityEngine.Object.DestroyImmediate(first);
                 UnityEngine.Object.DestroyImmediate(second);
             }
+        }
+
+        private static void ClearActiveSelections()
+        {
+            DeucarianThemingEditorAssetUtility.SetActiveTheme(null);
+            DeucarianThemingEditorAssetUtility.SetActivePalette(null);
+            DeucarianThemingEditorAssetUtility.SetActiveRoleLibrary(null);
         }
     }
 }

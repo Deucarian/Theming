@@ -22,12 +22,25 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.2.0"
+    "com.deucarian.theming": "0.2.1"
   }
 }
 ```
 
 TextMesh Pro, uGUI, and Unity's built-in UIElements module are declared as package dependencies. No third-party UI Toolkit package is required.
+
+## Deucarian Menu
+
+The package owns its Unity Editor tools under `Deucarian > Theming`:
+
+- `Open Theme Manager` opens `DeucarianThemeManagerWindow` for selecting active theme, palette, and role library assets.
+- `Create Missing Default Theme Assets` creates or reuses default roles, a role library, a palette, and a theme under `Assets/Deucarian/Theming/Defaults/`.
+- `Select Active Theme`, `Select Active Palette`, and `Select Role Library` select the only matching asset, create defaults when none exist, or open the Theme Manager when multiple choices exist.
+- `Open Theme Assets Folder` selects and pings `Assets/Deucarian/Theming/Defaults/`.
+- `Apply Active Theme To Open Scene` assigns the active theme to open-scene `DeucarianThemeProvider` components, creating one provider when the scene has none.
+- `Create UI Toolkit Demo Assets` creates the existing package-local UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
+
+Active theme, palette, and role library selections are stored by asset GUID in `EditorPrefs`; no other Deucarian package is required to use these menu items.
 
 ## Core Concept
 
@@ -41,11 +54,12 @@ Enums make every new color role a code change. This package keeps roles as asset
 
 ## Designer Workflow
 
-1. Create a color role asset with `Assets/Create/Deucarian/Theming/Color Role`.
-2. Add the role asset to a `DeucarianColorRoleLibrary`.
-3. Add the role to a `DeucarianColorPalette` and choose the color.
-4. Assign the role to a uGUI, TMP, renderer, or UI Toolkit adapter.
-5. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+1. Create default assets with `Deucarian > Theming > Create Missing Default Theme Assets`.
+2. Refine or add color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
+3. Add role assets to a `DeucarianColorRoleLibrary`.
+4. Add roles to a `DeucarianColorPalette` and choose the colors.
+5. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
+6. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
 
 ## uGUI Usage
 
