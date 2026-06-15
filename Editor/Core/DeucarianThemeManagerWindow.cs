@@ -139,16 +139,21 @@ namespace Deucarian.Theming.Editor
                 RefreshAssets(true);
             }
 
-            if (GUILayout.Button("Create Missing Default Assets"))
+            if (GUILayout.Button("Create Missing Default Theme Assets"))
             {
                 DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
                 DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
                 RefreshAssets(true);
             }
 
+            if (GUILayout.Button("Create UI Toolkit Demo Assets"))
+            {
+                DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets();
+            }
+
             using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveTheme == null))
             {
-                if (GUILayout.Button("Select/Ping Active Theme"))
+                if (GUILayout.Button("Select Active Theme"))
                 {
                     DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActiveTheme);
                 }
@@ -156,7 +161,7 @@ namespace Deucarian.Theming.Editor
 
             using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActivePalette == null))
             {
-                if (GUILayout.Button("Select/Ping Active Palette"))
+                if (GUILayout.Button("Select Active Palette"))
                 {
                     DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActivePalette);
                 }
@@ -164,7 +169,7 @@ namespace Deucarian.Theming.Editor
 
             using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveRoleLibrary == null))
             {
-                if (GUILayout.Button("Select/Ping Role Library"))
+                if (GUILayout.Button("Select Role Library"))
                 {
                     DeucarianThemingMenuActions.SelectAndPing(DeucarianThemingEditorSettings.ActiveRoleLibrary);
                 }

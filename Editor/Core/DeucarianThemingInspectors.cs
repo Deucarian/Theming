@@ -175,7 +175,7 @@ namespace Deucarian.Theming.Editor
 
             using (new EditorGUI.DisabledScope(theme.ColorPalette == null))
             {
-                if (GUILayout.Button("Ping Palette"))
+                if (GUILayout.Button("Select Palette"))
                 {
                     Selection.activeObject = theme.ColorPalette;
                     EditorGUIUtility.PingObject(theme.ColorPalette);

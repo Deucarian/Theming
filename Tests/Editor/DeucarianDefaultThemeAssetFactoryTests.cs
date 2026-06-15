@@ -68,6 +68,22 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void ThemeManagerWindowCanOpen()
+        {
+            DeucarianThemeManagerWindow.OpenWindow();
+
+            DeucarianThemeManagerWindow[] windows =
+                Resources.FindObjectsOfTypeAll<DeucarianThemeManagerWindow>();
+
+            Assert.GreaterOrEqual(windows.Length, 1);
+
+            for (int i = 0; i < windows.Length; i++)
+            {
+                windows[i].Close();
+            }
+        }
+
+        [Test]
         public void DuplicateValidationDetectsDuplicateIds()
         {
             DeucarianColorRole first = ScriptableObject.CreateInstance<DeucarianColorRole>();

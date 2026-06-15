@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+- Kept only high-level Theming entries under `Tools > Deucarian > Theming`.
+- Moved default asset creation, UI Toolkit demo asset creation, active asset selection, and scene-apply workflows into `DeucarianThemeManagerWindow`.
+- Renamed visible `Ping` editor buttons to `Select`.
+
 ## 0.2.1
 
 - Added top-level `Deucarian/Theming` menu tools for finding, selecting, creating, and applying theme assets.
