@@ -8,17 +8,14 @@ namespace Deucarian.Theming.Editor
     public static class DeucarianThemingMenu
     {
         private const string ToolsMenuRoot = "Tools/Deucarian/Theming/";
-        private const string DeucarianMenuRoot = "Deucarian/Theming/";
 
         [MenuItem(ToolsMenuRoot + "Open Theme Manager", priority = 100)]
-        [MenuItem(DeucarianMenuRoot + "Open Theme Manager", priority = 100)]
         public static void OpenThemeManager()
         {
             DeucarianThemeManagerWindow.OpenWindow();
         }
 
         [MenuItem(ToolsMenuRoot + "Create Minimal Palette", priority = 105)]
-        [MenuItem(DeucarianMenuRoot + "Create Minimal Palette", priority = 105)]
         public static void CreateMinimalPalette()
         {
             DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel();

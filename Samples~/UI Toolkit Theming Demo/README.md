@@ -31,7 +31,7 @@ Example bindings:
 - `.viewer-button` -> `BackgroundColor`
 - `.viewer-error` -> `TextColor`
 
-Open `Deucarian/Theming/Open Theme Manager` to create a minimal palette and use **Apply Theme To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
+Open `Tools/Deucarian/Theming/Open Theme Manager` to create a minimal palette and use **Apply Theme To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
 
 ## Designer Workflow
 

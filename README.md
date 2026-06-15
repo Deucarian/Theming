@@ -14,9 +14,9 @@ The package can create and maintain those automatically.
 
 Recommended workflow:
 
-1. In Unity, choose `Deucarian > Theming > Create Minimal Palette`.
+1. In Unity, choose `Tools > Deucarian > Theming > Create Minimal Palette`.
 2. Edit the colors in the generated palette asset.
-3. Open `Deucarian > Theming > Open Theme Manager` and click `Apply Theme To Scene` when you are ready to apply the active theme.
+3. Open `Tools > Deucarian > Theming > Open Theme Manager` and click `Apply Theme To Scene` when you are ready to apply the active theme.
 
 Done.
 
@@ -30,12 +30,13 @@ Palette
 
 The palette is the main asset. Theme and role library assets are support assets.
 
-The top menu is intentionally limited to quick entry points:
+Deucarian package tools live under `Tools/Deucarian/<PackageName>/...`.
+The Theming menu is intentionally limited to quick entry points:
 
-- `Deucarian/Theming/Open Theme Manager`
-- `Deucarian/Theming/Create Minimal Palette`
+- `Tools/Deucarian/Theming/Open Theme Manager`
+- `Tools/Deucarian/Theming/Create Minimal Palette`
 
-`Tools > Deucarian > Theming` exposes the same two entries. Use the Theme Manager for the full workflow and actions:
+Use the Theme Manager for the full workflow and actions:
 
 - Find, select, and ping theme assets.
 - Create missing defaults.
@@ -62,7 +63,7 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.4.1"
+    "com.deucarian.theming": "0.4.2"
   }
 }
 ```

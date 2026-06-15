@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+
+- Removed duplicate top-level Theming editor menu entries.
+- Kept Theming package tools under the ecosystem standard path: `Tools/Deucarian/Theming/...`.
+- Documented the current Deucarian tool menu standard as `Tools/Deucarian/<PackageName>/...`.
+
 ## 0.4.1
 
 - Reworked README onboarding around the palette-first quick-start path.
@@ -38,7 +44,7 @@
 
 - Added a dependency on `com.deucarian.editor` for fixed Deucarian editor chrome and shared editor UI helpers.
 - Updated the Theme Manager to use `DeucarianEditorChrome`, `DeucarianEditorFields`, `DeucarianEditorIcons`, and `DeucarianEditorStatusBadge`.
-- Moved Theming menu entries to `Deucarian > Theming`.
+- Updated Theming menu placement.
 - Removed the local duplicate editor asset field helper.
 
 ## 0.2.2
@@ -52,11 +58,11 @@
 
 ## 0.2.1
 
-- Added top-level `Deucarian/Theming` menu tools for finding, selecting, creating, and applying theme assets.
+- Added top-level menu tools for finding, selecting, creating, and applying theme assets.
 - Added `DeucarianThemeManagerWindow` with active theme, palette, role library, asset counts, and scene-apply actions.
 - Added GUID-backed editor settings for active theme, palette, role library, and the default theme asset folder.
 - Kept existing `Tools/Deucarian/Theming` compatibility menu items working.
-- Moved the UI Toolkit demo asset menu item under `Deucarian/Theming`.
+- Moved the UI Toolkit demo asset creation action into the Theming menu.
 - Added editor tests for menu settings, asset discovery, default creation, active theme creation, and provider assignment.
 
 ## 0.2.0

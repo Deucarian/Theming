@@ -67,7 +67,7 @@ namespace Deucarian.Theming.Editor
             DrawDefaultAssetsSection();
             DrawAssetSummary();
             DrawAdvancedSection();
-            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.1");
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.2");
 
             EditorGUILayout.EndScrollView();
         }

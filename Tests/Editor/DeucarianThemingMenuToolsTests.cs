@@ -47,9 +47,7 @@ namespace Deucarian.Theming.Editor.Tests
             string[] expectedMenuItems =
             {
                 "Tools/Deucarian/Theming/Open Theme Manager",
-                "Deucarian/Theming/Open Theme Manager",
-                "Tools/Deucarian/Theming/Create Minimal Palette",
-                "Deucarian/Theming/Create Minimal Palette"
+                "Tools/Deucarian/Theming/Create Minimal Palette"
             };
 
             List<string> actualMenuItems = new List<string>();
