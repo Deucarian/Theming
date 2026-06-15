@@ -478,7 +478,7 @@ namespace Deucarian.Theming.Editor
                     }
 
                     string uniquePath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
-                    Debug.LogWarning($"Asset already exists at {assetPath} and is not a {typeof(T).Name}. Creating {uniquePath} instead.");
+                    ThemingLog.Editor.Warning($"Asset already exists at {assetPath} and is not a {typeof(T).Name}. Creating {uniquePath} instead.");
                     assetPath = uniquePath;
                 }
                 else

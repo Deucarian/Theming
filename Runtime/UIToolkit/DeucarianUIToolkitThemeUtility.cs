@@ -255,7 +255,7 @@ namespace Deucarian.Theming.UIToolkit
 
             warnedCustomVariables = true;
             string variableName = string.IsNullOrWhiteSpace(customCssVariableName) ? "the requested variable" : customCssVariableName;
-            Debug.LogWarning(
+            ThemingLog.UIToolkit.Warning(
                 $"Runtime USS custom variable assignment is not exposed consistently by Unity UI Toolkit. '{variableName}' was not applied; use DeucarianUIToolkitThemeVariables to preview/generate USS variable values.");
         }
     }

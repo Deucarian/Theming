@@ -67,7 +67,13 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
 }
 ```
 
-TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.editor` are declared as package dependencies. No third-party UI Toolkit package is required.
+Deucarian Logging, TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.editor` are declared as package dependencies. No third-party UI Toolkit package is required.
+
+## Logging
+
+This package uses `com.deucarian.logging`.
+
+Theming diagnostics use stable package categories: `Theming`, `Theming.Editor`, and `Theming.UIToolkit`. Configure Deucarian Logging filters by category and level to isolate runtime theme-target warnings, editor workflow messages, or UI Toolkit adapter output. Entries flow through the shared ring buffer for recent-diagnostic inspection and remain compatible with future telemetry sinks.
 
 # What Gets Created Automatically
 

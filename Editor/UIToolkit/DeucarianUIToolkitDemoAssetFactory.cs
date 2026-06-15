@@ -1,4 +1,5 @@
 using System.IO;
+using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
 
@@ -60,7 +61,7 @@ namespace Deucarian.Theming.Editor
 
             if (File.Exists(fullPath))
             {
-                Debug.LogWarning($"UI Toolkit demo asset already exists and was left unchanged: {assetPath}");
+                ThemingLog.Editor.Warning($"UI Toolkit demo asset already exists and was left unchanged: {assetPath}");
                 return;
             }
 

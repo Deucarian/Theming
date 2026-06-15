@@ -101,7 +101,7 @@ namespace Deucarian.Theming
             }
 
             flag = true;
-            Debug.LogWarning(message, this);
+            ThemingLog.General.Warning(message, this);
         }
 
         /// <summary>Finds the provider this target should listen to for theme changes.</summary>

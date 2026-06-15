@@ -7,6 +7,8 @@
 - Aligned Theme Manager and menu wording around `Create Minimal Palette`, `Repair Palette Setup`, and `Apply Theme To Scene`.
 - Simplified the Theming top menu to the Theme Manager and minimal palette quick entries.
 - Kept setup, repair, selection, folder, and scene-apply workflows available inside Theme Manager.
+- Standardized package logging on com.deucarian.logging.
+- Added `ThemingLog` package categories for runtime, editor, and UI Toolkit diagnostics.
 
 ## 0.4.0
 

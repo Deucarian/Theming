@@ -92,7 +92,7 @@ namespace Deucarian.Theming.Editor
                     Undo.RecordObject(palette, "Add Missing Palette Roles");
                     int added = palette.AddMissingRolesFromLibrary();
                     EditorUtility.SetDirty(palette);
-                    Debug.Log($"Added {added} missing role entries to {palette.name}.", palette);
+                    ThemingLog.Editor.Info($"Added {added} missing role entries to {palette.name}.", palette);
                 }
             }
 
@@ -101,7 +101,7 @@ namespace Deucarian.Theming.Editor
                 Undo.RecordObject(palette, "Remove Null Palette Entries");
                 int removed = palette.RemoveNullEntries();
                 EditorUtility.SetDirty(palette);
-                Debug.Log($"Removed {removed} null entries from {palette.name}.", palette);
+                ThemingLog.Editor.Info($"Removed {removed} null entries from {palette.name}.", palette);
             }
 
             if (GUILayout.Button("Sort By Category Then Display Name"))

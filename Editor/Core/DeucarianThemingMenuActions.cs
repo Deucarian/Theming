@@ -98,7 +98,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemingEditorSettings.DefaultAssetFolder = assetFolder;
             DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateDefaultThemeAssets(assetFolder);
             StoreDefaultAssetSelections(assets);
-            Debug.Log($"Deucarian default theme assets are ready in {assetFolder}.", assets.Theme);
+            ThemingLog.Editor.Info($"Deucarian default theme assets are ready in {assetFolder}.", assets.Theme);
             return assets;
         }
 
@@ -115,7 +115,7 @@ namespace Deucarian.Theming.Editor
 
             DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateGameThemeAssets(assetFolder);
             StoreDefaultAssetSelections(assets);
-            Debug.Log($"Deucarian game theme assets are ready in {assetFolder}.", assets.Theme);
+            ThemingLog.Editor.Info($"Deucarian game theme assets are ready in {assetFolder}.", assets.Theme);
             return assets;
         }
 
@@ -130,7 +130,7 @@ namespace Deucarian.Theming.Editor
         {
             DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(palettePath);
             StoreDefaultAssetSelections(assets);
-            Debug.Log($"Deucarian minimal palette is ready at {AssetDatabase.GetAssetPath(assets.Palette)}.", assets.Palette);
+            ThemingLog.Editor.Info($"Deucarian minimal palette is ready at {AssetDatabase.GetAssetPath(assets.Palette)}.", assets.Palette);
             return assets;
         }
 
@@ -164,13 +164,13 @@ namespace Deucarian.Theming.Editor
             DeucarianColorPalette palette = ResolveOrCreateActivePaletteFirst();
             if (palette == null)
             {
-                Debug.LogWarning("No active Deucarian palette is selected. Choose one palette or create a minimal palette first.");
+                ThemingLog.Editor.Warning("No active Deucarian palette is selected. Choose one palette or create a minimal palette first.");
                 return null;
             }
 
             DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairPaletteSetup(palette);
             StoreDefaultAssetSelections(assets);
-            Debug.Log($"Repaired Deucarian palette setup for '{palette.name}'.", palette);
+            ThemingLog.Editor.Info($"Repaired Deucarian palette setup for '{palette.name}'.", palette);
             return assets;
         }
 
@@ -183,7 +183,7 @@ namespace Deucarian.Theming.Editor
                 DeucarianThemingEditorSettings.ActiveRoleLibrary = palette.RoleLibrary;
             }
 
-            Debug.Log($"Created Deucarian palette '{palette.name}' from theme '{theme.name}'.", palette);
+            ThemingLog.Editor.Info($"Created Deucarian palette '{palette.name}' from theme '{theme.name}'.", palette);
             return palette;
         }
 
@@ -192,7 +192,7 @@ namespace Deucarian.Theming.Editor
             DeucarianTheme theme = ResolveOrCreateActiveTheme();
             if (theme == null || theme.ColorPalette == null)
             {
-                Debug.LogWarning("No active Deucarian theme with a palette is selected.");
+                ThemingLog.Editor.Warning("No active Deucarian theme with a palette is selected.");
                 return null;
             }
 
@@ -221,7 +221,7 @@ namespace Deucarian.Theming.Editor
                 : NormalizeSearchFolders(searchFolders);
             if (folders == null || folders.Length == 0)
             {
-                Debug.Log("No Deucarian generated asset folders were found to repair.");
+                ThemingLog.Editor.Info("No Deucarian generated asset folders were found to repair.");
                 return 0;
             }
 
@@ -237,7 +237,7 @@ namespace Deucarian.Theming.Editor
                 AssetDatabase.Refresh();
             }
 
-            Debug.Log($"Repaired {repaired} Deucarian generated asset name(s).");
+            ThemingLog.Editor.Info($"Repaired {repaired} Deucarian generated asset name(s).");
             return repaired;
         }
 
@@ -356,7 +356,7 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            Debug.Log($"Deucarian theme assets folder: {folder}");
+            ThemingLog.Editor.Info($"Deucarian theme assets folder: {folder}");
         }
 
         public static int ApplyActiveThemeToOpenScene(bool createProviderIfMissing = true, bool askBeforeCreate = true)
@@ -364,7 +364,7 @@ namespace Deucarian.Theming.Editor
             DeucarianTheme theme = ResolveOrCreateActiveTheme();
             if (theme == null)
             {
-                Debug.LogWarning("No active Deucarian theme is selected. Open the Theme Manager and choose one.");
+                ThemingLog.Editor.Warning("No active Deucarian theme is selected. Open the Theme Manager and choose one.");
                 return 0;
             }
 
@@ -378,7 +378,7 @@ namespace Deucarian.Theming.Editor
         {
             if (theme == null)
             {
-                Debug.LogWarning("Cannot apply a null Deucarian theme to the open scene.");
+                ThemingLog.Editor.Warning("Cannot apply a null Deucarian theme to the open scene.");
                 return 0;
             }
 
@@ -387,7 +387,7 @@ namespace Deucarian.Theming.Editor
             {
                 if (!createProviderIfMissing || !ShouldCreateThemeProvider(askBeforeCreate))
                 {
-                    Debug.LogWarning("No DeucarianThemeProvider was found in the open scenes.");
+                    ThemingLog.Editor.Warning("No DeucarianThemeProvider was found in the open scenes.");
                     return 0;
                 }
 
@@ -415,7 +415,7 @@ namespace Deucarian.Theming.Editor
 
             if (applied > 0)
             {
-                Debug.Log($"Applied Deucarian theme '{theme.name}' to {applied} theme provider(s).", theme);
+                ThemingLog.Editor.Info($"Applied Deucarian theme '{theme.name}' to {applied} theme provider(s).", theme);
             }
 
             return applied;

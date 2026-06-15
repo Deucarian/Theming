@@ -4,6 +4,7 @@
   "references": [
     "Deucarian.Editor",
     "Deucarian.Theming",
+    "Deucarian.Logging",
     "UnityEngine.UIElementsModule"
   ],
   "includePlatforms": [

@@ -2,6 +2,7 @@
   "name": "Deucarian.Theming",
   "rootNamespace": "Deucarian.Theming",
   "references": [
+    "Deucarian.Logging",
     "Unity.TextMeshPro",
     "UnityEngine.UI",
     "UnityEngine.UIElementsModule"

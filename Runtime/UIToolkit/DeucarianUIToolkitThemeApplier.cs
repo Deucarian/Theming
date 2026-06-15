@@ -289,7 +289,7 @@ namespace Deucarian.Theming.UIToolkit
             }
 
             warnedMissingDocument = true;
-            Debug.LogWarning("UI Toolkit theme applier has no UIDocument root to theme.", this);
+            ThemingLog.UIToolkit.Warning("UI Toolkit theme applier has no UIDocument root to theme.", this);
         }
 
         private void WarnBinding(bool shouldLog, string message)
@@ -300,7 +300,7 @@ namespace Deucarian.Theming.UIToolkit
             }
 
             warnedBindingMessages.Add(message);
-            Debug.LogWarning(message, this);
+            ThemingLog.UIToolkit.Warning(message, this);
         }
 
         private static bool TargetsRoot(DeucarianUIToolkitThemeBinding binding)

@@ -235,7 +235,7 @@ namespace Deucarian.Theming.UIToolkit
             }
 
             warnedRuntimeVariablesUnsupported = true;
-            Debug.LogWarning(
+            ThemingLog.UIToolkit.Warning(
                 "Unity UI Toolkit does not expose a stable runtime API for assigning USS custom variables in Unity 2022.3. Variable values were generated and can be previewed or exported as USS text.",
                 this);
         }
