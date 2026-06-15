@@ -1,5 +1,7 @@
 # Deucarian Theming
 
+## Overview
+
 Deucarian Theming is a Unity UPM package for designer-friendly color themes. It uses `ScriptableObject` color role assets as the source of truth, so new roles can be created in the Unity Editor without changing C#.
 
 ## Installation
@@ -22,7 +24,7 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.2.3"
+    "com.deucarian.theming": "0.2.4"
   }
 }
 ```
@@ -31,7 +33,7 @@ TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.edito
 
 ## Deucarian Menu Workflow
 
-The package exposes only high-level Unity Editor entries under `Deucarian > Theming`:
+The package exposes only high-level Unity Editor entries under `Tools > Deucarian > Theming`:
 
 - `Open Theme Manager` opens `DeucarianThemeManagerWindow`.
 - `Open Theme Assets Folder` selects `Assets/Deucarian/Theming/Defaults/` in the Project window.
@@ -46,7 +48,7 @@ Use the Theme Manager for package workflows:
 
 Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`. The editor UI uses `com.deucarian.editor` for fixed Deucarian chrome, icons, status badges, and inline asset field controls. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
 
-Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select/Ping button stay on the same row.
+Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select button stay on the same row.
 
 ## Core Concept
 
@@ -60,7 +62,7 @@ Enums make every new color role a code change. This package keeps roles as asset
 
 ## Designer Workflow
 
-1. Open `Deucarian > Theming > Open Theme Manager`.
+1. Open `Tools > Deucarian > Theming > Open Theme Manager`.
 2. Create default assets from the Theme Manager.
 3. Refine or add color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
 4. Add role assets to a `DeucarianColorRoleLibrary`.
@@ -182,3 +184,11 @@ Example UI Toolkit bindings:
 - `.viewer-error` -> `TextColor`
 
 Use a `DeucarianThemeProvider` at the viewer root so uGUI, TMP, renderer, and UI Toolkit theme targets all update when the report viewer switches theme.
+
+## Tests
+
+Run the package's EditMode tests in Unity. Runtime tests cover palette/theme behavior, and editor tests cover default asset creation, active asset settings, and manager workflows.
+
+## License
+
+See [LICENSE.md](LICENSE.md).

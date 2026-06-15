@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4
+
+- Moved high-level Theming editor menu entries under `Tools > Deucarian > Theming`.
+- Updated the shared editor helper dependency to `com.deucarian.editor` `0.1.1`.
+- Updated Theme Manager package version chrome.
+- Updated README and sample menu guidance, usage, tests, and license sections.
+
 ## 0.2.3
 
 - Added a dependency on `com.deucarian.editor` for fixed Deucarian editor chrome and shared editor UI helpers.

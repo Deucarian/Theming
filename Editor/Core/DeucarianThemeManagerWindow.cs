@@ -39,7 +39,7 @@ namespace Deucarian.Theming.Editor
             DrawFolderField();
             DrawAssetSummary();
             DrawActionButtons();
-            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.2.3");
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.2.4");
 
             EditorGUILayout.EndScrollView();
         }
