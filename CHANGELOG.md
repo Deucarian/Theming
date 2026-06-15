@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+
+- Added a palette-first workflow that creates or repairs support role, library, and theme assets from one editable palette.
+- Added `Create Minimal Palette`, `Repair Palette Setup`, `Create Palette From Active Theme`, and generated asset name repair menu tools.
+- Updated Theme Manager to prioritize the active palette and expose palette setup actions near the active asset fields.
+- Fixed generated ScriptableObject object names so they match their asset filenames while keeping display names separate.
+- Added editor tests for minimal palette creation, palette repair, user color preservation, generated asset names, and minimal role scope.
+
 ## 0.3.0
 
 - Split built-in theme generation into minimal default theme assets and optional game theme assets.

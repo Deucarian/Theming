@@ -67,7 +67,7 @@ namespace Deucarian.Theming.Editor
             DrawDefaultAssetsSection();
             DrawAssetSummary();
             DrawAdvancedSection();
-            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.3.0");
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.0");
 
             EditorGUILayout.EndScrollView();
         }
@@ -77,6 +77,14 @@ namespace Deucarian.Theming.Editor
             DeucarianEditorChrome.DrawSectionHeader("Active Assets");
             DeucarianEditorChrome.BeginSection();
 
+            DeucarianThemingEditorSettings.ActivePalette = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
+                "Active Palette",
+                DeucarianThemingEditorSettings.ActivePalette,
+                "Select",
+                palette => DeucarianThemingEditorSettings.ActivePalette = palette,
+                null,
+                () => DeucarianThemingMenuActions.ResolveOrCreateActivePaletteFirst());
+
             DeucarianThemingEditorSettings.ActiveTheme = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Active Theme",
                 DeucarianThemingEditorSettings.ActiveTheme,
@@ -84,14 +92,6 @@ namespace Deucarian.Theming.Editor
                 theme => DeucarianThemingEditorSettings.ActiveTheme = theme,
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveTheme());
-
-            DeucarianThemingEditorSettings.ActivePalette = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
-                "Active Palette",
-                DeucarianThemingEditorSettings.ActivePalette,
-                "Select",
-                palette => DeucarianThemingEditorSettings.ActivePalette = palette,
-                null,
-                () => DeucarianThemingMenuActions.ResolveOrCreateActivePalette());
 
             DeucarianThemingEditorSettings.ActiveRoleLibrary = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Role Library",
@@ -103,7 +103,40 @@ namespace Deucarian.Theming.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Create Minimal Palette", GUILayout.Width(156)))
+            {
+                DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel();
+                if (assets != null)
+                {
+                    RefreshAssets(true);
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActivePalette == null))
+            {
+                if (GUILayout.Button("Create Theme From Active Palette", GUILayout.Width(220)))
+                {
+                    DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateThemeFromActivePalette();
+                    if (assets != null)
+                    {
+                        RefreshAssets(true);
+                    }
+                }
+            }
+
             GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Repair Palette Setup", GUILayout.Width(156)))
+            {
+                DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.RepairActivePaletteSetup();
+                if (assets != null)
+                {
+                    RefreshAssets(true);
+                }
+            }
+
             using (new EditorGUI.DisabledScope(DeucarianThemingEditorSettings.ActiveTheme == null))
             {
                 if (GUILayout.Button("Apply To Scene", GUILayout.Width(132)))
@@ -237,11 +270,11 @@ namespace Deucarian.Theming.Editor
         {
             string folder = DeucarianThemingEditorSettings.DefaultAssetFolder;
             DeucarianColorRoleLibrary library = AssetDatabase.LoadAssetAtPath<DeucarianColorRoleLibrary>(
-                CombineAssetPath(folder, "Default Color Role Library.asset"));
+                CombineAssetPath(folder, "DefaultColorRoleLibrary.asset"));
             DeucarianColorPalette palette = AssetDatabase.LoadAssetAtPath<DeucarianColorPalette>(
-                CombineAssetPath(folder, "Default Dark Color Palette.asset"));
+                CombineAssetPath(folder, "DefaultDarkColorPalette.asset"));
             DeucarianTheme theme = AssetDatabase.LoadAssetAtPath<DeucarianTheme>(
-                CombineAssetPath(folder, "Default Theme.asset"));
+                CombineAssetPath(folder, "DefaultTheme.asset"));
 
             if (library == null || palette == null || theme == null || theme.ColorPalette != palette || palette.RoleLibrary != library)
             {

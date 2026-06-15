@@ -119,6 +119,128 @@ namespace Deucarian.Theming.Editor
             return assets;
         }
 
+        public static DeucarianDefaultThemeAssets CreateMinimalPalette()
+        {
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string palettePath = CombineAssetPath(folder, DeucarianDefaultThemeAssetFactory.MinimalPaletteFileName);
+            return CreateMinimalPalette(palettePath);
+        }
+
+        public static DeucarianDefaultThemeAssets CreateMinimalPalette(string palettePath)
+        {
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(palettePath);
+            StoreDefaultAssetSelections(assets);
+            Debug.Log($"Deucarian minimal palette is ready at {AssetDatabase.GetAssetPath(assets.Palette)}.", assets.Palette);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets CreateMinimalPaletteFromSavePanel()
+        {
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string palettePath = EditorUtility.SaveFilePanelInProject(
+                "Create Minimal Palette",
+                PathWithoutExtension(DeucarianDefaultThemeAssetFactory.MinimalPaletteFileName),
+                "asset",
+                "Choose where to create the minimal Deucarian palette.",
+                folder);
+
+            if (string.IsNullOrEmpty(palettePath))
+            {
+                return null;
+            }
+
+            DeucarianDefaultThemeAssets assets = CreateMinimalPalette(palettePath);
+            SelectAndPing(assets.Palette);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets CreateThemeFromActivePalette()
+        {
+            return RepairActivePaletteSetup();
+        }
+
+        public static DeucarianDefaultThemeAssets RepairActivePaletteSetup()
+        {
+            DeucarianColorPalette palette = ResolveOrCreateActivePaletteFirst();
+            if (palette == null)
+            {
+                Debug.LogWarning("No active Deucarian palette is selected. Choose one palette or create a minimal palette first.");
+                return null;
+            }
+
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairPaletteSetup(palette);
+            StoreDefaultAssetSelections(assets);
+            Debug.Log($"Repaired Deucarian palette setup for '{palette.name}'.", palette);
+            return assets;
+        }
+
+        public static DeucarianColorPalette CreatePaletteFromTheme(DeucarianTheme theme, string palettePath)
+        {
+            DeucarianColorPalette palette = DeucarianDefaultThemeAssetFactory.CreatePaletteFromTheme(theme, palettePath);
+            DeucarianThemingEditorSettings.ActivePalette = palette;
+            if (palette != null && palette.RoleLibrary != null)
+            {
+                DeucarianThemingEditorSettings.ActiveRoleLibrary = palette.RoleLibrary;
+            }
+
+            Debug.Log($"Created Deucarian palette '{palette.name}' from theme '{theme.name}'.", palette);
+            return palette;
+        }
+
+        public static DeucarianColorPalette CreatePaletteFromActiveThemeFromSavePanel()
+        {
+            DeucarianTheme theme = ResolveOrCreateActiveTheme();
+            if (theme == null || theme.ColorPalette == null)
+            {
+                Debug.LogWarning("No active Deucarian theme with a palette is selected.");
+                return null;
+            }
+
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string palettePath = EditorUtility.SaveFilePanelInProject(
+                "Create Palette From Active Theme",
+                theme.name + "Palette",
+                "asset",
+                "Choose where to create or update the palette copy.",
+                folder);
+
+            if (string.IsNullOrEmpty(palettePath))
+            {
+                return null;
+            }
+
+            DeucarianColorPalette palette = CreatePaletteFromTheme(theme, palettePath);
+            SelectAndPing(palette);
+            return palette;
+        }
+
+        public static int RepairGeneratedAssetNames(string[] searchFolders = null)
+        {
+            string[] folders = searchFolders == null
+                ? NormalizeSearchFolders(new[] { DeucarianThemingEditorSettings.DefaultProjectFolder })
+                : NormalizeSearchFolders(searchFolders);
+            if (folders == null || folders.Length == 0)
+            {
+                Debug.Log("No Deucarian generated asset folders were found to repair.");
+                return 0;
+            }
+
+            int repaired = 0;
+            repaired += RepairAssetNames<DeucarianColorRole>(folders);
+            repaired += RepairAssetNames<DeucarianColorRoleLibrary>(folders);
+            repaired += RepairAssetNames<DeucarianColorPalette>(folders);
+            repaired += RepairAssetNames<DeucarianTheme>(folders);
+
+            if (repaired > 0)
+            {
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+
+            Debug.Log($"Repaired {repaired} Deucarian generated asset name(s).");
+            return repaired;
+        }
+
         public static DeucarianTheme ResolveOrCreateActiveTheme(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
@@ -131,6 +253,37 @@ namespace Deucarian.Theming.Editor
                 assets => assets.Theme,
                 openManagerForMultiple,
                 createFolder);
+        }
+
+        public static DeucarianColorPalette ResolveOrCreateActivePaletteFirst(
+            bool openManagerForMultiple = true,
+            string[] searchFolders = null)
+        {
+            DeucarianColorPalette activePalette = DeucarianThemingEditorSettings.ActivePalette;
+            if (activePalette != null)
+            {
+                return activePalette;
+            }
+
+            IReadOnlyList<DeucarianColorPalette> palettes = FindAssets<DeucarianColorPalette>(searchFolders);
+            if (palettes.Count == 1)
+            {
+                DeucarianThemingEditorSettings.ActivePalette = palettes[0];
+                return palettes[0];
+            }
+
+            if (palettes.Count == 0)
+            {
+                DeucarianDefaultThemeAssets assets = CreateMinimalPalette();
+                return assets.Palette;
+            }
+
+            if (openManagerForMultiple)
+            {
+                DeucarianThemeManagerWindow.OpenWindow();
+            }
+
+            return null;
         }
 
         public static DeucarianColorPalette ResolveOrCreateActivePalette(
@@ -301,6 +454,60 @@ namespace Deucarian.Theming.Editor
 
             AssetDatabase.Refresh();
             return normalized;
+        }
+
+        private static int RepairAssetNames<T>(string[] searchFolders)
+            where T : UnityEngine.Object
+        {
+            string[] guids = searchFolders == null
+                ? AssetDatabase.FindAssets("t:" + typeof(T).Name)
+                : AssetDatabase.FindAssets("t:" + typeof(T).Name, searchFolders);
+
+            int repaired = 0;
+            HashSet<string> seenGuids = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < guids.Length; i++)
+            {
+                if (!seenGuids.Add(guids[i]))
+                {
+                    continue;
+                }
+
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+                if (asset == null)
+                {
+                    continue;
+                }
+
+                string expectedName = PathWithoutExtension(path);
+                if (!string.Equals(asset.name, expectedName, StringComparison.Ordinal))
+                {
+                    asset.name = expectedName;
+                    EditorUtility.SetDirty(asset);
+                    repaired++;
+                }
+            }
+
+            return repaired;
+        }
+
+        private static string CombineAssetPath(string left, string right)
+        {
+            return DeucarianThemingEditorSettings.NormalizeAssetPath(left.TrimEnd('/') + "/" + right.TrimStart('/'));
+        }
+
+        private static string PathWithoutExtension(string path)
+        {
+            string fileName = path;
+            int slashIndex = fileName.LastIndexOf('/');
+            if (slashIndex >= 0)
+            {
+                fileName = fileName.Substring(slashIndex + 1);
+            }
+
+            return fileName.EndsWith(".asset", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Substring(0, fileName.Length - ".asset".Length)
+                : fileName;
         }
 
         private static T ResolveOrCreateActiveAsset<T>(

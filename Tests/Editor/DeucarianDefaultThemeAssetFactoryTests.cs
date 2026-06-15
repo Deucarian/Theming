@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using Deucarian.Theming.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -97,6 +98,114 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.IsTrue(AssetDatabase.Contains(assets.Theme));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Roles"));
             AssertRequiredRolesExist(assets.RoleLibrary, RequiredMinimalRoleIds);
+        }
+
+        [Test]
+        public void CreateMinimalPaletteCreatesPaletteThemeLibraryAndRoles()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianThemingMenuActions.CreateMinimalPalette(testRoot + "/SimultriaPalette.asset");
+
+            Assert.NotNull(assets.Palette);
+            Assert.NotNull(assets.Theme);
+            Assert.NotNull(assets.RoleLibrary);
+            Assert.AreEqual(RequiredMinimalRoleIds.Length, assets.Roles.Count);
+            Assert.AreSame(assets.Palette, assets.Theme.ColorPalette);
+            Assert.AreSame(assets.RoleLibrary, assets.Palette.RoleLibrary);
+            Assert.AreSame(assets.Palette, DeucarianThemingEditorSettings.ActivePalette);
+            Assert.AreSame(assets.Theme, DeucarianThemingEditorSettings.ActiveTheme);
+            Assert.AreSame(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/SimultriaPalette Support/Roles"));
+            AssertRequiredRolesExist(assets.RoleLibrary, RequiredMinimalRoleIds);
+        }
+
+        [Test]
+        public void RepairPaletteSetupFillsMissingSupportAssetsAndReferences()
+        {
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(testRoot + "/StandalonePalette.asset");
+
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairPaletteSetup(palette);
+
+            Assert.NotNull(assets.RoleLibrary);
+            Assert.NotNull(assets.Theme);
+            Assert.AreSame(palette, assets.Palette);
+            Assert.AreSame(assets.RoleLibrary, palette.RoleLibrary);
+            Assert.AreSame(palette, assets.Theme.ColorPalette);
+            AssertRequiredRolesExist(assets.RoleLibrary, RequiredMinimalRoleIds);
+
+            for (int i = 0; i < RequiredMinimalRoleIds.Length; i++)
+            {
+                Assert.True(palette.TryGetColorById(RequiredMinimalRoleIds[i], out _), RequiredMinimalRoleIds[i]);
+            }
+        }
+
+        [Test]
+        public void RepairPaletteSetupDoesNotOverwriteUserSetColors()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(testRoot + "/CustomPalette.asset");
+            Assert.True(assets.RoleLibrary.TryGetRoleById(
+                DeucarianBuiltinColorRoleIds.Core.Primary,
+                out DeucarianColorRole primaryRole));
+
+            Color userColor = new Color(0.12f, 0.34f, 0.56f, 1f);
+            assets.Palette.SetColor(primaryRole, userColor, "User color");
+            EditorUtility.SetDirty(assets.Palette);
+            AssetDatabase.SaveAssets();
+
+            DeucarianDefaultThemeAssets repaired = DeucarianDefaultThemeAssetFactory.RepairPaletteSetup(assets.Palette);
+
+            Assert.True(repaired.Palette.TryGetColor(primaryRole, out Color repairedColor));
+            Assert.True(ColorsMatch(userColor, repairedColor), repairedColor.ToString());
+        }
+
+        [Test]
+        public void GeneratedAssetObjectNamesMatchFileNames()
+        {
+            DeucarianDefaultThemeAssets defaultAssets =
+                DeucarianDefaultThemeAssetFactory.CreateDefaultThemeAssets(testRoot + "/Defaults");
+            DeucarianDefaultThemeAssets minimalAssets =
+                DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(testRoot + "/SimultriaPalette.asset");
+
+            AssertObjectNameMatchesFile(defaultAssets.RoleLibrary);
+            AssertObjectNameMatchesFile(defaultAssets.Palette);
+            AssertObjectNameMatchesFile(defaultAssets.Theme);
+            AssertObjectNameMatchesFile(minimalAssets.RoleLibrary);
+            AssertObjectNameMatchesFile(minimalAssets.Palette);
+            AssertObjectNameMatchesFile(minimalAssets.Theme);
+
+            for (int i = 0; i < defaultAssets.Roles.Count; i++)
+            {
+                AssertObjectNameMatchesFile(defaultAssets.Roles[i]);
+            }
+
+            for (int i = 0; i < minimalAssets.Roles.Count; i++)
+            {
+                AssertObjectNameMatchesFile(minimalAssets.Roles[i]);
+            }
+        }
+
+        [Test]
+        public void GeneratedDisplayNamesCanDifferFromAssetNames()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(testRoot + "/SimultriaPalette.asset");
+
+            Assert.AreEqual("SimultriaPalette", assets.Palette.name);
+            Assert.AreEqual("Simultria Palette", assets.Palette.DisplayName);
+            Assert.AreEqual("SimultriaTheme", assets.Theme.name);
+            Assert.AreEqual("Simultria Theme", assets.Theme.DisplayName);
+        }
+
+        [Test]
+        public void MinimalPaletteContainsNoGameSpecificRoles()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(testRoot + "/MinimalPalette.asset");
+
+            Assert.IsFalse(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.Gameplay.Health, out _));
+            Assert.IsFalse(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.ItemRarity.Legendary, out _));
+            Assert.IsFalse(assets.RoleLibrary.TryGetRoleById(DeucarianBuiltinColorRoleIds.Faction.Enemy, out _));
         }
 
         [Test]
@@ -250,9 +359,42 @@ namespace Deucarian.Theming.Editor.Tests
             }
         }
 
+        [Test]
+        public void RepairGeneratedAssetNamesMatchesMainObjectNamesToFiles()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(testRoot + "/NameRepairPalette.asset");
+            assets.Palette.name = "Name Repair Palette";
+            assets.Theme.name = "Name Repair Theme";
+            EditorUtility.SetDirty(assets.Palette);
+            EditorUtility.SetDirty(assets.Theme);
+            AssetDatabase.SaveAssets();
+
+            int repaired = DeucarianThemingMenuActions.RepairGeneratedAssetNames(new[] { testRoot });
+
+            Assert.AreEqual(2, repaired);
+            AssertObjectNameMatchesFile(assets.Palette);
+            AssertObjectNameMatchesFile(assets.Theme);
+            Assert.AreEqual("Name Repair Palette", assets.Palette.DisplayName);
+            Assert.AreEqual("Name Repair Theme", assets.Theme.DisplayName);
+        }
+
         private static void ClearActiveSelections()
         {
             DeucarianThemingEditorSettings.ClearActiveAssets();
+        }
+
+        private static T CreateAsset<T>(string path)
+            where T : ScriptableObject
+        {
+            string folder = path.Substring(0, path.LastIndexOf('/'));
+            DeucarianThemingMenuActions.EnsureAssetFolder(folder);
+            T asset = ScriptableObject.CreateInstance<T>();
+            asset.name = Path.GetFileNameWithoutExtension(path);
+            AssetDatabase.CreateAsset(asset, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return asset;
         }
 
         private static void AssertRequiredRolesExist(DeucarianColorRoleLibrary library, IReadOnlyList<string> roleIds)
@@ -281,6 +423,14 @@ namespace Deucarian.Theming.Editor.Tests
                 && Mathf.Abs(expected.g - actual.g) <= ColorTolerance
                 && Mathf.Abs(expected.b - actual.b) <= ColorTolerance
                 && Mathf.Abs(expected.a - actual.a) <= ColorTolerance;
+        }
+
+        private static void AssertObjectNameMatchesFile(Object asset)
+        {
+            Assert.NotNull(asset);
+            string path = AssetDatabase.GetAssetPath(asset);
+            Assert.IsNotEmpty(path);
+            Assert.AreEqual(Path.GetFileNameWithoutExtension(path), asset.name);
         }
     }
 }

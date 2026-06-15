@@ -24,7 +24,7 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.3.0"
+    "com.deucarian.theming": "0.4.0"
   }
 }
 ```
@@ -33,23 +33,27 @@ TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.edito
 
 ## Deucarian Menu Workflow
 
-The package exposes only high-level Unity Editor entries under `Tools > Deucarian > Theming`:
+The package exposes high-level Unity Editor entries under both `Tools > Deucarian > Theming` and `Deucarian > Theming`:
 
 - `Open Theme Manager` opens `DeucarianThemeManagerWindow`.
+- `Create Minimal Palette` creates a palette-first setup for normal use.
+- `Repair Palette Setup` repairs support role, library, palette-entry, and theme links for the active palette.
+- `Create Palette From Active Theme` copies the active theme palette into a new editable palette.
 - `Create Missing Default Theme Assets` creates the minimal generic Deucarian defaults.
 - `Create Game Theme Assets` creates optional gameplay, faction, and item rarity presets.
+- `Repair Generated Asset Names` fixes Unity main-object names to match asset filenames.
 - `Open Theme Assets Folder` selects `Assets/Deucarian/Theming/Defaults/` in the Project window.
 
 Use the Theme Manager for package workflows:
 
-- Create or reuse minimal default roles, a role library, a palette, and a theme under `Assets/Deucarian/Theming/Defaults/`.
+- Create or reuse one main palette asset, then let the package create or repair required support assets.
+- Set active palette, theme, and role library assets, with the palette shown first.
+- Create or repair a theme from the active palette.
+- Apply the active theme to open-scene `DeucarianThemeProvider` components, asking before creating one when the scene has none.
 - Create optional game theme assets under `Assets/Deucarian/Theming/Game/`.
 - Create the existing UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
-- Set active theme, palette, and role library assets.
-- Select saved theme, palette, and role library assets.
-- Apply the active theme to open-scene `DeucarianThemeProvider` components, asking before creating one when the scene has none.
 
-Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`. The editor UI uses `com.deucarian.editor` for fixed Deucarian chrome, icons, status badges, and inline asset field controls. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
+Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`. The editor UI uses `com.deucarian.editor` for fixed Deucarian chrome, icons, status badges, and inline asset field controls. Palette-first support assets are generated beside the palette under a `<PaletteName> Support/` folder. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
 
 Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select button stay on the same row.
 
@@ -94,15 +98,30 @@ The minimal default palette uses the Deucarian brand palette:
 | `deucarian.ui.disabled` | `#3C444F` |
 | `deucarian.ui.focused` | `#5A6FA0` |
 
-## Designer Workflow
+## Simple Palette Workflow
+
+Most users should start with one palette asset:
 
 1. Open `Tools > Deucarian > Theming > Open Theme Manager`.
-2. Create default assets from the Theme Manager.
-3. Refine or add color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
-4. Add role assets to a `DeucarianColorRoleLibrary`.
-5. Add roles to a `DeucarianColorPalette` and choose the colors.
-6. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
-7. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+2. Click `Create Minimal Palette`.
+3. Edit colors on the generated `DeucarianColorPalette` asset.
+4. Click `Create Theme From Active Palette` or `Repair Palette Setup` if support assets need repair.
+5. Click `Apply To Scene` to assign the active theme to open-scene `DeucarianThemeProvider` components.
+
+The generated roles, role library, and theme exist to support semantic theming. Normal palette editing usually happens on the palette asset; users do not need to manage every generated role asset directly.
+
+## Advanced Workflow
+
+Advanced users can still work directly with the full asset model:
+
+1. Create or refine color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
+2. Add role assets to a `DeucarianColorRoleLibrary`.
+3. Add roles to a `DeucarianColorPalette` and choose the colors.
+4. Link a `DeucarianTheme` to the palette.
+5. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
+6. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+
+Game-specific roles are optional. Use `Create Game Theme Assets` only when gameplay, faction, and item rarity roles are useful for the project.
 
 ## uGUI Usage
 

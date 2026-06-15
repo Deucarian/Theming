@@ -1,8 +1,8 @@
 # Basic Theming Demo
 
-This sample is intentionally lightweight for v0.3.0.
+This sample is intentionally lightweight for v0.4.0.
 
-Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Missing Default Theme Assets**, then add a `DeucarianThemeProvider` to your scene and place the generated default theme on it. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
+Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Minimal Palette**, then apply the active theme to your scene. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
 
 ## Demo Hierarchy
 
@@ -31,10 +31,10 @@ Use `DeucarianSelectableThemeColors` on any `UnityEngine.UI.Selectable`, includi
 
 ## Designer Workflow
 
-1. Create a role with `Assets/Create/Deucarian/Theming/Color Role`.
-2. Add that role to the scene's `DeucarianColorRoleLibrary`.
-3. Add a palette entry for the role and choose the theme color.
-4. Assign the role to a theme component such as `DeucarianTMPThemeColor` or `DeucarianSelectableThemeColors`.
+1. Create a minimal palette from the Theme Manager.
+2. Edit colors on the palette asset.
+3. Assign roles to theme components such as `DeucarianTMPThemeColor` or `DeucarianSelectableThemeColors`.
+4. Add custom roles only when the built-in minimal roles are not enough.
 5. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
 
 The package resolves colors in this order:
