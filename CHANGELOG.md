@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3
+
+- Added a dependency on `com.deucarian.editor` for fixed Deucarian editor chrome and shared editor UI helpers.
+- Updated the Theme Manager to use `DeucarianEditorChrome`, `DeucarianEditorFields`, `DeucarianEditorIcons`, and `DeucarianEditorStatusBadge`.
+- Moved Theming menu entries to `Deucarian > Theming`.
+- Removed the local duplicate editor asset field helper.
+
 ## 0.2.2
 
 - Kept only high-level Theming entries under `Tools > Deucarian > Theming`.

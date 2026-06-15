@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -29,43 +30,56 @@ namespace Deucarian.Theming.Editor
         {
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
+            DeucarianEditorChrome.DrawPackageHeader(
+                "theming",
+                "Deucarian Theming",
+                "Create, discover, select, and apply runtime theme assets.");
+
             DrawActiveAssetFields();
-            EditorGUILayout.Space();
             DrawFolderField();
-            EditorGUILayout.Space();
             DrawAssetSummary();
-            EditorGUILayout.Space();
             DrawActionButtons();
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.2.3");
 
             EditorGUILayout.EndScrollView();
         }
 
         private void DrawActiveAssetFields()
         {
-            EditorGUILayout.LabelField("Active Assets", EditorStyles.boldLabel);
+            DeucarianEditorChrome.DrawSectionHeader("Active Assets");
+            DeucarianEditorChrome.BeginSection();
 
-            DeucarianEditorGUILayout.DrawAssetFieldWithSelectButton(
+            DeucarianThemingEditorSettings.ActiveTheme = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Active Theme",
                 DeucarianThemingEditorSettings.ActiveTheme,
+                "Select",
                 theme => DeucarianThemingEditorSettings.ActiveTheme = theme,
+                null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveTheme());
 
-            DeucarianEditorGUILayout.DrawAssetFieldWithSelectButton(
+            DeucarianThemingEditorSettings.ActivePalette = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Active Palette",
                 DeucarianThemingEditorSettings.ActivePalette,
+                "Select",
                 palette => DeucarianThemingEditorSettings.ActivePalette = palette,
+                null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActivePalette());
 
-            DeucarianEditorGUILayout.DrawAssetFieldWithSelectButton(
+            DeucarianThemingEditorSettings.ActiveRoleLibrary = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Role Library",
                 DeucarianThemingEditorSettings.ActiveRoleLibrary,
+                "Select",
                 roleLibrary => DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary,
+                null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveRoleLibrary());
+
+            DeucarianEditorChrome.EndSection();
         }
 
         private void DrawFolderField()
         {
-            EditorGUILayout.LabelField("Default Asset Folder", EditorStyles.boldLabel);
+            DeucarianEditorChrome.DrawSectionHeader("Default Asset Folder");
+            DeucarianEditorChrome.BeginSection();
 
             EditorGUI.BeginChangeCheck();
             string folder = EditorGUILayout.TextField("Path", DeucarianThemingEditorSettings.DefaultAssetFolder);
@@ -73,28 +87,39 @@ namespace Deucarian.Theming.Editor
             {
                 DeucarianThemingEditorSettings.DefaultAssetFolder = folder;
             }
+
+            DeucarianEditorChrome.EndSection();
         }
 
         private void DrawAssetSummary()
         {
             EnsureSearchResult();
 
-            EditorGUILayout.LabelField("Found Assets", EditorStyles.boldLabel);
+            DeucarianEditorChrome.DrawSectionHeader("Found Assets");
+            DeucarianEditorChrome.BeginSection();
             EditorGUILayout.LabelField("Theme Assets Count", searchResult.Themes.Count.ToString());
             EditorGUILayout.LabelField("Palette Assets Count", searchResult.Palettes.Count.ToString());
             EditorGUILayout.LabelField("Role Library Assets Count", searchResult.RoleLibraries.Count.ToString());
 
+            EditorGUILayout.Space();
+            DeucarianEditorStatusBadge.Draw("Themes: " + searchResult.Themes.Count, DeucarianEditorStatus.Info);
+            DeucarianEditorStatusBadge.Draw("Palettes: " + searchResult.Palettes.Count, DeucarianEditorStatus.Info);
+            DeucarianEditorStatusBadge.Draw("Role Libraries: " + searchResult.RoleLibraries.Count, DeucarianEditorStatus.Info);
+
             if (searchResult.Themes.Count == 0 && searchResult.Palettes.Count == 0 && searchResult.RoleLibraries.Count == 0)
             {
-                EditorGUILayout.HelpBox(
+                DeucarianEditorChrome.DrawInlineHelp(
                     "No Deucarian theme assets were found in this project. Create the default assets to get started.",
                     MessageType.Info);
             }
+
+            DeucarianEditorChrome.EndSection();
         }
 
         private void DrawActionButtons()
         {
-            EditorGUILayout.LabelField("Actions", EditorStyles.boldLabel);
+            DeucarianEditorChrome.DrawSectionHeader("Actions");
+            DeucarianEditorChrome.BeginSection();
 
             if (GUILayout.Button("Find Existing Assets"))
             {
@@ -122,6 +147,8 @@ namespace Deucarian.Theming.Editor
             {
                 DeucarianThemingMenuActions.OpenThemeAssetsFolder();
             }
+
+            DeucarianEditorChrome.EndSection();
         }
 
         private void RefreshAssets(bool autoSelectSingles)

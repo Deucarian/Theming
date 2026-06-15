@@ -22,16 +22,16 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.2.2"
+    "com.deucarian.theming": "0.2.3"
   }
 }
 ```
 
-TextMesh Pro, uGUI, and Unity's built-in UIElements module are declared as package dependencies. No third-party UI Toolkit package is required.
+TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.editor` are declared as package dependencies. No third-party UI Toolkit package is required.
 
 ## Deucarian Menu Workflow
 
-The package exposes only high-level Unity Editor entries under `Tools > Deucarian > Theming`:
+The package exposes only high-level Unity Editor entries under `Deucarian > Theming`:
 
 - `Open Theme Manager` opens `DeucarianThemeManagerWindow`.
 - `Open Theme Assets Folder` selects `Assets/Deucarian/Theming/Defaults/` in the Project window.
@@ -44,9 +44,9 @@ Use the Theme Manager for package workflows:
 - Select saved theme, palette, and role library assets.
 - Apply the active theme to open-scene `DeucarianThemeProvider` components, asking before creating one when the scene has none.
 
-Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`; no other Deucarian package is required to use these menu items. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
+Active theme, palette, role library, and default asset folder selections are stored by asset GUID/path in `EditorPrefs`. The editor UI uses `com.deucarian.editor` for fixed Deucarian chrome, icons, status badges, and inline asset field controls. Default assets are created in `Assets/Deucarian/Theming/Defaults/`, under the project folder `Assets/Deucarian/Theming/`.
 
-Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use an inline Select/Ping button next to the field instead, following the shared `DrawAssetFieldWithSelectButton<T>()` pattern.
+Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select/Ping button stay on the same row.
 
 ## Core Concept
 
@@ -60,7 +60,7 @@ Enums make every new color role a code change. This package keeps roles as asset
 
 ## Designer Workflow
 
-1. Open `Tools > Deucarian > Theming > Open Theme Manager`.
+1. Open `Deucarian > Theming > Open Theme Manager`.
 2. Create default assets from the Theme Manager.
 3. Refine or add color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
 4. Add role assets to a `DeucarianColorRoleLibrary`.
