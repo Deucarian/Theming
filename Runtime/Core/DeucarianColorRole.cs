@@ -16,7 +16,7 @@ namespace Deucarian.Theming
         [SerializeField] private Color defaultColor = Color.white;
         [SerializeField] private bool isCoreRole;
 
-        /// <summary>Stable role identifier, such as <c>deucarian.semantic.primary</c>.</summary>
+        /// <summary>Stable role identifier, such as <c>deucarian.primary</c>.</summary>
         public string Id => id;
 
         /// <summary>Human-readable role name shown to designers.</summary>

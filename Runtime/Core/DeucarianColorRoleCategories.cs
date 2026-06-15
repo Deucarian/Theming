@@ -8,6 +8,7 @@ namespace Deucarian.Theming
     {
         public const string Semantic = "Semantic";
         public const string Text = "Text";
+        public const string Status = "Status";
         public const string UiState = "UI State";
         public const string Gameplay = "Gameplay";
         public const string ItemRarity = "Item Rarity";

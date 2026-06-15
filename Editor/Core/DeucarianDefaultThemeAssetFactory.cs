@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Deucarian.Theming.Editor
 {
     /// <summary>
-    /// Result object returned by default theme asset creation.
+    /// Result object returned by theme preset asset creation.
     /// </summary>
     public sealed class DeucarianDefaultThemeAssets
     {
@@ -29,11 +29,12 @@ namespace Deucarian.Theming.Editor
     }
 
     /// <summary>
-    /// Creates a complete default set of Deucarian theming assets.
+    /// Creates built-in Deucarian theme preset assets.
     /// </summary>
     public static class DeucarianDefaultThemeAssetFactory
     {
         public const string DefaultRootFolder = "Assets/Deucarian/Theming/Defaults";
+        public const string GameRootFolder = "Assets/Deucarian/Theming/Game";
 
         public static void CreateDefaultThemeAssetsFromMenu()
         {
@@ -44,23 +45,70 @@ namespace Deucarian.Theming.Editor
             }
         }
 
+        public static void CreateGameThemeAssetsFromMenu()
+        {
+            DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets(GameRootFolder);
+            if (assets.Theme != null)
+            {
+                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+            }
+        }
+
         /// <summary>
-        /// Creates default role, library, palette, and theme assets under the requested Assets folder.
-        /// Existing assets are reused and warned about unless overwriteExisting is true.
+        /// Creates minimal generic role, library, palette, and theme assets under the requested Assets folder.
+        /// Existing assets are reused, with missing role references and palette entries filled in.
         /// </summary>
         public static DeucarianDefaultThemeAssets CreateDefaultThemeAssets(string rootFolder, bool overwriteExisting = false)
+        {
+            return CreateThemeAssets(
+                rootFolder,
+                overwriteExisting,
+                CreateMinimalDefaultRoleDefinitions(),
+                new ThemePresetDefinition(
+                    "Default Color Role Library.asset",
+                    "Default Dark Color Palette.asset",
+                    "Default Theme.asset",
+                    "deucarian.palette.default",
+                    "Deucarian Default",
+                    "deucarian.theme.default",
+                    "Default"));
+        }
+
+        /// <summary>
+        /// Creates optional gameplay, faction, and item rarity role assets under the requested Assets folder.
+        /// </summary>
+        public static DeucarianDefaultThemeAssets CreateGameThemeAssets(string rootFolder, bool overwriteExisting = false)
+        {
+            return CreateThemeAssets(
+                rootFolder,
+                overwriteExisting,
+                CreateGameRoleDefinitions(),
+                new ThemePresetDefinition(
+                    "Game Color Role Library.asset",
+                    "Game Color Palette.asset",
+                    "Game Theme.asset",
+                    "deucarian.palette.game",
+                    "Game Default",
+                    "deucarian.theme.game",
+                    "Game Theme"));
+        }
+
+        private static DeucarianDefaultThemeAssets CreateThemeAssets(
+            string rootFolder,
+            bool overwriteExisting,
+            IReadOnlyList<BuiltinRoleDefinition> definitions,
+            ThemePresetDefinition preset)
         {
             string normalizedRoot = NormalizeAssetPath(rootFolder);
             if (string.IsNullOrEmpty(normalizedRoot) || (normalizedRoot != "Assets" && !normalizedRoot.StartsWith("Assets/", StringComparison.Ordinal)))
             {
-                throw new ArgumentException("Default theme assets must be created under the Assets folder.", nameof(rootFolder));
+                throw new ArgumentException("Theme assets must be created under the Assets folder.", nameof(rootFolder));
             }
 
             string rolesFolder = CombineAssetPath(normalizedRoot, "Roles");
             EnsureFolder(rolesFolder);
 
             DeucarianDefaultThemeAssets result = new DeucarianDefaultThemeAssets();
-            IReadOnlyList<BuiltinRoleDefinition> definitions = GetDefaultRoleDefinitions();
 
             for (int i = 0; i < definitions.Count; i++)
             {
@@ -72,7 +120,7 @@ namespace Deucarian.Theming.Editor
                     overwriteExisting,
                     out bool roleCreated);
 
-                if (roleCreated || overwriteExisting)
+                if (roleCreated || overwriteExisting || ShouldRepairGeneratedRole(role, definition))
                 {
                     role.Configure(
                         definition.Id,
@@ -87,55 +135,78 @@ namespace Deucarian.Theming.Editor
                 result.AddRole(role);
             }
 
-            string libraryPath = CombineAssetPath(normalizedRoot, "Default Color Role Library.asset");
+            string libraryPath = CombineAssetPath(normalizedRoot, preset.RoleLibraryFileName);
             DeucarianColorRoleLibrary library = LoadOrCreateAsset(
                 libraryPath,
                 () => ScriptableObject.CreateInstance<DeucarianColorRoleLibrary>(),
                 overwriteExisting,
                 out bool libraryCreated);
 
-            if (libraryCreated || overwriteExisting)
+            bool libraryChanged = library.RemoveNullRoles() > 0;
+            for (int i = 0; i < result.Roles.Count; i++)
             {
-                for (int i = 0; i < result.Roles.Count; i++)
-                {
-                    library.AddRole(result.Roles[i]);
-                }
+                libraryChanged |= library.AddRole(result.Roles[i]);
+            }
 
+            if (libraryChanged || libraryCreated || overwriteExisting)
+            {
                 library.SortRolesByCategoryAndName();
                 EditorUtility.SetDirty(library);
             }
 
-            string palettePath = CombineAssetPath(normalizedRoot, "Default Dark Color Palette.asset");
+            string palettePath = CombineAssetPath(normalizedRoot, preset.PaletteFileName);
             DeucarianColorPalette palette = LoadOrCreateAsset(
                 palettePath,
                 () => ScriptableObject.CreateInstance<DeucarianColorPalette>(),
                 overwriteExisting,
                 out bool paletteCreated);
 
+            bool paletteChanged = paletteCreated || overwriteExisting || palette.RoleLibrary != library;
+            palette.Configure(preset.PaletteId, preset.PaletteDisplayName, library);
             if (paletteCreated || overwriteExisting)
             {
-                palette.Configure("deucarian.palette.dark-default", "Dark Default", library);
                 palette.ClearEntries();
+            }
+            else
+            {
+                paletteChanged |= palette.RemoveNullEntries() > 0;
+            }
 
-                for (int i = 0; i < result.Roles.Count; i++)
+            for (int i = 0; i < result.Roles.Count; i++)
+            {
+                DeucarianColorRole role = result.Roles[i];
+                Color defaultColor = definitions[i].DefaultColor;
+                if (role == null)
                 {
-                    palette.SetColor(result.Roles[i], definitions[i].DefaultColor);
+                    continue;
                 }
 
+                if (paletteCreated
+                    || overwriteExisting
+                    || !PaletteHasEntryForRole(palette, role)
+                    || PaletteRoleColorIsMissing(palette, role))
+                {
+                    palette.SetColor(role, defaultColor, definitions[i].Description);
+                    paletteChanged = true;
+                }
+            }
+
+            if (paletteChanged)
+            {
                 palette.SortEntriesByCategoryAndName();
                 EditorUtility.SetDirty(palette);
             }
 
-            string themePath = CombineAssetPath(normalizedRoot, "Default Theme.asset");
+            string themePath = CombineAssetPath(normalizedRoot, preset.ThemeFileName);
             DeucarianTheme theme = LoadOrCreateAsset(
                 themePath,
                 () => ScriptableObject.CreateInstance<DeucarianTheme>(),
                 overwriteExisting,
                 out bool themeCreated);
 
-            if (themeCreated || overwriteExisting)
+            if (themeCreated || overwriteExisting || theme.ColorPalette != palette || string.IsNullOrWhiteSpace(theme.ThemeId))
             {
-                theme.Configure("deucarian.theme.default", "Default", palette);
+                theme.Configure(preset.ThemeId, preset.ThemeDisplayName, palette);
                 EditorUtility.SetDirty(theme);
             }
 
@@ -162,7 +233,6 @@ namespace Deucarian.Theming.Editor
                     T typedExisting = existing as T;
                     if (typedExisting != null)
                     {
-                        Debug.LogWarning($"Using existing asset without overwriting it: {assetPath}", typedExisting);
                         return typedExisting;
                     }
 
@@ -230,43 +300,154 @@ namespace Deucarian.Theming.Editor
             return safeName;
         }
 
-        private static IReadOnlyList<BuiltinRoleDefinition> GetDefaultRoleDefinitions()
+        private static bool ShouldRepairGeneratedRole(DeucarianColorRole role, BuiltinRoleDefinition definition)
+        {
+            if (role == null)
+            {
+                return false;
+            }
+
+            return !string.Equals(role.Id, definition.Id, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(role.DisplayName)
+                || string.IsNullOrWhiteSpace(role.Category)
+                || IsPackageMissingColor(role.DefaultColor);
+        }
+
+        private static bool PaletteHasEntryForRole(DeucarianColorPalette palette, DeucarianColorRole role)
+        {
+            IReadOnlyList<DeucarianColorEntry> entries = palette.Entries;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                DeucarianColorEntry entry = entries[i];
+                if (entry == null || entry.Role == null)
+                {
+                    continue;
+                }
+
+                if (entry.Role == role || string.Equals(entry.Role.Id, role.Id, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool PaletteRoleColorIsMissing(DeucarianColorPalette palette, DeucarianColorRole role)
+        {
+            IReadOnlyList<DeucarianColorEntry> entries = palette.Entries;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                DeucarianColorEntry entry = entries[i];
+                if (entry == null || entry.Role == null)
+                {
+                    continue;
+                }
+
+                if ((entry.Role == role || string.Equals(entry.Role.Id, role.Id, StringComparison.Ordinal))
+                    && IsPackageMissingColor(entry.Color))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsPackageMissingColor(Color color)
+        {
+            const float tolerance = 0.0001f;
+            return Mathf.Abs(color.r - Color.magenta.r) <= tolerance
+                && Mathf.Abs(color.g - Color.magenta.g) <= tolerance
+                && Mathf.Abs(color.b - Color.magenta.b) <= tolerance
+                && Mathf.Abs(color.a - Color.magenta.a) <= tolerance;
+        }
+
+        private static IReadOnlyList<BuiltinRoleDefinition> CreateMinimalDefaultRoleDefinitions()
         {
             return new[]
             {
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Background, "Background", DeucarianColorRoleCategories.Semantic, "Main scene or UI background.", new Color32(16, 17, 20, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Surface, "Surface", DeucarianColorRoleCategories.Semantic, "Default panel or card surface.", new Color32(24, 27, 32, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.SurfaceRaised, "Surface Raised", DeucarianColorRoleCategories.Semantic, "Elevated panel or overlay surface.", new Color32(35, 39, 49, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.TextPrimary, "Text Primary", DeucarianColorRoleCategories.Text, "Primary readable text.", new Color32(245, 247, 250, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.TextSecondary, "Text Secondary", DeucarianColorRoleCategories.Text, "Secondary readable text.", new Color32(184, 192, 204, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.TextDisabled, "Text Disabled", DeucarianColorRoleCategories.Text, "Disabled or unavailable text.", new Color32(112, 119, 132, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Primary, "Primary", DeucarianColorRoleCategories.Semantic, "Primary action or brand emphasis.", new Color32(91, 167, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Secondary, "Secondary", DeucarianColorRoleCategories.Semantic, "Secondary action or emphasis.", new Color32(177, 124, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Accent, "Accent", DeucarianColorRoleCategories.Semantic, "Decorative accent or contrast.", new Color32(255, 209, 102, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Success, "Success", DeucarianColorRoleCategories.Semantic, "Positive state or confirmation.", new Color32(87, 214, 141, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Warning, "Warning", DeucarianColorRoleCategories.Semantic, "Warning state.", new Color32(255, 184, 77, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Error, "Error", DeucarianColorRoleCategories.Semantic, "Error or destructive state.", new Color32(255, 107, 107, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiNormal, "UI Normal", DeucarianColorRoleCategories.UiState, "Default selectable UI state.", new Color32(245, 247, 250, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiHighlighted, "UI Highlighted", DeucarianColorRoleCategories.UiState, "Hovered or highlighted selectable UI state.", new Color32(123, 223, 242, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiPressed, "UI Pressed", DeucarianColorRoleCategories.UiState, "Pressed selectable UI state.", new Color32(91, 167, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiSelected, "UI Selected", DeucarianColorRoleCategories.UiState, "Selected selectable UI state.", new Color32(255, 230, 109, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiDisabled, "UI Disabled", DeucarianColorRoleCategories.UiState, "Disabled selectable UI state.", new Color32(112, 119, 132, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UiFocused, "UI Focused", DeucarianColorRoleCategories.UiState, "Keyboard or controller focused UI state.", new Color32(177, 124, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Health, "Health", DeucarianColorRoleCategories.Gameplay, "Health resource color.", new Color32(233, 77, 95, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Mana, "Mana", DeucarianColorRoleCategories.Gameplay, "Mana resource color.", new Color32(78, 155, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Stamina, "Stamina", DeucarianColorRoleCategories.Gameplay, "Stamina resource color.", new Color32(97, 211, 148, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Experience, "Experience", DeucarianColorRoleCategories.Gameplay, "Experience resource color.", new Color32(201, 162, 39, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Ally, "Ally", DeucarianColorRoleCategories.Faction, "Friendly team or unit color.", new Color32(75, 192, 200, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Enemy, "Enemy", DeucarianColorRoleCategories.Faction, "Hostile team or unit color.", new Color32(242, 92, 84, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Neutral, "Neutral", DeucarianColorRoleCategories.Faction, "Neutral team or unit color.", new Color32(164, 169, 182, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemCommon, "Item Common", DeucarianColorRoleCategories.ItemRarity, "Common item rarity color.", new Color32(205, 210, 218, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemUncommon, "Item Uncommon", DeucarianColorRoleCategories.ItemRarity, "Uncommon item rarity color.", new Color32(87, 214, 141, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRare, "Item Rare", DeucarianColorRoleCategories.ItemRarity, "Rare item rarity color.", new Color32(78, 155, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemEpic, "Item Epic", DeucarianColorRoleCategories.ItemRarity, "Epic item rarity color.", new Color32(177, 124, 255, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemLegendary, "Item Legendary", DeucarianColorRoleCategories.ItemRarity, "Legendary item rarity color.", new Color32(255, 184, 77, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Interactable, "Interactable", DeucarianColorRoleCategories.Semantic, "Interactive affordance color.", new Color32(123, 223, 242, 255)),
-                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Highlight, "Highlight", DeucarianColorRoleCategories.Semantic, "Selected or highlighted element color.", new Color32(255, 230, 109, 255))
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.Background, "Background", DeucarianColorRoleCategories.Semantic, "Main UI or scene background surface.", Hex("#0D1218")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.Surface, "Surface", DeucarianColorRoleCategories.Semantic, "Default panel or card surface.", Hex("#1A2330")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.SurfaceRaised, "Surface Raised", DeucarianColorRoleCategories.Semantic, "Elevated panel or overlay surface.", Hex("#2C3A4D")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.Primary, "Primary", DeucarianColorRoleCategories.Semantic, "Primary action or brand emphasis.", Hex("#5A6FA0")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.Secondary, "Secondary", DeucarianColorRoleCategories.Semantic, "Secondary action or brand emphasis.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Core.Accent, "Accent", DeucarianColorRoleCategories.Semantic, "Subtle accent or supporting emphasis.", Hex("#276065")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Text.Primary, "Text Primary", DeucarianColorRoleCategories.Text, "Primary readable text.", Hex("#C4CAD1")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Text.Secondary, "Text Secondary", DeucarianColorRoleCategories.Text, "Secondary readable text.", Hex("#A8B0BA")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Text.Muted, "Text Muted", DeucarianColorRoleCategories.Text, "Muted helper or supporting text.", Hex("#6F7A86")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Text.Disabled, "Text Disabled", DeucarianColorRoleCategories.Text, "Disabled or unavailable text.", Hex("#3C444F")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Status.Success, "Success", DeucarianColorRoleCategories.Status, "Positive state or confirmation.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Status.Warning, "Warning", DeucarianColorRoleCategories.Status, "Warning state.", Hex("#A87932")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Status.Error, "Error", DeucarianColorRoleCategories.Status, "Error or destructive state.", Hex("#A04444")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Status.Info, "Info", DeucarianColorRoleCategories.Status, "Informational state.", Hex("#5A6FA0")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Normal, "UI Normal", DeucarianColorRoleCategories.UiState, "Default selectable UI state.", Hex("#1A2330")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Highlighted, "UI Highlighted", DeucarianColorRoleCategories.UiState, "Hovered or highlighted selectable UI state.", Hex("#2C3A4D")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Pressed, "UI Pressed", DeucarianColorRoleCategories.UiState, "Pressed selectable UI state.", Hex("#276065")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Selected, "UI Selected", DeucarianColorRoleCategories.UiState, "Selected selectable UI state.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Disabled, "UI Disabled", DeucarianColorRoleCategories.UiState, "Disabled selectable UI state.", Hex("#3C444F")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.UI.Focused, "UI Focused", DeucarianColorRoleCategories.UiState, "Keyboard or controller focused UI state.", Hex("#5A6FA0"))
             };
+        }
+
+        private static IReadOnlyList<BuiltinRoleDefinition> CreateGameRoleDefinitions()
+        {
+            return new[]
+            {
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Health, "Health", DeucarianColorRoleCategories.Gameplay, "Health resource color.", new Color32(180, 67, 76, 255)),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Mana, "Mana", DeucarianColorRoleCategories.Gameplay, "Mana resource color.", Hex("#5A6FA0")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Stamina, "Stamina", DeucarianColorRoleCategories.Gameplay, "Stamina resource color.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Experience, "Experience", DeucarianColorRoleCategories.Gameplay, "Experience resource color.", new Color32(168, 121, 50, 255)),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Interactable, "Interactable", DeucarianColorRoleCategories.Gameplay, "Interactive game affordance color.", Hex("#276065")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Gameplay.Highlight, "Highlight", DeucarianColorRoleCategories.Gameplay, "Selected or highlighted game element color.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Faction.Ally, "Ally", DeucarianColorRoleCategories.Faction, "Friendly team or unit color.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Faction.Enemy, "Enemy", DeucarianColorRoleCategories.Faction, "Hostile team or unit color.", new Color32(180, 67, 76, 255)),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.Faction.Neutral, "Neutral", DeucarianColorRoleCategories.Faction, "Neutral team or unit color.", Hex("#A8B0BA")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRarity.Common, "Item Common", DeucarianColorRoleCategories.ItemRarity, "Common item rarity color.", Hex("#C4CAD1")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRarity.Uncommon, "Item Uncommon", DeucarianColorRoleCategories.ItemRarity, "Uncommon item rarity color.", Hex("#3BA69A")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRarity.Rare, "Item Rare", DeucarianColorRoleCategories.ItemRarity, "Rare item rarity color.", Hex("#5A6FA0")),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRarity.Epic, "Item Epic", DeucarianColorRoleCategories.ItemRarity, "Epic item rarity color.", new Color32(128, 103, 169, 255)),
+                new BuiltinRoleDefinition(DeucarianBuiltinColorRoleIds.ItemRarity.Legendary, "Item Legendary", DeucarianColorRoleCategories.ItemRarity, "Legendary item rarity color.", new Color32(168, 121, 50, 255))
+            };
+        }
+
+        private static Color Hex(string hex)
+        {
+            if (!ColorUtility.TryParseHtmlString(hex, out Color color))
+            {
+                throw new ArgumentException("Invalid color value: " + hex, nameof(hex));
+            }
+
+            return color;
+        }
+
+        private readonly struct ThemePresetDefinition
+        {
+            public ThemePresetDefinition(
+                string roleLibraryFileName,
+                string paletteFileName,
+                string themeFileName,
+                string paletteId,
+                string paletteDisplayName,
+                string themeId,
+                string themeDisplayName)
+            {
+                RoleLibraryFileName = roleLibraryFileName;
+                PaletteFileName = paletteFileName;
+                ThemeFileName = themeFileName;
+                PaletteId = paletteId;
+                PaletteDisplayName = paletteDisplayName;
+                ThemeId = themeId;
+                ThemeDisplayName = themeDisplayName;
+            }
+
+            public string RoleLibraryFileName { get; }
+            public string PaletteFileName { get; }
+            public string ThemeFileName { get; }
+            public string PaletteId { get; }
+            public string PaletteDisplayName { get; }
+            public string ThemeId { get; }
+            public string ThemeDisplayName { get; }
         }
 
         private readonly struct BuiltinRoleDefinition

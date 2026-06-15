@@ -24,7 +24,7 @@ For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.2.4"
+    "com.deucarian.theming": "0.3.0"
   }
 }
 ```
@@ -36,11 +36,14 @@ TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.edito
 The package exposes only high-level Unity Editor entries under `Tools > Deucarian > Theming`:
 
 - `Open Theme Manager` opens `DeucarianThemeManagerWindow`.
+- `Create Missing Default Theme Assets` creates the minimal generic Deucarian defaults.
+- `Create Game Theme Assets` creates optional gameplay, faction, and item rarity presets.
 - `Open Theme Assets Folder` selects `Assets/Deucarian/Theming/Defaults/` in the Project window.
 
 Use the Theme Manager for package workflows:
 
-- Create or reuse default roles, a role library, a palette, and a theme under `Assets/Deucarian/Theming/Defaults/`.
+- Create or reuse minimal default roles, a role library, a palette, and a theme under `Assets/Deucarian/Theming/Defaults/`.
+- Create optional game theme assets under `Assets/Deucarian/Theming/Game/`.
 - Create the existing UI Toolkit demo files under `Assets/Deucarian/Theming/UIToolkitDemo/`.
 - Set active theme, palette, and role library assets.
 - Select saved theme, palette, and role library assets.
@@ -58,7 +61,38 @@ Editor tooling guideline: never create a separate Select button row for an asset
 - `DeucarianTheme`: references the active palette for a visual style.
 - `DeucarianThemeProvider`: scene component that applies themes to child `IDeucarianThemeTarget` components and notifies targets when the theme changes.
 
-Enums make every new color role a code change. This package keeps roles as assets with stable string IDs such as `deucarian.semantic.primary`, `deucarian.ui.normal`, or `reportviewer.text.primary`. Code can use optional constants from `DeucarianBuiltinColorRoleIds`, but designers can add new roles without modifying or recompiling C#.
+Enums make every new color role a code change. This package keeps roles as assets with stable string IDs such as `deucarian.primary`, `deucarian.ui.normal`, or `reportviewer.text.primary`. Code can use optional constants from `DeucarianBuiltinColorRoleIds`, but designers can add new roles without modifying or recompiling C#.
+
+## Default Theme Presets
+
+Minimal Default Theme Assets are generic and brand-aligned. They include only core, text, status, and UI state roles, so new projects do not start with gameplay assumptions.
+
+Game Theme Assets are optional. They add gameplay resource roles, faction roles, item rarity roles, and a couple of game-specific highlight/interactable roles. Designers can still create custom roles at any time by adding role assets to their own libraries and palettes.
+
+The minimal default palette uses the Deucarian brand palette:
+
+| Role | Color |
+| --- | --- |
+| `deucarian.background` | `#0D1218` |
+| `deucarian.surface` | `#1A2330` |
+| `deucarian.surface.raised` | `#2C3A4D` |
+| `deucarian.primary` | `#5A6FA0` |
+| `deucarian.secondary` | `#3BA69A` |
+| `deucarian.accent` | `#276065` |
+| `deucarian.text.primary` | `#C4CAD1` |
+| `deucarian.text.secondary` | `#A8B0BA` |
+| `deucarian.text.muted` | `#6F7A86` |
+| `deucarian.text.disabled` | `#3C444F` |
+| `deucarian.success` | `#3BA69A` |
+| `deucarian.warning` | `#A87932` |
+| `deucarian.error` | `#A04444` |
+| `deucarian.info` | `#5A6FA0` |
+| `deucarian.ui.normal` | `#1A2330` |
+| `deucarian.ui.highlighted` | `#2C3A4D` |
+| `deucarian.ui.pressed` | `#276065` |
+| `deucarian.ui.selected` | `#3BA69A` |
+| `deucarian.ui.disabled` | `#3C444F` |
+| `deucarian.ui.focused` | `#5A6FA0` |
 
 ## Designer Workflow
 

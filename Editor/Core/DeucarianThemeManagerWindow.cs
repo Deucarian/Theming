@@ -39,7 +39,7 @@ namespace Deucarian.Theming.Editor
             DrawFolderField();
             DrawAssetSummary();
             DrawActionButtons();
-            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.2.4");
+            DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.3.0");
 
             EditorGUILayout.EndScrollView();
         }
@@ -129,6 +129,13 @@ namespace Deucarian.Theming.Editor
             if (GUILayout.Button("Create Missing Default Theme Assets"))
             {
                 DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
+                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+                RefreshAssets(true);
+            }
+
+            if (GUILayout.Button("Create Game Theme Assets"))
+            {
+                DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets();
                 DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
                 RefreshAssets(true);
             }

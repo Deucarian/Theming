@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Split built-in theme generation into minimal default theme assets and optional game theme assets.
+- Updated the minimal default palette to Deucarian brand colors with no gameplay, item rarity, or faction roles.
+- Added grouped built-in role ID constants for core, text, status, UI, gameplay, item rarity, and faction roles while keeping flat constants available.
+- Added a Theme Manager action and menu entry for creating game theme assets.
+- Kept current theme preset tooling under `Tools > Deucarian > Theming`.
+- Added editor tests for the minimal default role set, game preset role set, brand palette colors, and non-magenta defaults.
+
 ## 0.2.4
 
 - Moved high-level Theming editor menu entries under `Tools > Deucarian > Theming`.

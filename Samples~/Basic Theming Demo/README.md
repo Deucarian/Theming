@@ -1,6 +1,6 @@
 # Basic Theming Demo
 
-This sample is intentionally lightweight for v0.2.1.
+This sample is intentionally lightweight for v0.3.0.
 
 Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Missing Default Theme Assets**, then add a `DeucarianThemeProvider` to your scene and place the generated default theme on it. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
 

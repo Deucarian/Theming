@@ -7,12 +7,13 @@ namespace Deucarian.Theming.Editor.Tests
 {
     public sealed class DeucarianThemingMenuToolsTests
     {
-        private const string TestRoot = "Assets/DeucarianThemingMenuEditorTests";
+        private const string TestRootBase = "Assets/DeucarianThemingMenuEditorTests";
 
         private string previousThemeGuid;
         private string previousPaletteGuid;
         private string previousRoleLibraryGuid;
         private string previousDefaultAssetFolder;
+        private string testRoot;
 
         [SetUp]
         public void SetUp()
@@ -21,16 +22,17 @@ namespace Deucarian.Theming.Editor.Tests
             previousPaletteGuid = DeucarianThemingEditorSettings.ActivePaletteGuid;
             previousRoleLibraryGuid = DeucarianThemingEditorSettings.ActiveRoleLibraryGuid;
             previousDefaultAssetFolder = DeucarianThemingEditorSettings.DefaultAssetFolder;
+            testRoot = TestRootBase + "/" + System.Guid.NewGuid().ToString("N");
 
-            AssetDatabase.DeleteAsset(TestRoot);
+            AssetDatabase.DeleteAsset(testRoot);
             DeucarianThemingEditorSettings.ClearActiveAssets();
-            DeucarianThemingEditorSettings.DefaultAssetFolder = TestRoot + "/Defaults";
+            DeucarianThemingEditorSettings.DefaultAssetFolder = testRoot + "/Defaults";
         }
 
         [TearDown]
         public void TearDown()
         {
-            AssetDatabase.DeleteAsset(TestRoot);
+            AssetDatabase.DeleteAsset(testRoot);
             DeucarianThemingEditorSettings.ActiveThemeGuid = previousThemeGuid;
             DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
             DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
@@ -40,7 +42,7 @@ namespace Deucarian.Theming.Editor.Tests
         [Test]
         public void SettingsStoreAndResolveActiveThemeGuid()
         {
-            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
 
             DeucarianThemingEditorSettings.ActiveTheme = theme;
 
@@ -51,12 +53,12 @@ namespace Deucarian.Theming.Editor.Tests
         [Test]
         public void FindExistingAssetsReturnsThemesPalettesAndRoleLibraries()
         {
-            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
-            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(TestRoot + "/Palette.asset");
-            DeucarianColorRoleLibrary roleLibrary = CreateAsset<DeucarianColorRoleLibrary>(TestRoot + "/Role Library.asset");
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(testRoot + "/Palette.asset");
+            DeucarianColorRoleLibrary roleLibrary = CreateAsset<DeucarianColorRoleLibrary>(testRoot + "/Role Library.asset");
 
             DeucarianThemingMenuActions.AssetSearchResult result =
-                DeucarianThemingMenuActions.FindExistingAssets(new[] { TestRoot });
+                DeucarianThemingMenuActions.FindExistingAssets(new[] { testRoot });
 
             CollectionAssert.Contains(result.Themes, theme);
             CollectionAssert.Contains(result.Palettes, palette);
@@ -67,7 +69,7 @@ namespace Deucarian.Theming.Editor.Tests
         public void CreateMissingDefaultsCreatesScriptableObjectAssets()
         {
             DeucarianDefaultThemeAssets assets =
-                DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(TestRoot + "/Defaults");
+                DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(testRoot + "/Defaults");
 
             Assert.NotNull(assets.Theme);
             Assert.NotNull(assets.Palette);
@@ -85,8 +87,8 @@ namespace Deucarian.Theming.Editor.Tests
         {
             DeucarianTheme theme = DeucarianThemingMenuActions.ResolveOrCreateActiveTheme(
                 false,
-                new[] { TestRoot + "/EmptySearch" },
-                TestRoot + "/Defaults");
+                new[] { testRoot + "/EmptySearch" },
+                testRoot + "/Defaults");
 
             Assert.NotNull(theme);
             Assert.IsTrue(AssetDatabase.Contains(theme));
@@ -96,7 +98,7 @@ namespace Deucarian.Theming.Editor.Tests
         [Test]
         public void ApplyingActiveThemeAssignsItToProviders()
         {
-            DeucarianTheme theme = CreateAsset<DeucarianTheme>(TestRoot + "/Theme.asset");
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
             DeucarianThemingEditorSettings.ActiveTheme = theme;
             GameObject gameObject = new GameObject("Theme Provider Test");
             DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();

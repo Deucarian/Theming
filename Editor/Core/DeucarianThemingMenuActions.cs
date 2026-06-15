@@ -102,6 +102,23 @@ namespace Deucarian.Theming.Editor
             return assets;
         }
 
+        public static DeucarianDefaultThemeAssets CreateGameThemeAssets()
+        {
+            return CreateGameThemeAssets(DeucarianDefaultThemeAssetFactory.GameRootFolder);
+        }
+
+        public static DeucarianDefaultThemeAssets CreateGameThemeAssets(string folder)
+        {
+            string assetFolder = string.IsNullOrWhiteSpace(folder)
+                ? DeucarianDefaultThemeAssetFactory.GameRootFolder
+                : DeucarianThemingEditorSettings.NormalizeAssetPath(folder);
+
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateGameThemeAssets(assetFolder);
+            StoreDefaultAssetSelections(assets);
+            Debug.Log($"Deucarian game theme assets are ready in {assetFolder}.", assets.Theme);
+            return assets;
+        }
+
         public static DeucarianTheme ResolveOrCreateActiveTheme(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
