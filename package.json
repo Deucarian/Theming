@@ -14,6 +14,10 @@
   "author": {
     "name": "Deucarian"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deucarian/Theming.git"
+  },
   "dependencies": {
     "com.deucarian.editor": "0.1.1",
     "com.deucarian.logging": "0.2.2",
