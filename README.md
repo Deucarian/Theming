@@ -51,14 +51,14 @@ Install from Git URL in Unity Package Manager:
 https://github.com/Deucarian/Theming.git
 ```
 
-For a scoped registry, add a Deucarian registry entry to `Packages/manifest.json` once your registry is available:
+For a scoped registry, add the Deucarian registry entry to `Packages/manifest.json`:
 
 ```json
 {
   "scopedRegistries": [
     {
       "name": "Deucarian",
-      "url": "https://registry.example.com",
+      "url": "https://registry.npmjs.org",
       "scopes": ["com.deucarian"]
     }
   ],

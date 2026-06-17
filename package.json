@@ -1,7 +1,7 @@
 {
   "name": "com.deucarian.theming",
   "displayName": "Deucarian Theming",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "unity": "2022.3",
   "description": "Designer-friendly ScriptableObject theming for Deucarian Unity projects.",
   "keywords": [
@@ -14,9 +14,13 @@
   "author": {
     "name": "Deucarian"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deucarian/Theming.git"
+  },
   "dependencies": {
-    "com.deucarian.editor": "0.1.1",
-    "com.deucarian.logging": "0.2.2",
+    "com.deucarian.editor": "0.1.2",
+    "com.deucarian.logging": "0.2.5",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"

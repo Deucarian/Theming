@@ -437,7 +437,34 @@ jobs:
             exit 1
           fi
 
-          npm publish --provenance --access public --tag latest --registry="${NPM_REGISTRY_URL}"
+          attempt=1
+          max_attempts=4
+          delay_seconds=300
+          while true; do
+            log_file="$(mktemp)"
+            set +e
+            npm publish --provenance --access public --tag latest --registry="${NPM_REGISTRY_URL}" 2>&1 | tee "$log_file"
+            publish_exit=${PIPESTATUS[0]}
+            set -e
+
+            if [ "$publish_exit" -eq 0 ]; then
+              rm -f "$log_file"
+              break
+            fi
+
+            if grep -Eqi 'E429|Too Many Requests|rate limited' "$log_file" && [ "$attempt" -lt "$max_attempts" ]; then
+              next_attempt=$((attempt + 1))
+              echo "::warning::npm publish was rate-limited. Retrying in ${delay_seconds}s (attempt ${next_attempt}/${max_attempts})."
+              rm -f "$log_file"
+              sleep "$delay_seconds"
+              attempt="$next_attempt"
+              delay_seconds=$((delay_seconds * 2))
+              continue
+            fi
+
+            rm -f "$log_file"
+            exit "$publish_exit"
+          done
 
       - name: Create Git tag
         shell: bash
