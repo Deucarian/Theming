@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.0 - 2026-06-22
+
+- Marked the current package metadata as 1.0.0 for the stable Theming package line.
+- Updated package documentation to reference the current scoped-registry version and dependency roles.
+
 ## 0.4.2
 
 - Removed duplicate top-level Theming editor menu entries.

@@ -63,12 +63,14 @@ For a scoped registry, add the Deucarian registry entry to `Packages/manifest.js
     }
   ],
   "dependencies": {
-    "com.deucarian.theming": "0.4.2"
+    "com.deucarian.theming": "1.0.0"
   }
 }
 ```
 
-Deucarian Logging, TextMesh Pro, uGUI, Unity's built-in UIElements module, and `com.deucarian.editor` are declared as package dependencies. No third-party UI Toolkit package is required.
+Current package version: `1.0.0`.
+
+Deucarian Logging is used for runtime and editor diagnostics. TextMesh Pro, uGUI, and Unity's built-in UIElements module support the theme adapters. `com.deucarian.editor` is used by editor tooling. No third-party UI Toolkit package is required.
 
 ## Logging
 
