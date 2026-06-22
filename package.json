@@ -19,8 +19,8 @@
     "url": "git+https://github.com/Deucarian/Theming.git"
   },
   "dependencies": {
-    "com.deucarian.editor": "0.1.2",
-    "com.deucarian.logging": "0.2.5",
+    "com.deucarian.editor": "1.0.0",
+    "com.deucarian.logging": "1.0.1",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"
