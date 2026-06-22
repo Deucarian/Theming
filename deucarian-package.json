@@ -1,0 +1,29 @@
+{
+  "packageId": "com.deucarian.theming",
+  "displayName": "Deucarian Theming",
+  "ownedCapabilities": [
+    "runtime-theming"
+  ],
+  "runtimeAssemblies": [
+    "Deucarian.Theming"
+  ],
+  "editorAssemblies": [
+    "Deucarian.Theming.Editor"
+  ],
+  "sampleAssemblies": [],
+  "testAssemblies": [
+    "Deucarian.Theming.Editor.Tests",
+    "Deucarian.Theming.Tests"
+  ],
+  "requiredDependencies": [
+    "com.deucarian.editor",
+    "com.deucarian.logging",
+    "com.unity.modules.uielements",
+    "com.unity.textmeshpro",
+    "com.unity.ugui"
+  ],
+  "optionalVersionDefinedDependencies": [],
+  "allowedDirectDebugCalls": [],
+  "allowedDirectUnityObjectLifetimeCalls": [],
+  "expectedSamplesRoot": "Samples~"
+}
