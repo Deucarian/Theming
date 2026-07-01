@@ -1,6 +1,8 @@
-# Quick Start (Recommended)
+# Deucarian Theming
 
-Deucarian Theming is a Unity UPM package for designer-friendly color themes.
+## What this is
+
+`com.deucarian.theming` is a Unity UPM package for designer-friendly runtime themes, palettes, color roles, theme assets, and runtime UI adapters.
 
 Most users only need a **Palette**.
 
@@ -11,6 +13,51 @@ You do **not** need to manually create:
 - Theme assets
 
 The package can create and maintain those automatically.
+
+Current package version: `1.0.0`.
+
+## When to use it
+
+- You need reusable runtime color palettes and semantic color roles.
+- You need runtime adapters for UI Toolkit, uGUI, TextMesh Pro, renderers, or selectable controls.
+- You want designers to edit palette assets while code binds to stable semantic roles.
+- You need package-specific theme packs that can create or repair their own role assets.
+
+## When not to use it
+
+- Do not use Theming for Deucarian editor chrome; `com.deucarian.editor` owns editor shell styling.
+- Do not use Theming as a generic UI framework, layout system, package installer, diagnostics package, or registry source.
+- Do not add package-specific gameplay roles as built-ins unless they belong to the generic theming domain.
+
+## Install
+
+Stable:
+
+```json
+"com.deucarian.theming": "https://github.com/Deucarian/Theming.git#main"
+```
+
+Development:
+
+```json
+"com.deucarian.theming": "https://github.com/Deucarian/Theming.git#develop"
+```
+
+Dependencies:
+
+- `com.deucarian.editor` for editor tooling.
+- `com.deucarian.logging` for runtime and editor diagnostics.
+- `com.unity.modules.uielements` for UI Toolkit adapters and editor UI.
+- `com.unity.textmeshpro` for TextMesh Pro adapters.
+- `com.unity.ugui` for uGUI adapters.
+
+npm/scoped-registry distribution is deferred for now. Use Git URLs until the manual release process is finalized.
+
+## Unity compatibility
+
+Requires Unity 2022.3 or newer.
+
+## 60-second quick start
 
 Recommended workflow:
 
@@ -47,32 +94,36 @@ Use the Theme Manager for the full workflow and actions:
 - Open theme folders.
 - Apply the active theme to the open scene.
 
-Install from Git URL in Unity Package Manager:
+## Samples
 
-```text
-https://github.com/Deucarian/Theming.git
-```
+- Import **Basic Theming Demo** for role, palette, theme, and adapter setup notes.
+- Import **UI Toolkit Theming Demo** for UIDocument selector, VisualElement, and USS variable-generation examples.
 
-For a scoped registry, add the Deucarian registry entry to `Packages/manifest.json`:
+## Public API map
 
-```json
-{
-  "scopedRegistries": [
-    {
-      "name": "Deucarian",
-      "url": "https://registry.npmjs.org",
-      "scopes": ["com.deucarian"]
-    }
-  ],
-  "dependencies": {
-    "com.deucarian.theming": "1.0.0"
-  }
-}
-```
+- `DeucarianColorRole`, `DeucarianColorRoleLibrary`, `DeucarianColorPalette`, and `DeucarianTheme`: core semantic color assets.
+- `DeucarianThemeStyle`: visual surface treatment assets such as frosted glass and material dark.
+- `DeucarianThemeProvider`, `IDeucarianThemeTarget`, and `DeucarianThemeTargetBehaviour`: runtime theme application contracts.
+- `DeucarianThemeRuntimeSettings` and `DeucarianThemeRuntimeResolver`: project default theme lookup.
+- `DeucarianThemePack` and `DeucarianThemePackAssetFactory`: package-owned role and palette asset import/repair.
+- `DeucarianUIToolkitThemeApplier` and `DeucarianUIToolkitThemeVariables`: UI Toolkit bindings and USS text generation.
+- `DeucarianTMPThemeColor`, `DeucarianGraphicThemeColor`, `DeucarianSelectableThemeColors`, `DeucarianRendererThemeColor`: runtime adapters for common Unity UI/rendering targets.
+- `DeucarianThemeProvider.SetTheme` and `DeucarianThemeProvider.SetStyle`: runtime switching for theme and style.
 
-Current package version: `1.0.0`.
+## Integrations
 
-Deucarian Logging is used for runtime and editor diagnostics. TextMesh Pro, uGUI, and Unity's built-in UIElements module support the theme adapters. `com.deucarian.editor` is used by editor tooling. No third-party UI Toolkit package is required.
+Works with:
+
+- `com.deucarian.editor` for the Theme Manager shell.
+- `com.deucarian.logging` for stable package categories: `Theming`, `Theming.Editor`, and `Theming.UIToolkit`.
+- Unity UI Toolkit, TextMesh Pro, and uGUI adapters.
+
+Does not own:
+
+- Deucarian editor chrome styling,
+- generic UI layout frameworks,
+- package installation or registry governance,
+- diagnostics ownership or telemetry.
 
 ## Logging
 
@@ -80,7 +131,7 @@ This package uses `com.deucarian.logging`.
 
 Theming diagnostics use stable package categories: `Theming`, `Theming.Editor`, and `Theming.UIToolkit`. Configure Deucarian Logging filters by category and level to isolate runtime theme-target warnings, editor workflow messages, or UI Toolkit adapter output. Entries flow through the shared ring buffer for recent-diagnostic inspection and remain compatible with future telemetry sinks.
 
-# What Gets Created Automatically
+## What gets created automatically
 
 `Create Minimal Palette` creates everything needed to start editing colors:
 
@@ -95,7 +146,7 @@ Palette-first support assets are generated beside the palette under a `<PaletteN
 
 Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
 
-# Runtime Default Theme
+## Runtime default theme
 
 Builds can resolve a project default theme through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its `DefaultTheme` field to the theme that runtime-created providers should use.
 
@@ -107,13 +158,13 @@ Runtime code can call:
 
 `DeucarianThemeTargetBehaviour` also falls back to this runtime default when no provider theme is available.
 
-# Theme Packs
+## Theme packs
 
 Packages that need their own semantic roles can provide a `DeucarianThemePack` instead of writing package-specific theme menus. A theme pack describes role assets, palette defaults, theme metadata, and the default visual style. Editor tooling can import or repair it with `DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(...)` and can create the runtime settings asset with `CreateOrRepairRuntimeSettings(...)`.
 
 Theme packs should keep product-specific role IDs in the owning package, for example `reportviewer.navigation.active`. Deucarian Theming owns the generic import and repair mechanism; it should not absorb every package's domain-specific role names as built-ins.
 
-# Visual Styles
+## Visual styles
 
 Colors and styles are deliberately separate.
 
@@ -137,7 +188,7 @@ UI Toolkit and uGUI helpers are available for package-specific UI code that want
 - `Deucarian.Theming.DeucarianUGUIThemeStyleUtility.ApplyPanel(...)`
 - `Deucarian.Theming.DeucarianUGUIThemeStyleUtility.ApplyOutline(...)`
 
-# Why Color Roles Exist
+## Why color roles exist
 
 Color roles let UI code and prefabs ask for meaning instead of exact colors.
 
@@ -160,7 +211,7 @@ Advanced users can create custom concepts such as:
 
 Most projects can start with the built-in minimal roles and add custom roles only when a new semantic concept appears.
 
-# UI Toolkit
+## UI Toolkit
 
 Add `DeucarianUIToolkitThemeApplier` to the same GameObject as a `UIDocument`, or assign a UIDocument explicitly.
 
@@ -184,7 +235,7 @@ Use palette roles for binding colors. The UI Toolkit applier updates when the ac
 
 `DeucarianUIToolkitThemeVariables` can preview variable names and generate USS text from a role library and theme. Unity 2022.3 does not expose a stable runtime API for assigning USS custom variables directly, so direct style bindings are the recommended runtime path.
 
-# TMP
+## TMP
 
 Use `DeucarianTMPThemeColor` with any `TMP_Text`, including TextMeshProUGUI and world-space TextMesh Pro.
 
@@ -206,7 +257,7 @@ public sealed class LabelSetup : MonoBehaviour
 }
 ```
 
-# uGUI
+## uGUI
 
 Use `DeucarianGraphicThemeColor` with `UnityEngine.UI.Graphic` components such as `Image`, `RawImage`, and legacy `Text`.
 
@@ -220,7 +271,7 @@ Typical selectable bindings:
 - Selected -> `deucarian.ui.selected`
 - Disabled -> `deucarian.ui.disabled`
 
-# Runtime Theme Switching
+## Runtime theme switching
 
 Use `DeucarianThemeProvider.SetTheme` to switch themes at runtime.
 
@@ -242,7 +293,7 @@ public sealed class ThemeSwitcher : MonoBehaviour
 
 `DeucarianThemeProvider.SetTheme` reapplies the theme to child components that implement `IDeucarianThemeTarget`. Theme target components listen to their nearest provider while enabled, so they reapply automatically when the provider theme changes.
 
-# Advanced Workflow
+## Advanced workflow
 
 The palette-first workflow is recommended, but the full asset model remains available.
 
@@ -283,12 +334,35 @@ Future adapter packages could be:
 
 Editor tooling guideline: never create a separate Select button row for an asset already shown in an object field. Use `DeucarianEditorFields.DrawAssetFieldWithSelectButton<T>()` so the object field and Select button stay on the same row.
 
-Run the package's EditMode tests in Unity. Runtime tests cover palette/theme behavior, and editor tests cover palette-first creation, repair, default asset creation, active asset settings, and manager workflows.
+## Troubleshooting
 
-License: see [LICENSE.md](LICENSE.md).
+- If UI does not update, confirm a `DeucarianThemeProvider` is present and the target implements or uses a supported theme adapter.
+- If a UI Toolkit binding does not resolve, check selector priority: `ussSelector`, then `elementName`, then `elementClass`, then UIDocument root.
+- If generated palette support assets are missing, use `Repair Palette Setup` instead of recreating role libraries manually.
+- If a package needs domain-specific color roles, create a `DeucarianThemePack` in the owning package rather than adding those roles as Theming built-ins.
+
+## Validation
+
+Run the shared package validator from the repository root:
+
+```powershell
+python C:/Repositories/Package-Registry/Tools/deucarian_package_validator.py --registry-root C:/Repositories/Package-Registry --repository-root . --config deucarian-package.json
+```
+
+Run the package's Runtime and EditMode tests in Unity after code or assembly definition changes. Runtime tests cover palette/theme behavior, and editor tests cover palette-first creation, repair, default asset creation, active asset settings, and manager workflows.
+
+Documentation-only updates should still pass:
+
+```powershell
+git diff --check
+```
 
 ## Architecture / Contributor Notes
 
 - [AGENTS.md](AGENTS.md) contains repository-specific ownership and Codex guidance.
 - Deucarian architecture rules live in [Package Registry](https://github.com/Deucarian/Package-Registry/blob/develop/ARCHITECTURE.md).
 - Capability ownership is tracked in [CAPABILITY_OWNERSHIP.md](https://github.com/Deucarian/Package-Registry/blob/develop/CAPABILITY_OWNERSHIP.md).
+
+## License
+
+See [LICENSE.md](LICENSE.md).
