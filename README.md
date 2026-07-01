@@ -41,6 +41,8 @@ Use the Theme Manager for the full workflow and actions:
 - Find, select, and ping theme assets.
 - Create missing defaults.
 - Repair palette setup.
+- Create built-in visual styles.
+- Assign the active style to the active theme.
 - Create game theme assets.
 - Open theme folders.
 - Apply the active theme to the open scene.
@@ -92,6 +94,30 @@ These are support assets. Normal users mostly edit the palette.
 Palette-first support assets are generated beside the palette under a `<PaletteName> Support/` folder. If anything is missing later, use `Repair Palette Setup`. It repairs required roles, role library links, palette entries, and theme links without overwriting user-chosen colors unless an entry is missing, null, or still using the package missing-color fallback.
 
 Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
+
+# Visual Styles
+
+Colors and styles are deliberately separate.
+
+- A `DeucarianColorPalette` decides semantic colors such as surface, primary, error, and text.
+- A `DeucarianThemeStyle` decides how chrome is treated: opacity, tinting, borders, corner radius, and optional generated texture.
+- A `DeucarianTheme` can reference both a palette and a style.
+
+The built-in style presets are:
+
+- `Frosted Glass`: translucent glass-like surfaces with cool tinting, fine texture, and soft borders.
+- `Material Dark`: opaque layered dark surfaces with restrained radius and crisp dividers.
+- `Fluent Acrylic`: acrylic-inspired translucent surfaces with subtle tint and texture.
+
+This is a good fit for shared visual language, because packages such as a report viewer can keep their own layout and toolbar behavior while asking Theming for the surface treatment. It would be a bad fit if the style asset started owning product-specific UI structure, navigation rules, or a generic UI framework.
+
+Use the Theme Manager's advanced actions to create the built-in style assets under the default theme folder. Assign one to the active theme, or switch at runtime with `DeucarianThemeProvider.SetStyle`. If no provider style override is set, `DeucarianThemeProvider.CurrentStyle` resolves from the current theme's `VisualStyle`.
+
+UI Toolkit and uGUI helpers are available for package-specific UI code that wants to apply a style without copying preset math:
+
+- `Deucarian.Theming.UIToolkit.DeucarianUIToolkitThemeStyleUtility.ApplyPanel(...)`
+- `Deucarian.Theming.DeucarianUGUIThemeStyleUtility.ApplyPanel(...)`
+- `Deucarian.Theming.DeucarianUGUIThemeStyleUtility.ApplyOutline(...)`
 
 # Why Color Roles Exist
 
@@ -208,6 +234,7 @@ Advanced users can manually create and manage:
 - `DeucarianColorRoleLibrary`
 - `DeucarianColorPalette`
 - `DeucarianTheme`
+- `DeucarianThemeStyle`
 - `DeucarianThemeProvider`
 
 Manual workflow:

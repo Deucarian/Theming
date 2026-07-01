@@ -48,6 +48,16 @@ namespace Deucarian.Theming.Editor
             DeucarianThemingMenuActions.RepairGeneratedAssetNames();
         }
 
+        public static void CreateBuiltinThemeStyleAssets()
+        {
+            DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets();
+        }
+
+        public static void AssignActiveStyleToActiveTheme()
+        {
+            DeucarianThemingMenuActions.AssignActiveStyleToActiveTheme();
+        }
+
         public static void SelectActiveTheme()
         {
             DeucarianThemingMenuActions.SelectActiveTheme();
@@ -61,6 +71,11 @@ namespace Deucarian.Theming.Editor
         public static void SelectRoleLibrary()
         {
             DeucarianThemingMenuActions.SelectActiveRoleLibrary();
+        }
+
+        public static void SelectActiveStyle()
+        {
+            DeucarianThemingMenuActions.SelectActiveStyle();
         }
 
         public static void OpenThemeAssetsFolder()
