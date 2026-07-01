@@ -36,6 +36,13 @@ namespace Deucarian.Theming.Editor
             DeucarianBuiltinColorRoleIds.UI.Focused
         };
 
+        private static readonly string[] DefaultStyleIds =
+        {
+            DeucarianThemeStyleIds.FrostedGlass,
+            DeucarianThemeStyleIds.MaterialDark,
+            DeucarianThemeStyleIds.FluentAcrylic
+        };
+
         private DeucarianThemingMenuActions.AssetSearchResult searchResult;
         private bool advancedFoldout;
         private Vector2 scrollPosition;
@@ -101,6 +108,14 @@ namespace Deucarian.Theming.Editor
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveRoleLibrary());
 
+            DeucarianThemingEditorSettings.ActiveStyle = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
+                "Active Style",
+                DeucarianThemingEditorSettings.ActiveStyle,
+                "Select",
+                style => DeucarianThemingEditorSettings.ActiveStyle = style,
+                null,
+                () => DeucarianThemingMenuActions.ResolveOrCreateActiveStyle());
+
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Create Minimal Palette", GUILayout.Width(156)))
@@ -142,6 +157,20 @@ namespace Deucarian.Theming.Editor
                 if (GUILayout.Button("Apply Theme To Scene", GUILayout.Width(168)))
                 {
                     DeucarianThemingMenuActions.ApplyActiveThemeToOpenScene();
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(
+                       DeucarianThemingEditorSettings.ActiveTheme == null
+                       || DeucarianThemingEditorSettings.ActiveStyle == null))
+            {
+                if (GUILayout.Button("Assign Style To Active Theme", GUILayout.Width(220)))
+                {
+                    DeucarianThemingMenuActions.AssignActiveStyleToActiveTheme();
+                    RefreshAssets(true);
                 }
             }
 
@@ -197,8 +226,12 @@ namespace Deucarian.Theming.Editor
             DrawCountRow("Themes", searchResult.Themes.Count);
             DrawCountRow("Palettes", searchResult.Palettes.Count);
             DrawCountRow("Role Libraries", searchResult.RoleLibraries.Count);
+            DrawCountRow("Styles", searchResult.Styles.Count);
 
-            if (searchResult.Themes.Count == 0 && searchResult.Palettes.Count == 0 && searchResult.RoleLibraries.Count == 0)
+            if (searchResult.Themes.Count == 0
+                && searchResult.Palettes.Count == 0
+                && searchResult.RoleLibraries.Count == 0
+                && searchResult.Styles.Count == 0)
             {
                 DeucarianEditorChrome.DrawInlineHelp(
                     "No Deucarian theme assets were found in this project. Create the default assets to get started.",
@@ -245,6 +278,31 @@ namespace Deucarian.Theming.Editor
                 EditorGUILayout.EndHorizontal();
 
                 EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Create Built-in Theme Styles", GUILayout.Width(196)))
+                {
+                    DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets();
+                    RefreshAssets(true);
+                }
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
+                using (new EditorGUI.DisabledScope(
+                           DeucarianThemingEditorSettings.ActiveTheme == null
+                           || DeucarianThemingEditorSettings.ActiveStyle == null))
+                {
+                    if (GUILayout.Button("Assign Style To Active Theme", GUILayout.Width(196)))
+                    {
+                        DeucarianThemingMenuActions.AssignActiveStyleToActiveTheme();
+                        RefreshAssets(true);
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Create UI Toolkit Demo Assets", GUILayout.Width(196)))
                 {
                     DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets();
@@ -276,7 +334,12 @@ namespace Deucarian.Theming.Editor
             DeucarianTheme theme = AssetDatabase.LoadAssetAtPath<DeucarianTheme>(
                 CombineAssetPath(folder, "DefaultTheme.asset"));
 
-            if (library == null || palette == null || theme == null || theme.ColorPalette != palette || palette.RoleLibrary != library)
+            if (library == null
+                || palette == null
+                || theme == null
+                || theme.ColorPalette != palette
+                || palette.RoleLibrary != library
+                || theme.VisualStyle == null)
             {
                 return false;
             }
@@ -287,6 +350,14 @@ namespace Deucarian.Theming.Editor
                 if (!library.TryGetRoleById(roleId, out DeucarianColorRole role)
                     || role == null
                     || !HasPaletteEntryForRole(palette, role))
+                {
+                    return false;
+                }
+            }
+
+            for (int i = 0; i < DefaultStyleIds.Length; i++)
+            {
+                if (!HasStyleAssetWithId(folder, DefaultStyleIds[i]))
                 {
                     return false;
                 }
@@ -320,6 +391,29 @@ namespace Deucarian.Theming.Editor
             return string.IsNullOrEmpty(normalizedLeft)
                 ? right.TrimStart('/')
                 : normalizedLeft.TrimEnd('/') + "/" + right.TrimStart('/');
+        }
+
+        private static bool HasStyleAssetWithId(string defaultFolder, string styleId)
+        {
+            string stylesFolder = CombineAssetPath(defaultFolder, DeucarianDefaultThemeAssetFactory.BuiltinStylesFolderName);
+            if (!AssetDatabase.IsValidFolder(stylesFolder))
+            {
+                return false;
+            }
+
+            string[] guids = AssetDatabase.FindAssets("t:" + nameof(DeucarianThemeStyle), new[] { stylesFolder });
+            string normalizedId = DeucarianColorRole.NormalizeId(styleId);
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                DeucarianThemeStyle style = AssetDatabase.LoadAssetAtPath<DeucarianThemeStyle>(path);
+                if (style != null && style.StyleId == normalizedId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void RefreshAssets(bool autoSelectSingles)

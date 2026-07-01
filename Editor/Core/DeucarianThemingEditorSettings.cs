@@ -16,6 +16,7 @@ namespace Deucarian.Theming.Editor
         private const string ActiveThemeGuidKey = "Deucarian.Theming.ActiveThemeGuid";
         private const string ActivePaletteGuidKey = "Deucarian.Theming.ActivePaletteGuid";
         private const string ActiveRoleLibraryGuidKey = "Deucarian.Theming.ActiveRoleLibraryGuid";
+        private const string ActiveStyleGuidKey = "Deucarian.Theming.ActiveStyleGuid";
         private const string DefaultAssetFolderKey = "Deucarian.Theming.DefaultAssetFolder";
 
         public static string ActiveThemeGuid
@@ -34,6 +35,12 @@ namespace Deucarian.Theming.Editor
         {
             get => EditorPrefs.GetString(ActiveRoleLibraryGuidKey, string.Empty);
             set => SetGuid(ActiveRoleLibraryGuidKey, value);
+        }
+
+        public static string ActiveStyleGuid
+        {
+            get => EditorPrefs.GetString(ActiveStyleGuidKey, string.Empty);
+            set => SetGuid(ActiveStyleGuidKey, value);
         }
 
         public static string DefaultAssetFolder
@@ -66,6 +73,12 @@ namespace Deucarian.Theming.Editor
         {
             get => LoadAssetByGuid<DeucarianColorRoleLibrary>(ActiveRoleLibraryGuid);
             set => ActiveRoleLibraryGuid = GetAssetGuid(value);
+        }
+
+        public static DeucarianThemeStyle ActiveStyle
+        {
+            get => LoadAssetByGuid<DeucarianThemeStyle>(ActiveStyleGuid);
+            set => ActiveStyleGuid = GetAssetGuid(value);
         }
 
         public static string GetAssetGuid(UnityEngine.Object asset)
@@ -103,6 +116,7 @@ namespace Deucarian.Theming.Editor
             ActiveThemeGuid = string.Empty;
             ActivePaletteGuid = string.Empty;
             ActiveRoleLibraryGuid = string.Empty;
+            ActiveStyleGuid = string.Empty;
         }
 
         public static void ResetToDefaults()
@@ -110,6 +124,7 @@ namespace Deucarian.Theming.Editor
             EditorPrefs.DeleteKey(ActiveThemeGuidKey);
             EditorPrefs.DeleteKey(ActivePaletteGuidKey);
             EditorPrefs.DeleteKey(ActiveRoleLibraryGuidKey);
+            EditorPrefs.DeleteKey(ActiveStyleGuidKey);
             EditorPrefs.DeleteKey(DefaultAssetFolderKey);
         }
 

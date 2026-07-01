@@ -11,6 +11,7 @@ namespace Deucarian.Theming
         [SerializeField] private string themeId = "deucarian.theme.default";
         [SerializeField] private string displayName = "Default";
         [SerializeField] private DeucarianColorPalette colorPalette;
+        [SerializeField] private DeucarianThemeStyle visualStyle;
 
         /// <summary>Stable theme identifier.</summary>
         public string ThemeId => themeId;
@@ -21,12 +22,28 @@ namespace Deucarian.Theming
         /// <summary>Palette used by this theme.</summary>
         public DeucarianColorPalette ColorPalette => colorPalette;
 
+        /// <summary>Optional visual style used for themed chrome and surface treatment.</summary>
+        public DeucarianThemeStyle VisualStyle => visualStyle;
+
         /// <summary>Configures theme metadata and palette reference.</summary>
         public void Configure(string id, string name, DeucarianColorPalette palette)
+        {
+            Configure(id, name, palette, visualStyle);
+        }
+
+        /// <summary>Configures theme metadata, palette reference, and optional visual style.</summary>
+        public void Configure(string id, string name, DeucarianColorPalette palette, DeucarianThemeStyle style)
         {
             themeId = DeucarianColorRole.NormalizeId(id);
             displayName = name ?? string.Empty;
             colorPalette = palette;
+            visualStyle = style;
+        }
+
+        /// <summary>Sets the optional visual style used by this theme.</summary>
+        public void SetVisualStyle(DeucarianThemeStyle style)
+        {
+            visualStyle = style;
         }
 
         /// <summary>Returns the palette color, role default color, or magenta when unresolved.</summary>
@@ -50,12 +67,19 @@ namespace Deucarian.Theming
         /// <summary>Returns the palette color by role ID or magenta when unresolved.</summary>
         public Color GetColorById(string roleId)
         {
+            return TryGetColorById(roleId, out Color color) ? color : DeucarianColorPalette.MissingColor;
+        }
+
+        /// <summary>Delegates color lookup by role ID to the assigned palette.</summary>
+        public bool TryGetColorById(string roleId, out Color color)
+        {
             if (colorPalette != null)
             {
-                return colorPalette.GetColorById(roleId);
+                return colorPalette.TryGetColorById(roleId, out color);
             }
 
-            return DeucarianColorPalette.MissingColor;
+            color = DeucarianColorPalette.MissingColor;
+            return false;
         }
 
         private void OnValidate()

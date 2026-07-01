@@ -54,9 +54,17 @@ namespace Deucarian.Theming.Editor.Tests
             DeucarianBuiltinColorRoleIds.ItemRarity.Legendary
         };
 
+        private static readonly string[] RequiredStyleIds =
+        {
+            DeucarianThemeStyleIds.FrostedGlass,
+            DeucarianThemeStyleIds.MaterialDark,
+            DeucarianThemeStyleIds.FluentAcrylic
+        };
+
         private string previousThemeGuid;
         private string previousPaletteGuid;
         private string previousRoleLibraryGuid;
+        private string previousStyleGuid;
         private string previousDefaultAssetFolder;
         private string testRoot;
 
@@ -66,6 +74,7 @@ namespace Deucarian.Theming.Editor.Tests
             previousThemeGuid = DeucarianThemingEditorSettings.ActiveThemeGuid;
             previousPaletteGuid = DeucarianThemingEditorSettings.ActivePaletteGuid;
             previousRoleLibraryGuid = DeucarianThemingEditorSettings.ActiveRoleLibraryGuid;
+            previousStyleGuid = DeucarianThemingEditorSettings.ActiveStyleGuid;
             previousDefaultAssetFolder = DeucarianThemingEditorSettings.DefaultAssetFolder;
             testRoot = TestRootBase + "/" + System.Guid.NewGuid().ToString("N");
 
@@ -80,6 +89,7 @@ namespace Deucarian.Theming.Editor.Tests
             DeucarianThemingEditorSettings.ActiveThemeGuid = previousThemeGuid;
             DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
             DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
+            DeucarianThemingEditorSettings.ActiveStyleGuid = previousStyleGuid;
             DeucarianThemingEditorSettings.DefaultAssetFolder = previousDefaultAssetFolder;
         }
 
@@ -92,12 +102,31 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.NotNull(assets.RoleLibrary);
             Assert.NotNull(assets.Palette);
             Assert.NotNull(assets.Theme);
+            Assert.NotNull(assets.DefaultStyle);
             Assert.AreEqual(RequiredMinimalRoleIds.Length, assets.Roles.Count);
+            Assert.AreEqual(RequiredStyleIds.Length, assets.Styles.Count);
             Assert.IsTrue(AssetDatabase.Contains(assets.RoleLibrary));
             Assert.IsTrue(AssetDatabase.Contains(assets.Palette));
             Assert.IsTrue(AssetDatabase.Contains(assets.Theme));
+            Assert.IsTrue(AssetDatabase.Contains(assets.DefaultStyle));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Roles"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Styles"));
             AssertRequiredRolesExist(assets.RoleLibrary, RequiredMinimalRoleIds);
+            AssertRequiredStylesExist(assets.Styles, RequiredStyleIds);
+            Assert.AreSame(assets.DefaultStyle, assets.Theme.VisualStyle);
+        }
+
+        [Test]
+        public void BuiltinStyleAssetCreationCreatesFrostedMaterialAndFluentStyles()
+        {
+            IReadOnlyList<DeucarianThemeStyle> styles =
+                DeucarianDefaultThemeAssetFactory.CreateBuiltinThemeStyleAssets(testRoot + "/Styles");
+
+            Assert.AreEqual(RequiredStyleIds.Length, styles.Count);
+            AssertRequiredStylesExist(styles, RequiredStyleIds);
+            AssertStyle(styles, DeucarianThemeStyleIds.FrostedGlass, DeucarianThemeStyleSurfaceTreatment.FrostedGlass, true);
+            AssertStyle(styles, DeucarianThemeStyleIds.MaterialDark, DeucarianThemeStyleSurfaceTreatment.Material, false);
+            AssertStyle(styles, DeucarianThemeStyleIds.FluentAcrylic, DeucarianThemeStyleSurfaceTreatment.FluentAcrylic, true);
         }
 
         [Test]
@@ -170,6 +199,7 @@ namespace Deucarian.Theming.Editor.Tests
             AssertObjectNameMatchesFile(defaultAssets.RoleLibrary);
             AssertObjectNameMatchesFile(defaultAssets.Palette);
             AssertObjectNameMatchesFile(defaultAssets.Theme);
+            AssertObjectNameMatchesFile(defaultAssets.DefaultStyle);
             AssertObjectNameMatchesFile(minimalAssets.RoleLibrary);
             AssertObjectNameMatchesFile(minimalAssets.Palette);
             AssertObjectNameMatchesFile(minimalAssets.Theme);
@@ -182,6 +212,11 @@ namespace Deucarian.Theming.Editor.Tests
             for (int i = 0; i < minimalAssets.Roles.Count; i++)
             {
                 AssertObjectNameMatchesFile(minimalAssets.Roles[i]);
+            }
+
+            for (int i = 0; i < defaultAssets.Styles.Count; i++)
+            {
+                AssertObjectNameMatchesFile(defaultAssets.Styles[i]);
             }
         }
 
@@ -311,6 +346,7 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.AreEqual(assets.Theme, DeucarianThemingEditorSettings.ActiveTheme);
             Assert.AreEqual(assets.Palette, DeucarianThemingEditorSettings.ActivePalette);
             Assert.AreEqual(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+            Assert.AreEqual(assets.DefaultStyle, DeucarianThemingEditorSettings.ActiveStyle);
         }
 
         [Test]
@@ -403,6 +439,46 @@ namespace Deucarian.Theming.Editor.Tests
             {
                 Assert.IsTrue(library.TryGetRoleById(roleIds[i], out _), roleIds[i]);
             }
+        }
+
+        private static void AssertRequiredStylesExist(IReadOnlyList<DeucarianThemeStyle> styles, IReadOnlyList<string> styleIds)
+        {
+            for (int i = 0; i < styleIds.Count; i++)
+            {
+                Assert.IsTrue(ContainsStyle(styles, styleIds[i]), styleIds[i]);
+            }
+        }
+
+        private static void AssertStyle(
+            IReadOnlyList<DeucarianThemeStyle> styles,
+            string styleId,
+            DeucarianThemeStyleSurfaceTreatment treatment,
+            bool usesTexture)
+        {
+            DeucarianThemeStyle style = FindStyle(styles, styleId);
+            Assert.NotNull(style, styleId);
+            Assert.AreEqual(treatment, style.SurfaceTreatment);
+            Assert.AreEqual(usesTexture, style.UseGeneratedNoiseTexture);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(style.Description));
+        }
+
+        private static bool ContainsStyle(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)
+        {
+            return FindStyle(styles, styleId) != null;
+        }
+
+        private static DeucarianThemeStyle FindStyle(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)
+        {
+            for (int i = 0; i < styles.Count; i++)
+            {
+                DeucarianThemeStyle style = styles[i];
+                if (style != null && style.StyleId == styleId)
+                {
+                    return style;
+                }
+            }
+
+            return null;
         }
 
         private static void AssertPaletteColor(DeucarianColorPalette palette, string roleId, string expectedHex)

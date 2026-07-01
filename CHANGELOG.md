@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added `DeucarianThemeStyle` visual style assets and optional `DeucarianTheme.VisualStyle` references.
+- Added built-in Frosted Glass, Material Dark, and Fluent Acrylic style generation.
+- Added provider style overrides and UI Toolkit/uGUI style helpers for package-specific panel chrome.
+- Updated Theme Manager workflows and tests for discovering, selecting, and assigning style assets.
+
 ## 1.0.0 - 2026-06-22
 
 - Marked the current package metadata as 1.0.0 for the stable Theming package line.

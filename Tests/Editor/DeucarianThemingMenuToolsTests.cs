@@ -14,6 +14,7 @@ namespace Deucarian.Theming.Editor.Tests
         private string previousThemeGuid;
         private string previousPaletteGuid;
         private string previousRoleLibraryGuid;
+        private string previousStyleGuid;
         private string previousDefaultAssetFolder;
         private string testRoot;
 
@@ -23,6 +24,7 @@ namespace Deucarian.Theming.Editor.Tests
             previousThemeGuid = DeucarianThemingEditorSettings.ActiveThemeGuid;
             previousPaletteGuid = DeucarianThemingEditorSettings.ActivePaletteGuid;
             previousRoleLibraryGuid = DeucarianThemingEditorSettings.ActiveRoleLibraryGuid;
+            previousStyleGuid = DeucarianThemingEditorSettings.ActiveStyleGuid;
             previousDefaultAssetFolder = DeucarianThemingEditorSettings.DefaultAssetFolder;
             testRoot = TestRootBase + "/" + System.Guid.NewGuid().ToString("N");
 
@@ -38,6 +40,7 @@ namespace Deucarian.Theming.Editor.Tests
             DeucarianThemingEditorSettings.ActiveThemeGuid = previousThemeGuid;
             DeucarianThemingEditorSettings.ActivePaletteGuid = previousPaletteGuid;
             DeucarianThemingEditorSettings.ActiveRoleLibraryGuid = previousRoleLibraryGuid;
+            DeucarianThemingEditorSettings.ActiveStyleGuid = previousStyleGuid;
             DeucarianThemingEditorSettings.DefaultAssetFolder = previousDefaultAssetFolder;
         }
 
@@ -78,11 +81,23 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void SettingsStoreAndResolveActiveStyleGuid()
+        {
+            DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>(testRoot + "/Style.asset");
+
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+
+            Assert.IsNotEmpty(DeucarianThemingEditorSettings.ActiveStyleGuid);
+            Assert.AreSame(style, DeucarianThemingEditorSettings.ActiveStyle);
+        }
+
+        [Test]
         public void FindExistingAssetsReturnsThemesPalettesAndRoleLibraries()
         {
             DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
             DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(testRoot + "/Palette.asset");
             DeucarianColorRoleLibrary roleLibrary = CreateAsset<DeucarianColorRoleLibrary>(testRoot + "/Role Library.asset");
+            DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>(testRoot + "/Style.asset");
 
             DeucarianThemingMenuActions.AssetSearchResult result =
                 DeucarianThemingMenuActions.FindExistingAssets(new[] { testRoot });
@@ -90,6 +105,7 @@ namespace Deucarian.Theming.Editor.Tests
             CollectionAssert.Contains(result.Themes, theme);
             CollectionAssert.Contains(result.Palettes, palette);
             CollectionAssert.Contains(result.RoleLibraries, roleLibrary);
+            CollectionAssert.Contains(result.Styles, style);
         }
 
         [Test]
@@ -101,12 +117,15 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.NotNull(assets.Theme);
             Assert.NotNull(assets.Palette);
             Assert.NotNull(assets.RoleLibrary);
+            Assert.NotNull(assets.DefaultStyle);
             Assert.IsTrue(AssetDatabase.Contains(assets.Theme));
             Assert.IsTrue(AssetDatabase.Contains(assets.Palette));
             Assert.IsTrue(AssetDatabase.Contains(assets.RoleLibrary));
+            Assert.IsTrue(AssetDatabase.Contains(assets.DefaultStyle));
             Assert.AreSame(assets.Theme, DeucarianThemingEditorSettings.ActiveTheme);
             Assert.AreSame(assets.Palette, DeucarianThemingEditorSettings.ActivePalette);
             Assert.AreSame(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+            Assert.AreSame(assets.DefaultStyle, DeucarianThemingEditorSettings.ActiveStyle);
         }
 
         [Test]
@@ -120,6 +139,19 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.NotNull(theme);
             Assert.IsTrue(AssetDatabase.Contains(theme));
             Assert.AreSame(theme, DeucarianThemingEditorSettings.ActiveTheme);
+        }
+
+        [Test]
+        public void AssignActiveStyleToActiveThemeStoresStyleOnTheme()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>(testRoot + "/Style.asset");
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+
+            Assert.IsTrue(DeucarianThemingMenuActions.AssignActiveStyleToActiveTheme());
+
+            Assert.AreSame(style, theme.VisualStyle);
         }
 
         [Test]

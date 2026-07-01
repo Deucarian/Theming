@@ -13,17 +13,28 @@ namespace Deucarian.Theming.Editor
     public sealed class DeucarianDefaultThemeAssets
     {
         private readonly List<DeucarianColorRole> roles = new List<DeucarianColorRole>();
+        private readonly List<DeucarianThemeStyle> styles = new List<DeucarianThemeStyle>();
 
         public DeucarianColorRoleLibrary RoleLibrary { get; internal set; }
         public DeucarianColorPalette Palette { get; internal set; }
         public DeucarianTheme Theme { get; internal set; }
+        public DeucarianThemeStyle DefaultStyle { get; internal set; }
         public IReadOnlyList<DeucarianColorRole> Roles => roles;
+        public IReadOnlyList<DeucarianThemeStyle> Styles => styles;
 
         internal void AddRole(DeucarianColorRole role)
         {
             if (role != null)
             {
                 roles.Add(role);
+            }
+        }
+
+        internal void AddStyle(DeucarianThemeStyle style)
+        {
+            if (style != null)
+            {
+                styles.Add(style);
             }
         }
     }
@@ -35,6 +46,7 @@ namespace Deucarian.Theming.Editor
     {
         public const string DefaultRootFolder = "Assets/Deucarian/Theming/Defaults";
         public const string GameRootFolder = "Assets/Deucarian/Theming/Game";
+        public const string BuiltinStylesFolderName = "Styles";
         public const string MinimalPaletteRootFolder = "Assets/Deucarian/Theming";
         public const string MinimalPaletteFileName = "DeucarianMinimalPalette.asset";
         public const string MinimalThemeFileName = "DeucarianMinimalTheme.asset";
@@ -63,7 +75,7 @@ namespace Deucarian.Theming.Editor
         /// </summary>
         public static DeucarianDefaultThemeAssets CreateDefaultThemeAssets(string rootFolder, bool overwriteExisting = false)
         {
-            return CreateThemeAssets(
+            DeucarianDefaultThemeAssets assets = CreateThemeAssets(
                 rootFolder,
                 overwriteExisting,
                 CreateMinimalDefaultRoleDefinitions(),
@@ -75,6 +87,27 @@ namespace Deucarian.Theming.Editor
                     "Deucarian Default",
                     "deucarian.theme.default",
                     "Default"));
+
+            IReadOnlyList<DeucarianThemeStyle> styles = CreateBuiltinThemeStyleAssets(
+                CombineAssetPath(NormalizeAssetPath(rootFolder), BuiltinStylesFolderName),
+                overwriteExisting);
+            for (int i = 0; i < styles.Count; i++)
+            {
+                assets.AddStyle(styles[i]);
+            }
+
+            assets.DefaultStyle = FindStyleById(styles, DeucarianThemeStyleIds.FrostedGlass);
+            if (assets.Theme != null
+                && assets.DefaultStyle != null
+                && (overwriteExisting || assets.Theme.VisualStyle == null))
+            {
+                assets.Theme.SetVisualStyle(assets.DefaultStyle);
+                EditorUtility.SetDirty(assets.Theme);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+
+            return assets;
         }
 
         /// <summary>
@@ -94,6 +127,48 @@ namespace Deucarian.Theming.Editor
                     "Game Default",
                     "deucarian.theme.game",
                     "Game Theme"));
+        }
+
+        /// <summary>
+        /// Creates or repairs the built-in Deucarian visual style assets under the requested Assets folder.
+        /// </summary>
+        public static IReadOnlyList<DeucarianThemeStyle> CreateBuiltinThemeStyleAssets(
+            string rootFolder,
+            bool overwriteExisting = false)
+        {
+            string normalizedRoot = NormalizeAssetPath(rootFolder);
+            if (string.IsNullOrEmpty(normalizedRoot)
+                || (normalizedRoot != "Assets" && !normalizedRoot.StartsWith("Assets/", StringComparison.Ordinal)))
+            {
+                throw new ArgumentException("Theme style assets must be created under the Assets folder.", nameof(rootFolder));
+            }
+
+            EnsureFolder(normalizedRoot);
+            IReadOnlyList<DeucarianThemeStylePreset> definitions = DeucarianThemeStylePresets.BuiltinStyles;
+            List<DeucarianThemeStyle> styles = new List<DeucarianThemeStyle>();
+
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DeucarianThemeStylePreset definition = definitions[i];
+                string stylePath = CombineAssetPath(normalizedRoot, definition.FileName);
+                DeucarianThemeStyle style = LoadOrCreateAsset(
+                    stylePath,
+                    () => ScriptableObject.CreateInstance<DeucarianThemeStyle>(),
+                    overwriteExisting,
+                    out bool styleCreated);
+
+                if (styleCreated || overwriteExisting || ShouldRepairGeneratedStyle(style, definition))
+                {
+                    definition.Configure(style);
+                    EditorUtility.SetDirty(style);
+                }
+
+                styles.Add(style);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return styles;
         }
 
         /// <summary>
@@ -727,6 +802,18 @@ namespace Deucarian.Theming.Editor
                 || IsPackageMissingColor(role.DefaultColor);
         }
 
+        private static bool ShouldRepairGeneratedStyle(DeucarianThemeStyle style, DeucarianThemeStylePreset definition)
+        {
+            if (style == null)
+            {
+                return false;
+            }
+
+            return !string.Equals(style.StyleId, definition.Id, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(style.DisplayName)
+                || string.IsNullOrWhiteSpace(style.Description);
+        }
+
         private static bool PaletteHasEntryForRole(DeucarianColorPalette palette, DeucarianColorRole role)
         {
             IReadOnlyList<DeucarianColorEntry> entries = palette.Entries;
@@ -835,6 +922,21 @@ namespace Deucarian.Theming.Editor
             return color;
         }
 
+        private static DeucarianThemeStyle FindStyleById(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)
+        {
+            string normalizedId = DeucarianColorRole.NormalizeId(styleId);
+            for (int i = 0; i < styles.Count; i++)
+            {
+                DeucarianThemeStyle style = styles[i];
+                if (style != null && string.Equals(style.StyleId, normalizedId, StringComparison.Ordinal))
+                {
+                    return style;
+                }
+            }
+
+            return null;
+        }
+
         private readonly struct ThemePresetDefinition
         {
             public ThemePresetDefinition(
@@ -881,5 +983,6 @@ namespace Deucarian.Theming.Editor
             public string Description { get; }
             public Color DefaultColor { get; }
         }
+
     }
 }

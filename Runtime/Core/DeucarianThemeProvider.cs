@@ -13,6 +13,7 @@ namespace Deucarian.Theming
         private static readonly List<DeucarianThemeProvider> EnabledProviders = new List<DeucarianThemeProvider>();
 
         [SerializeField] private DeucarianTheme currentTheme;
+        [SerializeField] private DeucarianThemeStyle styleOverride;
         [SerializeField] private bool applyToChildrenOnEnable = true;
         [SerializeField] private bool includeInactiveChildren = true;
 
@@ -24,8 +25,19 @@ namespace Deucarian.Theming
         /// <summary>Currently active theme for this provider.</summary>
         public DeucarianTheme CurrentTheme => currentTheme;
 
+        /// <summary>Explicit style override. When null, the current theme's visual style is used.</summary>
+        public DeucarianThemeStyle StyleOverride => styleOverride;
+
+        /// <summary>Resolved active visual style for this provider.</summary>
+        public DeucarianThemeStyle CurrentStyle => styleOverride != null
+            ? styleOverride
+            : currentTheme != null ? currentTheme.VisualStyle : null;
+
         /// <summary>Raised after this provider changes theme and reapplies child targets.</summary>
         public event Action<DeucarianTheme> ThemeChanged;
+
+        /// <summary>Raised after this provider changes resolved style and reapplies child style targets.</summary>
+        public event Action<DeucarianThemeStyle> StyleChanged;
 
         /// <summary>Sets the active theme and reapplies it to child theme targets.</summary>
         public void SetTheme(DeucarianTheme theme)
@@ -35,6 +47,7 @@ namespace Deucarian.Theming
                 return;
             }
 
+            DeucarianThemeStyle previousStyle = CurrentStyle;
             currentTheme = theme;
             if (isActiveAndEnabled)
             {
@@ -43,6 +56,36 @@ namespace Deucarian.Theming
 
             ApplyThemeToChildren();
             ThemeChanged?.Invoke(currentTheme);
+
+            if (previousStyle != CurrentStyle)
+            {
+                ApplyStyleToChildren();
+                StyleChanged?.Invoke(CurrentStyle);
+            }
+        }
+
+        /// <summary>Sets the provider style override and reapplies it to child style targets.</summary>
+        public void SetStyle(DeucarianThemeStyle style)
+        {
+            if (styleOverride == style)
+            {
+                return;
+            }
+
+            styleOverride = style;
+            if (isActiveAndEnabled)
+            {
+                Active = this;
+            }
+
+            ApplyStyleToChildren();
+            StyleChanged?.Invoke(CurrentStyle);
+        }
+
+        /// <summary>Clears the style override so the current theme's visual style is used.</summary>
+        public void ClearStyleOverride()
+        {
+            SetStyle(null);
         }
 
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
@@ -65,6 +108,27 @@ namespace Deucarian.Theming
             }
         }
 
+        /// <summary>Applies the current resolved style to child components implementing <see cref="IDeucarianThemeStyleTarget"/>.</summary>
+        public void ApplyStyleToChildren()
+        {
+            ApplyStyleToChildren(includeInactiveChildren);
+        }
+
+        /// <summary>Applies the current resolved style to child components implementing <see cref="IDeucarianThemeStyleTarget"/>.</summary>
+        public void ApplyStyleToChildren(bool includeInactive)
+        {
+            MonoBehaviour[] behaviours = GetComponentsInChildren<MonoBehaviour>(includeInactive);
+            DeucarianThemeStyle style = CurrentStyle;
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                MonoBehaviour behaviour = behaviours[i];
+                if (behaviour is IDeucarianThemeStyleTarget target)
+                {
+                    target.ApplyStyle(style);
+                }
+            }
+        }
+
         private void OnEnable()
         {
             if (!EnabledProviders.Contains(this))
@@ -77,6 +141,7 @@ namespace Deucarian.Theming
             if (applyToChildrenOnEnable)
             {
                 ApplyThemeToChildren();
+                ApplyStyleToChildren();
             }
         }
 
