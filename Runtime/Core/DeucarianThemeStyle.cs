@@ -28,6 +28,8 @@ namespace Deucarian.Theming
         [SerializeField] private bool useGeneratedNoiseTexture = true;
         [SerializeField] private Color textureTint = new Color(1f, 1f, 1f, 0.08f);
         [SerializeField, Range(8, 128)] private int generatedTextureSize = 32;
+        [SerializeField, Range(0, 12)] private int generatedTextureBlurRadius = 3;
+        [SerializeField, Range(0f, 1f)] private float generatedTextureBlurStrength = 0.85f;
 
         [System.NonSerialized] private Texture2D generatedNoiseTexture;
 
@@ -85,6 +87,12 @@ namespace Deucarian.Theming
         /// <summary>Generated texture size in pixels.</summary>
         public int GeneratedTextureSize => generatedTextureSize;
 
+        /// <summary>Blur radius used by the generated frosted texture.</summary>
+        public int GeneratedTextureBlurRadius => generatedTextureBlurRadius;
+
+        /// <summary>Blend strength between raw grain and blurred frosted texture.</summary>
+        public float GeneratedTextureBlurStrength => generatedTextureBlurStrength;
+
         /// <summary>Configures all style fields for editor preset creation and tests.</summary>
         public void Configure(
             string id,
@@ -106,6 +114,52 @@ namespace Deucarian.Theming
             Color resolvedTextureTint,
             int textureSize)
         {
+            Configure(
+                id,
+                name,
+                styleDescription,
+                treatment,
+                darkTint,
+                lightTint,
+                tintStrength,
+                alphaMultiplier,
+                minAlpha,
+                maxAlpha,
+                resolvedBorderTint,
+                resolvedBorderTintStrength,
+                resolvedBorderAlpha,
+                resolvedBorderWidth,
+                resolvedCornerRadius,
+                useNoiseTexture,
+                resolvedTextureTint,
+                textureSize,
+                3,
+                0.85f);
+        }
+
+        /// <summary>Configures all style fields, including generated frosted texture blur controls.</summary>
+        public void Configure(
+            string id,
+            string name,
+            string styleDescription,
+            DeucarianThemeStyleSurfaceTreatment treatment,
+            Color darkTint,
+            Color lightTint,
+            float tintStrength,
+            float alphaMultiplier,
+            float minAlpha,
+            float maxAlpha,
+            Color resolvedBorderTint,
+            float resolvedBorderTintStrength,
+            float resolvedBorderAlpha,
+            float resolvedBorderWidth,
+            float resolvedCornerRadius,
+            bool useNoiseTexture,
+            Color resolvedTextureTint,
+            int textureSize,
+            int textureBlurRadius,
+            float textureBlurStrength)
+        {
             styleId = DeucarianColorRole.NormalizeId(id);
             displayName = name ?? string.Empty;
             description = styleDescription ?? string.Empty;
@@ -124,8 +178,11 @@ namespace Deucarian.Theming
             useGeneratedNoiseTexture = useNoiseTexture;
             textureTint = resolvedTextureTint;
             generatedTextureSize = textureSize;
+            generatedTextureBlurRadius = textureBlurRadius;
+            generatedTextureBlurStrength = textureBlurStrength;
             generatedNoiseTexture = null;
             Sanitize();
+            NotifyChanged();
         }
 
         /// <summary>Resolves a panel-like surface color from a palette/role color.</summary>
@@ -145,7 +202,7 @@ namespace Deucarian.Theming
             return border;
         }
 
-        /// <summary>Returns the generated style texture, or null when this style does not use one.</summary>
+        /// <summary>Returns the generated frosted style texture, or null when this style does not use one.</summary>
         public Texture2D GetGeneratedTexture()
         {
             if (!useGeneratedNoiseTexture)
@@ -159,15 +216,24 @@ namespace Deucarian.Theming
             }
 
             int size = Mathf.Clamp(generatedTextureSize, 8, 128);
-            Color32[] pixels = new Color32[size * size];
+            float[] rawValues = new float[size * size];
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
                     int hash = (x * 73856093) ^ (y * 19349663);
-                    byte value = (byte)(224 + (hash & 31));
-                    pixels[y * size + x] = new Color32(value, value, value, 255);
+                    rawValues[y * size + x] = (hash & 255) / 255f;
                 }
+            }
+
+            float[] blurredValues = BlurWrapped(rawValues, size, generatedTextureBlurRadius);
+            float blurStrength = Mathf.Clamp01(generatedTextureBlurStrength);
+            Color32[] pixels = new Color32[size * size];
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                float value = Mathf.Lerp(rawValues[i], blurredValues[i], blurStrength);
+                byte channel = (byte)Mathf.Clamp(Mathf.RoundToInt(220f + value * 35f), 0, 255);
+                pixels[i] = new Color32(channel, channel, channel, 255);
             }
 
             generatedNoiseTexture = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
@@ -178,7 +244,7 @@ namespace Deucarian.Theming
                 filterMode = FilterMode.Bilinear
             };
             generatedNoiseTexture.SetPixels32(pixels);
-            generatedNoiseTexture.Apply(false, true);
+            generatedNoiseTexture.Apply(false, false);
             return generatedNoiseTexture;
         }
 
@@ -191,6 +257,8 @@ namespace Deucarian.Theming
         private void OnValidate()
         {
             Sanitize();
+            generatedNoiseTexture = null;
+            NotifyChanged();
         }
 
         private void Sanitize()
@@ -212,6 +280,63 @@ namespace Deucarian.Theming
             borderWidth = Mathf.Max(0f, borderWidth);
             cornerRadius = Mathf.Max(0f, cornerRadius);
             generatedTextureSize = Mathf.Clamp(generatedTextureSize, 8, 128);
+            generatedTextureBlurRadius = Mathf.Clamp(generatedTextureBlurRadius, 0, 12);
+            generatedTextureBlurStrength = Mathf.Clamp01(generatedTextureBlurStrength);
+        }
+
+        private static float[] BlurWrapped(float[] source, int size, int radius)
+        {
+            if (source == null || source.Length == 0 || radius <= 0)
+            {
+                return source;
+            }
+
+            float[] horizontal = new float[source.Length];
+            float[] result = new float[source.Length];
+            int sampleCount = radius * 2 + 1;
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float sum = 0f;
+                    for (int offset = -radius; offset <= radius; offset++)
+                    {
+                        int wrappedX = WrapIndex(x + offset, size);
+                        sum += source[y * size + wrappedX];
+                    }
+
+                    horizontal[y * size + x] = sum / sampleCount;
+                }
+            }
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float sum = 0f;
+                    for (int offset = -radius; offset <= radius; offset++)
+                    {
+                        int wrappedY = WrapIndex(y + offset, size);
+                        sum += horizontal[wrappedY * size + x];
+                    }
+
+                    result[y * size + x] = sum / sampleCount;
+                }
+            }
+
+            return result;
+        }
+
+        private static int WrapIndex(int value, int size)
+        {
+            int wrapped = value % size;
+            return wrapped < 0 ? wrapped + size : wrapped;
+        }
+
+        private void NotifyChanged()
+        {
+            DeucarianThemeAssetChangeBus.NotifyChanged(this);
         }
     }
 }

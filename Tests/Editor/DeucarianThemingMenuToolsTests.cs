@@ -155,6 +155,150 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void AssignActiveStyleToActiveThemeRefreshesMatchingOpenSceneProviders()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>(testRoot + "/Style.asset");
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+            GameObject gameObject = new GameObject("Theme Provider Style Refresh Test");
+            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
+            DeucarianThemeStyle broadcastStyle = null;
+
+            try
+            {
+                provider.SetTheme(theme);
+                provider.StyleChanged += changedStyle => broadcastStyle = changedStyle;
+
+                Assert.IsTrue(DeucarianThemingMenuActions.AssignActiveStyleToActiveTheme());
+
+                Assert.AreSame(style, theme.VisualStyle);
+                Assert.AreSame(style, provider.CurrentStyle);
+                Assert.AreSame(style, broadcastStyle);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void SetActiveThemeAndApplyAssignsThemeToOpenSceneProviders()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            GameObject gameObject = new GameObject("Theme Provider Active Theme Test");
+            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
+
+            try
+            {
+                int applied = DeucarianThemingMenuActions.SetActiveThemeAndApply(theme);
+
+                Assert.GreaterOrEqual(applied, 1);
+                Assert.AreSame(theme, DeucarianThemingEditorSettings.ActiveTheme);
+                Assert.AreSame(theme, provider.CurrentTheme);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void SetActivePaletteAndApplyAssignsPaletteToActiveThemeAndRefreshesProvider()
+        {
+            DeucarianColorPalette firstPalette = CreateAsset<DeucarianColorPalette>(testRoot + "/FirstPalette.asset");
+            DeucarianColorPalette secondPalette = CreateAsset<DeucarianColorPalette>(testRoot + "/SecondPalette.asset");
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            theme.Configure("deucarian.test.theme", "Theme", firstPalette);
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            GameObject providerObject = new GameObject("Theme Provider Palette Test");
+            GameObject targetObject = new GameObject("Theme Target Palette Test");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
+
+            try
+            {
+                provider.SetTheme(theme);
+                int countAfterSetTheme = probe.ApplyCount;
+
+                Assert.IsTrue(DeucarianThemingMenuActions.SetActivePaletteAndApply(secondPalette));
+
+                Assert.AreSame(secondPalette, DeucarianThemingEditorSettings.ActivePalette);
+                Assert.AreSame(secondPalette, theme.ColorPalette);
+                Assert.Greater(probe.ApplyCount, countAfterSetTheme);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(targetObject);
+                UnityEngine.Object.DestroyImmediate(providerObject);
+            }
+        }
+
+        [Test]
+        public void SetActiveRoleLibraryAndApplyAssignsLibraryToActivePaletteAndRefreshesProvider()
+        {
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>(testRoot + "/Palette.asset");
+            DeucarianColorRoleLibrary roleLibrary = CreateAsset<DeucarianColorRoleLibrary>(testRoot + "/RoleLibrary.asset");
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            theme.Configure("deucarian.test.theme", "Theme", palette);
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            DeucarianThemingEditorSettings.ActivePalette = palette;
+            GameObject providerObject = new GameObject("Theme Provider Library Test");
+            GameObject targetObject = new GameObject("Theme Target Library Test");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
+
+            try
+            {
+                provider.SetTheme(theme);
+                int countAfterSetTheme = probe.ApplyCount;
+
+                Assert.IsTrue(DeucarianThemingMenuActions.SetActiveRoleLibraryAndApply(roleLibrary));
+
+                Assert.AreSame(roleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+                Assert.AreSame(roleLibrary, palette.RoleLibrary);
+                Assert.Greater(probe.ApplyCount, countAfterSetTheme);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(targetObject);
+                UnityEngine.Object.DestroyImmediate(providerObject);
+            }
+        }
+
+        [Test]
+        public void SetActiveStyleAndApplyAssignsStyleToActiveThemeAndRefreshesProvider()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
+            DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>(testRoot + "/Style.asset");
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            GameObject providerObject = new GameObject("Theme Provider Active Style Test");
+            GameObject targetObject = new GameObject("Style Target Active Style Test");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
+
+            try
+            {
+                provider.SetTheme(theme);
+                int countAfterSetTheme = probe.ApplyCount;
+
+                Assert.IsTrue(DeucarianThemingMenuActions.SetActiveStyleAndApply(style));
+
+                Assert.AreSame(style, DeucarianThemingEditorSettings.ActiveStyle);
+                Assert.AreSame(style, theme.VisualStyle);
+                Assert.Greater(probe.ApplyCount, countAfterSetTheme);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(targetObject);
+                UnityEngine.Object.DestroyImmediate(providerObject);
+            }
+        }
+
+        [Test]
         public void ApplyingActiveThemeAssignsItToProviders()
         {
             DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");
@@ -185,6 +329,26 @@ namespace Deucarian.Theming.Editor.Tests
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return asset;
+        }
+
+        private sealed class ThemeTargetProbe : MonoBehaviour, IDeucarianThemeTarget
+        {
+            public int ApplyCount { get; private set; }
+
+            public void ApplyTheme(DeucarianTheme theme)
+            {
+                ApplyCount++;
+            }
+        }
+
+        private sealed class StyleTargetProbe : MonoBehaviour, IDeucarianThemeStyleTarget
+        {
+            public int ApplyCount { get; private set; }
+
+            public void ApplyStyle(DeucarianThemeStyle style)
+            {
+                ApplyCount++;
+            }
         }
     }
 }

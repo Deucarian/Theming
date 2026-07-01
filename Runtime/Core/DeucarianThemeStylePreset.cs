@@ -28,7 +28,9 @@ namespace Deucarian.Theming
             float cornerRadius,
             bool useGeneratedNoiseTexture,
             Color textureTint,
-            int generatedTextureSize)
+            int generatedTextureSize,
+            int generatedTextureBlurRadius,
+            float generatedTextureBlurStrength)
         {
             FileName = fileName;
             Id = id;
@@ -49,6 +51,8 @@ namespace Deucarian.Theming
             UseGeneratedNoiseTexture = useGeneratedNoiseTexture;
             TextureTint = textureTint;
             GeneratedTextureSize = generatedTextureSize;
+            GeneratedTextureBlurRadius = generatedTextureBlurRadius;
+            GeneratedTextureBlurStrength = generatedTextureBlurStrength;
         }
 
         public string FileName { get; }
@@ -70,6 +74,8 @@ namespace Deucarian.Theming
         public bool UseGeneratedNoiseTexture { get; }
         public Color TextureTint { get; }
         public int GeneratedTextureSize { get; }
+        public int GeneratedTextureBlurRadius { get; }
+        public float GeneratedTextureBlurStrength { get; }
 
         /// <summary>Applies this preset to an existing style asset or runtime instance.</summary>
         public void Configure(DeucarianThemeStyle style)
@@ -97,7 +103,9 @@ namespace Deucarian.Theming
                 CornerRadius,
                 UseGeneratedNoiseTexture,
                 TextureTint,
-                GeneratedTextureSize);
+                GeneratedTextureSize,
+                GeneratedTextureBlurRadius,
+                GeneratedTextureBlurStrength);
         }
     }
 
@@ -127,7 +135,9 @@ namespace Deucarian.Theming
                 16f,
                 true,
                 new Color(1f, 1f, 1f, 0.08f),
-                32),
+                48,
+                4,
+                0.92f),
             new DeucarianThemeStylePreset(
                 "MaterialDarkStyle.asset",
                 DeucarianThemeStyleIds.MaterialDark,
@@ -147,7 +157,9 @@ namespace Deucarian.Theming
                 4f,
                 false,
                 Color.clear,
-                32),
+                32,
+                0,
+                0f),
             new DeucarianThemeStylePreset(
                 "FluentAcrylicStyle.asset",
                 DeucarianThemeStyleIds.FluentAcrylic,
@@ -167,7 +179,9 @@ namespace Deucarian.Theming
                 8f,
                 true,
                 new Color(1f, 1f, 1f, 0.06f),
-                32)
+                48,
+                3,
+                0.86f)
         };
 
         /// <summary>All built-in styles shipped by the theming package.</summary>

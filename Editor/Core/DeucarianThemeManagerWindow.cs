@@ -88,7 +88,7 @@ namespace Deucarian.Theming.Editor
                 "Active Palette",
                 DeucarianThemingEditorSettings.ActivePalette,
                 "Select",
-                palette => DeucarianThemingEditorSettings.ActivePalette = palette,
+                palette => DeucarianThemingMenuActions.SetActivePaletteAndApply(palette),
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActivePaletteFirst());
 
@@ -96,7 +96,7 @@ namespace Deucarian.Theming.Editor
                 "Active Theme",
                 DeucarianThemingEditorSettings.ActiveTheme,
                 "Select",
-                theme => DeucarianThemingEditorSettings.ActiveTheme = theme,
+                theme => DeucarianThemingMenuActions.SetActiveThemeAndApply(theme),
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveTheme());
 
@@ -104,7 +104,7 @@ namespace Deucarian.Theming.Editor
                 "Role Library",
                 DeucarianThemingEditorSettings.ActiveRoleLibrary,
                 "Select",
-                roleLibrary => DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary,
+                roleLibrary => DeucarianThemingMenuActions.SetActiveRoleLibraryAndApply(roleLibrary),
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveRoleLibrary());
 
@@ -112,7 +112,7 @@ namespace Deucarian.Theming.Editor
                 "Active Style",
                 DeucarianThemingEditorSettings.ActiveStyle,
                 "Select",
-                style => DeucarianThemingEditorSettings.ActiveStyle = style,
+                style => DeucarianThemingMenuActions.SetActiveStyleAndApply(style),
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveStyle());
 

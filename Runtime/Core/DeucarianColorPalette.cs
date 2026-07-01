@@ -40,13 +40,20 @@ namespace Deucarian.Theming
             displayName = name ?? string.Empty;
             roleLibrary = library;
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Sets the optional role library used by this palette.</summary>
         public void SetRoleLibrary(DeucarianColorRoleLibrary library)
         {
+            if (roleLibrary == library)
+            {
+                return;
+            }
+
             roleLibrary = library;
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Returns the palette color, role default color, or magenta for a null role.</summary>
@@ -118,6 +125,7 @@ namespace Deucarian.Theming
             EnsureEntryList();
             entries.Add(new DeucarianColorEntry(role, color, note));
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Adds or updates the first entry matching the role reference or role ID.</summary>
@@ -137,12 +145,14 @@ namespace Deucarian.Theming
                 {
                     entry.Configure(role, color, note);
                     RebuildCache();
+                    NotifyChanged();
                     return;
                 }
             }
 
             entries.Add(new DeucarianColorEntry(role, color, note));
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Removes all entries and rebuilds lookup caches.</summary>
@@ -151,6 +161,7 @@ namespace Deucarian.Theming
             EnsureEntryList();
             entries.Clear();
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Removes null entries or entries with no role and returns how many were removed.</summary>
@@ -162,6 +173,7 @@ namespace Deucarian.Theming
             if (removed > 0)
             {
                 RebuildCache();
+                NotifyChanged();
             }
 
             return removed;
@@ -185,6 +197,7 @@ namespace Deucarian.Theming
 
             entry.Configure(entry.Role, entry.Role.DefaultColor, entry.Note);
             RebuildCache();
+            NotifyChanged();
             return true;
         }
 
@@ -215,6 +228,7 @@ namespace Deucarian.Theming
             if (added > 0)
             {
                 RebuildCache();
+                NotifyChanged();
             }
 
             return added;
@@ -226,6 +240,7 @@ namespace Deucarian.Theming
             EnsureEntryList();
             entries.Sort(CompareEntries);
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Returns duplicate role IDs in deterministic entry order.</summary>
@@ -413,6 +428,12 @@ namespace Deucarian.Theming
             paletteId = DeucarianColorRole.NormalizeId(paletteId);
             displayName = displayName ?? string.Empty;
             RebuildCache();
+            NotifyChanged();
+        }
+
+        private void NotifyChanged()
+        {
+            DeucarianThemeAssetChangeBus.NotifyChanged(this);
         }
     }
 }

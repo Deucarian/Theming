@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace Deucarian.Theming
 {
@@ -16,6 +17,7 @@ namespace Deucarian.Theming
         [SerializeField] private DeucarianThemeStyle styleOverride;
         [SerializeField] private bool applyToChildrenOnEnable = true;
         [SerializeField] private bool includeInactiveChildren = true;
+        [NonSerialized] private DeucarianThemeStyle lastAppliedStyle;
 
         /// <summary>
         /// Last enabled provider. This is a convenience fallback, not a required singleton.
@@ -44,24 +46,17 @@ namespace Deucarian.Theming
         {
             if (currentTheme == theme)
             {
+                RefreshThemeGraph();
                 return;
             }
 
-            DeucarianThemeStyle previousStyle = CurrentStyle;
             currentTheme = theme;
             if (isActiveAndEnabled)
             {
                 Active = this;
             }
 
-            ApplyThemeToChildren();
-            ThemeChanged?.Invoke(currentTheme);
-
-            if (previousStyle != CurrentStyle)
-            {
-                ApplyStyleToChildren();
-                StyleChanged?.Invoke(CurrentStyle);
-            }
+            RefreshThemeGraph();
         }
 
         /// <summary>Sets the provider style override and reapplies it to child style targets.</summary>
@@ -69,6 +64,7 @@ namespace Deucarian.Theming
         {
             if (styleOverride == style)
             {
+                RefreshStyle();
                 return;
             }
 
@@ -78,14 +74,81 @@ namespace Deucarian.Theming
                 Active = this;
             }
 
-            ApplyStyleToChildren();
-            StyleChanged?.Invoke(CurrentStyle);
+            ApplyResolvedStyleAndNotify();
         }
 
         /// <summary>Clears the style override so the current theme's visual style is used.</summary>
         public void ClearStyleOverride()
         {
             SetStyle(null);
+        }
+
+        /// <summary>
+        /// Reapplies and broadcasts the resolved style if it changed outside the provider API,
+        /// such as when a theme asset's visual style is edited.
+        /// </summary>
+        public bool RefreshStyle()
+        {
+            DeucarianThemeStyle style = CurrentStyle;
+            if (lastAppliedStyle == null && style == null)
+            {
+                return false;
+            }
+
+            ApplyResolvedStyleAndNotify();
+            return true;
+        }
+
+        /// <summary>Reapplies the resolved theme and style through the provider's target APIs.</summary>
+        public bool RefreshThemeGraph()
+        {
+            ApplyThemeToChildren();
+            ThemeChanged?.Invoke(currentTheme);
+            ApplyResolvedStyleAndNotify();
+            return true;
+        }
+
+        /// <summary>Returns true when this provider depends on the supplied theme asset.</summary>
+        public bool UsesThemeAsset(UnityObject asset)
+        {
+            if (asset == null)
+            {
+                return false;
+            }
+
+            DeucarianThemeStyle currentStyle = CurrentStyle;
+            if (asset == currentTheme || asset == styleOverride || asset == currentStyle)
+            {
+                return true;
+            }
+
+            if (asset is DeucarianThemeRuntimeSettings)
+            {
+                return currentTheme == null;
+            }
+
+            DeucarianColorPalette palette = currentTheme != null ? currentTheme.ColorPalette : null;
+            if (asset == palette)
+            {
+                return true;
+            }
+
+            if (palette == null)
+            {
+                return asset is DeucarianColorRole && currentTheme == null;
+            }
+
+            if (asset == palette.RoleLibrary)
+            {
+                return true;
+            }
+
+            if (asset is DeucarianColorRole)
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
@@ -127,6 +190,8 @@ namespace Deucarian.Theming
                     target.ApplyStyle(style);
                 }
             }
+
+            lastAppliedStyle = style;
         }
 
         private void OnEnable()
@@ -137,22 +202,55 @@ namespace Deucarian.Theming
             }
 
             Active = this;
+            DeucarianThemeAssetChangeBus.AssetChanged += OnThemeAssetChanged;
 
             if (applyToChildrenOnEnable)
             {
                 ApplyThemeToChildren();
                 ApplyStyleToChildren();
             }
+            else
+            {
+                lastAppliedStyle = CurrentStyle;
+            }
         }
 
         private void OnDisable()
         {
+            DeucarianThemeAssetChangeBus.AssetChanged -= OnThemeAssetChanged;
             EnabledProviders.Remove(this);
 
             if (Active == this)
             {
                 Active = EnabledProviders.Count > 0 ? EnabledProviders[EnabledProviders.Count - 1] : null;
             }
+        }
+
+        private void OnValidate()
+        {
+            if (!isActiveAndEnabled)
+            {
+                lastAppliedStyle = CurrentStyle;
+                return;
+            }
+
+            RefreshThemeGraph();
+        }
+
+        private void ApplyResolvedStyleAndNotify()
+        {
+            ApplyStyleToChildren();
+            StyleChanged?.Invoke(lastAppliedStyle);
+        }
+
+        private void OnThemeAssetChanged(UnityObject asset)
+        {
+            if (!isActiveAndEnabled || !UsesThemeAsset(asset))
+            {
+                return;
+            }
+
+            RefreshThemeGraph();
         }
     }
 }

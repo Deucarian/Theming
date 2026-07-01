@@ -89,7 +89,12 @@ namespace Deucarian.Theming
                 return provider.CurrentTheme;
             }
 
-            return DeucarianThemeProvider.Active != null ? DeucarianThemeProvider.Active.CurrentTheme : null;
+            if (DeucarianThemeProvider.Active != null && DeucarianThemeProvider.Active.CurrentTheme != null)
+            {
+                return DeucarianThemeProvider.Active.CurrentTheme;
+            }
+
+            return DeucarianThemeRuntimeResolver.ResolveDefaultTheme(this);
         }
 
         /// <summary>Logs a warning once until the warning condition clears.</summary>

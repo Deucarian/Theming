@@ -95,6 +95,24 @@ Palette-first support assets are generated beside the palette under a `<PaletteN
 
 Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
 
+# Runtime Default Theme
+
+Builds can resolve a project default theme through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its `DefaultTheme` field to the theme that runtime-created providers should use.
+
+Runtime code can call:
+
+- `DeucarianThemeRuntimeResolver.ResolveDefaultTheme(...)`
+- `DeucarianThemeRuntimeResolver.ResolveTheme(...)`
+- `DeucarianThemeRuntimeResolver.EnsureProviderHasTheme(...)`
+
+`DeucarianThemeTargetBehaviour` also falls back to this runtime default when no provider theme is available.
+
+# Theme Packs
+
+Packages that need their own semantic roles can provide a `DeucarianThemePack` instead of writing package-specific theme menus. A theme pack describes role assets, palette defaults, theme metadata, and the default visual style. Editor tooling can import or repair it with `DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(...)` and can create the runtime settings asset with `CreateOrRepairRuntimeSettings(...)`.
+
+Theme packs should keep product-specific role IDs in the owning package, for example `reportviewer.navigation.active`. Deucarian Theming owns the generic import and repair mechanism; it should not absorb every package's domain-specific role names as built-ins.
+
 # Visual Styles
 
 Colors and styles are deliberately separate.

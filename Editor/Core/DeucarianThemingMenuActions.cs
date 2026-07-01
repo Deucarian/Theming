@@ -415,6 +415,86 @@ namespace Deucarian.Theming.Editor
             return style;
         }
 
+        public static int SetActiveThemeAndApply(DeucarianTheme theme)
+        {
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            if (theme == null)
+            {
+                return 0;
+            }
+
+            return ApplyThemeToOpenScene(theme, false, false);
+        }
+
+        public static bool SetActivePaletteAndApply(DeucarianColorPalette palette)
+        {
+            DeucarianThemingEditorSettings.ActivePalette = palette;
+            if (palette == null)
+            {
+                return false;
+            }
+
+            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme
+                ?? ResolveOrCreateActiveTheme(false);
+            if (theme == null)
+            {
+                return false;
+            }
+
+            Undo.RecordObject(theme, "Assign Deucarian Theme Palette");
+            theme.SetColorPalette(palette);
+            EditorUtility.SetDirty(theme);
+            AssetDatabase.SaveAssets();
+            RefreshOpenSceneProvidersUsingAsset(theme);
+            return true;
+        }
+
+        public static bool SetActiveRoleLibraryAndApply(DeucarianColorRoleLibrary roleLibrary)
+        {
+            DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary;
+            if (roleLibrary == null)
+            {
+                return false;
+            }
+
+            DeucarianColorPalette palette = DeucarianThemingEditorSettings.ActivePalette
+                ?? ResolveOrCreateActivePalette(false);
+            if (palette == null)
+            {
+                return false;
+            }
+
+            Undo.RecordObject(palette, "Assign Deucarian Palette Role Library");
+            palette.SetRoleLibrary(roleLibrary);
+            EditorUtility.SetDirty(palette);
+            AssetDatabase.SaveAssets();
+            RefreshOpenSceneProvidersUsingAsset(palette);
+            return true;
+        }
+
+        public static bool SetActiveStyleAndApply(DeucarianThemeStyle style)
+        {
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+            if (style == null)
+            {
+                return false;
+            }
+
+            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme
+                ?? ResolveOrCreateActiveTheme(false);
+            if (theme == null)
+            {
+                return false;
+            }
+
+            Undo.RecordObject(theme, "Assign Deucarian Theme Style");
+            theme.SetVisualStyle(style);
+            EditorUtility.SetDirty(theme);
+            AssetDatabase.SaveAssets();
+            RefreshOpenSceneProvidersUsingAsset(theme);
+            return true;
+        }
+
         public static bool AssignActiveStyleToActiveTheme()
         {
             DeucarianTheme theme = ResolveOrCreateActiveTheme();
@@ -429,7 +509,11 @@ namespace Deucarian.Theming.Editor
             theme.SetVisualStyle(style);
             EditorUtility.SetDirty(theme);
             AssetDatabase.SaveAssets();
-            ThemingLog.Editor.Info($"Assigned Deucarian style '{style.name}' to theme '{theme.name}'.", theme);
+            int refreshed = RefreshOpenSceneProvidersUsingAsset(theme);
+            string providerNote = refreshed > 0 ? $" Refreshed {refreshed} open scene provider(s)." : string.Empty;
+            ThemingLog.Editor.Info(
+                $"Assigned Deucarian style '{style.name}' to theme '{theme.name}'.{providerNote}",
+                theme);
             return true;
         }
 
@@ -742,6 +826,35 @@ namespace Deucarian.Theming.Editor
             return UnityEngine.Object.FindObjectsOfType<DeucarianThemeProvider>(true);
 #pragma warning restore CS0618
 #endif
+        }
+
+        public static int RefreshOpenSceneProvidersUsingAsset(UnityEngine.Object asset)
+        {
+            if (asset == null)
+            {
+                return 0;
+            }
+
+            DeucarianThemeProvider[] providers = FindThemeProvidersInOpenScenes();
+            int refreshed = 0;
+            for (int i = 0; i < providers.Length; i++)
+            {
+                DeucarianThemeProvider provider = providers[i];
+                if (provider == null
+                    || !provider.UsesThemeAsset(asset)
+                    || !provider.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(provider, "Refresh Deucarian Theme");
+                provider.RefreshThemeGraph();
+                EditorUtility.SetDirty(provider);
+                EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
+                refreshed++;
+            }
+
+            return refreshed;
         }
 
         private static DeucarianThemeProvider CreateThemeProvider(DeucarianTheme theme)
