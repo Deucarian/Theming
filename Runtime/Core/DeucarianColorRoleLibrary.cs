@@ -44,6 +44,7 @@ namespace Deucarian.Theming
 
             roles.Add(role);
             RebuildCache();
+            NotifyChanged();
             return true;
         }
 
@@ -56,6 +57,7 @@ namespace Deucarian.Theming
             if (removed > 0)
             {
                 RebuildCache();
+                NotifyChanged();
             }
 
             return removed;
@@ -67,6 +69,7 @@ namespace Deucarian.Theming
             EnsureRoleList();
             roles.Sort(CompareRoles);
             RebuildCache();
+            NotifyChanged();
         }
 
         /// <summary>Returns duplicate role IDs in deterministic library order.</summary>
@@ -203,6 +206,12 @@ namespace Deucarian.Theming
         private void OnValidate()
         {
             RebuildCache();
+            NotifyChanged();
+        }
+
+        private void NotifyChanged()
+        {
+            DeucarianThemeAssetChangeBus.NotifyChanged(this);
         }
     }
 }

@@ -38,12 +38,31 @@ namespace Deucarian.Theming
             displayName = name ?? string.Empty;
             colorPalette = palette;
             visualStyle = style;
+            NotifyChanged();
         }
 
         /// <summary>Sets the optional visual style used by this theme.</summary>
         public void SetVisualStyle(DeucarianThemeStyle style)
         {
+            if (visualStyle == style)
+            {
+                return;
+            }
+
             visualStyle = style;
+            NotifyChanged();
+        }
+
+        /// <summary>Sets the palette used by this theme.</summary>
+        public void SetColorPalette(DeucarianColorPalette palette)
+        {
+            if (colorPalette == palette)
+            {
+                return;
+            }
+
+            colorPalette = palette;
+            NotifyChanged();
         }
 
         /// <summary>Returns the palette color, role default color, or magenta when unresolved.</summary>
@@ -86,6 +105,12 @@ namespace Deucarian.Theming
         {
             themeId = DeucarianColorRole.NormalizeId(themeId);
             displayName = displayName ?? string.Empty;
+            NotifyChanged();
+        }
+
+        private void NotifyChanged()
+        {
+            DeucarianThemeAssetChangeBus.NotifyChanged(this);
         }
     }
 }

@@ -350,6 +350,76 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void ThemePackCreationCreatesPackAssetsStylesAndRuntimeSettings()
+        {
+            DeucarianThemePack themePack = CreateReportViewerThemePack();
+
+            try
+            {
+                DeucarianDefaultThemeAssets assets =
+                    DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(themePack, testRoot + "/ReportViewer");
+                DeucarianThemeRuntimeSettings settings =
+                    DeucarianThemePackAssetFactory.CreateOrRepairRuntimeSettings(
+                        testRoot + "/ReportViewer/Resources",
+                        assets.Theme);
+
+                Assert.NotNull(assets.RoleLibrary);
+                Assert.NotNull(assets.Palette);
+                Assert.NotNull(assets.Theme);
+                Assert.NotNull(assets.DefaultStyle);
+                Assert.AreEqual(2, assets.Roles.Count);
+                Assert.AreEqual(RequiredStyleIds.Length, assets.Styles.Count);
+                Assert.AreSame(assets.Palette, assets.Theme.ColorPalette);
+                Assert.AreSame(assets.DefaultStyle, assets.Theme.VisualStyle);
+                Assert.AreSame(assets.Theme, settings.DefaultTheme);
+                Assert.AreSame(assets.Theme, DeucarianThemeRuntimeResolver.ResolveDefaultTheme());
+                Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/ReportViewer/Roles"));
+                Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/ReportViewer/Styles"));
+                AssertRequiredRolesExist(
+                    assets.RoleLibrary,
+                    new[]
+                    {
+                        DeucarianBuiltinColorRoleIds.Core.Surface,
+                        "reportviewer.navigation.active"
+                    });
+            }
+            finally
+            {
+                Object.DestroyImmediate(themePack);
+            }
+        }
+
+        [Test]
+        public void ThemePackRepairDoesNotOverwriteUserColors()
+        {
+            DeucarianThemePack themePack = CreateReportViewerThemePack();
+
+            try
+            {
+                DeucarianDefaultThemeAssets assets =
+                    DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(themePack, testRoot + "/ReportViewer");
+                Assert.True(assets.RoleLibrary.TryGetRoleById(
+                    "reportviewer.navigation.active",
+                    out DeucarianColorRole activeRole));
+
+                Color userColor = new Color(0.2f, 0.4f, 0.6f, 1f);
+                assets.Palette.SetColor(activeRole, userColor, "User override");
+                EditorUtility.SetDirty(assets.Palette);
+                AssetDatabase.SaveAssets();
+
+                DeucarianDefaultThemeAssets repaired =
+                    DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(themePack, testRoot + "/ReportViewer");
+
+                Assert.True(repaired.Palette.TryGetColor(activeRole, out Color repairedColor));
+                Assert.True(ColorsMatch(userColor, repairedColor), repairedColor.ToString());
+            }
+            finally
+            {
+                Object.DestroyImmediate(themePack);
+            }
+        }
+
+        [Test]
         public void ThemeManagerWindowCanOpen()
         {
             if (Application.isBatchMode)
@@ -431,6 +501,42 @@ namespace Deucarian.Theming.Editor.Tests
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return asset;
+        }
+
+        private static DeucarianThemePack CreateReportViewerThemePack()
+        {
+            DeucarianThemePack themePack = ScriptableObject.CreateInstance<DeucarianThemePack>();
+            themePack.Configure(
+                "simultria.reportviewer.theme-pack",
+                "Simultria Report Viewer",
+                "SimultriaColorRoleLibrary.asset",
+                "SimultriaPalette.asset",
+                "SimultriaTheme.asset",
+                "simultria.reportviewer.palette",
+                "Simultria Palette",
+                "simultria.reportviewer.theme",
+                "Simultria Theme",
+                DeucarianThemeStyleIds.FrostedGlass,
+                new[]
+                {
+                    new DeucarianThemePackRole(
+                        "DeucarianSurface",
+                        DeucarianBuiltinColorRoleIds.Core.Surface,
+                        "Surface",
+                        DeucarianColorRoleCategories.Semantic,
+                        "Base color for viewer panels.",
+                        new Color(0.11f, 0.14f, 0.18f, 0.88f),
+                        true),
+                    new DeucarianThemePackRole(
+                        "ReportViewerNavigationActive",
+                        "reportviewer.navigation.active",
+                        "Report Viewer Navigation Active",
+                        DeucarianColorRoleCategories.UiState,
+                        "Active navigation control color.",
+                        new Color(99f / 255f, 66f / 255f, 150f / 255f, 1f),
+                        false)
+                });
+            return themePack;
         }
 
         private static void AssertRequiredRolesExist(DeucarianColorRoleLibrary library, IReadOnlyList<string> roleIds)

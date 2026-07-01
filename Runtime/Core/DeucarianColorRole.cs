@@ -54,6 +54,7 @@ namespace Deucarian.Theming
             description = roleDescription ?? string.Empty;
             defaultColor = roleDefaultColor;
             isCoreRole = coreRole;
+            NotifyChanged();
         }
 
         /// <summary>Returns a validation warning for this role, or null when the role is valid.</summary>
@@ -139,6 +140,12 @@ namespace Deucarian.Theming
             displayName = displayName ?? string.Empty;
             category = category ?? string.Empty;
             description = description ?? string.Empty;
+            NotifyChanged();
+        }
+
+        private void NotifyChanged()
+        {
+            DeucarianThemeAssetChangeBus.NotifyChanged(this);
         }
     }
 }

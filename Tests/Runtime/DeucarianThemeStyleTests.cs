@@ -118,6 +118,184 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void ProviderRefreshStyleAppliesThemeVisualStyleMutation()
+        {
+            DeucarianThemeStyle firstStyle = CreateFrostedStyle();
+            DeucarianThemeStyle secondStyle = DeucarianThemeStylePresets.CreateRuntimeStyle(
+                DeucarianThemeStyleIds.MaterialDark);
+            createdObjects.Add(secondStyle);
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>();
+            theme.Configure("deucarian.theme.with-style", "With Style", null, firstStyle);
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
+            int styleChangedCount = 0;
+            DeucarianThemeStyle broadcastStyle = null;
+
+            provider.SetTheme(theme);
+            provider.StyleChanged += style =>
+            {
+                styleChangedCount++;
+                broadcastStyle = style;
+            };
+
+            theme.SetVisualStyle(secondStyle);
+
+            Assert.AreSame(secondStyle, provider.CurrentStyle);
+            Assert.AreSame(secondStyle, probe.AppliedStyle);
+            Assert.AreSame(secondStyle, broadcastStyle);
+            Assert.AreEqual(1, styleChangedCount);
+        }
+
+        [Test]
+        public void ProviderRefreshesThemeTargetsWhenPaletteAssetChanges()
+        {
+            DeucarianColorRole role = CreateRole(DeucarianBuiltinColorRoleIds.Core.Primary, Color.black);
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>();
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>();
+            palette.AddEntry(role, Color.red);
+            theme.Configure("deucarian.theme.palette-refresh", "Palette Refresh", palette);
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
+
+            provider.SetTheme(theme);
+            int countAfterSetTheme = probe.ApplyCount;
+
+            palette.SetColor(role, Color.green);
+
+            Assert.Greater(probe.ApplyCount, countAfterSetTheme);
+            Assert.AreSame(theme, probe.AppliedTheme);
+        }
+
+        [Test]
+        public void ProviderRefreshesThemeTargetsWhenRoleAssetChanges()
+        {
+            DeucarianColorRole role = CreateRole(DeucarianBuiltinColorRoleIds.Core.Primary, Color.black);
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>();
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>();
+            theme.Configure("deucarian.theme.role-refresh", "Role Refresh", palette);
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
+
+            provider.SetTheme(theme);
+            int countAfterSetTheme = probe.ApplyCount;
+
+            role.Configure(
+                DeucarianBuiltinColorRoleIds.Core.Primary,
+                "Primary Updated",
+                "Tests",
+                "Updated role.",
+                Color.blue,
+                false);
+
+            Assert.Greater(probe.ApplyCount, countAfterSetTheme);
+            Assert.AreSame(theme, probe.AppliedTheme);
+        }
+
+        [Test]
+        public void ProviderRefreshesStyleTargetsWhenStyleAssetChanges()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
+
+            provider.SetStyle(style);
+            int countAfterSetStyle = probe.ApplyCount;
+
+            style.Configure(
+                DeucarianThemeStyleIds.FrostedGlass,
+                "Frosted Glass",
+                "Updated style.",
+                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                style.DarkSurfaceTint,
+                style.LightSurfaceTint,
+                0.42f,
+                style.SurfaceAlphaMultiplier,
+                style.MinimumSurfaceAlpha,
+                style.MaximumSurfaceAlpha,
+                style.BorderTint,
+                style.BorderTintStrength,
+                style.BorderAlpha,
+                style.BorderWidth,
+                style.CornerRadius,
+                true,
+                style.TextureTint,
+                style.GeneratedTextureSize,
+                style.GeneratedTextureBlurRadius,
+                style.GeneratedTextureBlurStrength);
+
+            Assert.Greater(probe.ApplyCount, countAfterSetStyle);
+            Assert.AreSame(style, probe.AppliedStyle);
+        }
+
+        [Test]
+        public void GeneratedFrostedTextureUsesBlurControls()
+        {
+            DeucarianThemeStyle rawStyle = CreateFrostedStyle();
+            rawStyle.Configure(
+                DeucarianThemeStyleIds.FrostedGlass,
+                "Raw Frosted Glass",
+                "Unblurred texture.",
+                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                rawStyle.DarkSurfaceTint,
+                rawStyle.LightSurfaceTint,
+                rawStyle.SurfaceTintStrength,
+                rawStyle.SurfaceAlphaMultiplier,
+                rawStyle.MinimumSurfaceAlpha,
+                rawStyle.MaximumSurfaceAlpha,
+                rawStyle.BorderTint,
+                rawStyle.BorderTintStrength,
+                rawStyle.BorderAlpha,
+                rawStyle.BorderWidth,
+                rawStyle.CornerRadius,
+                true,
+                rawStyle.TextureTint,
+                48,
+                0,
+                0f);
+            DeucarianThemeStyle blurredStyle = CreateFrostedStyle();
+            blurredStyle.Configure(
+                DeucarianThemeStyleIds.FrostedGlass,
+                "Blurred Frosted Glass",
+                "Blurred texture.",
+                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                blurredStyle.DarkSurfaceTint,
+                blurredStyle.LightSurfaceTint,
+                blurredStyle.SurfaceTintStrength,
+                blurredStyle.SurfaceAlphaMultiplier,
+                blurredStyle.MinimumSurfaceAlpha,
+                blurredStyle.MaximumSurfaceAlpha,
+                blurredStyle.BorderTint,
+                blurredStyle.BorderTintStrength,
+                blurredStyle.BorderAlpha,
+                blurredStyle.BorderWidth,
+                blurredStyle.CornerRadius,
+                true,
+                blurredStyle.TextureTint,
+                48,
+                4,
+                1f);
+
+            Texture2D rawTexture = rawStyle.GetGeneratedTexture();
+            Texture2D blurredTexture = blurredStyle.GetGeneratedTexture();
+
+            Assert.AreEqual(4, blurredStyle.GeneratedTextureBlurRadius);
+            Assert.AreEqual(1f, blurredStyle.GeneratedTextureBlurStrength);
+            Assert.Less(AverageNeighborDelta(blurredTexture), AverageNeighborDelta(rawTexture));
+        }
+
+        [Test]
         public void UIToolkitStyleUtilityAppliesPanelProperties()
         {
             DeucarianThemeStyle style = CreateFrostedStyle();
@@ -145,6 +323,20 @@ namespace Deucarian.Theming.Tests
             Assert.AreEqual(style.ResolveBorderColor(image.color), outline.effectColor);
         }
 
+        [Test]
+        public void UGUIStyleUtilityAppliesGeneratedTextureToImagePanels()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            GameObject gameObject = CreateGameObject("UGUI Image Panel");
+            UIImage image = gameObject.AddComponent<UIImage>();
+
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyPanelImage(image, Color.black, style));
+
+            Assert.NotNull(image.sprite);
+            Assert.AreSame(style.GetGeneratedTexture(), image.sprite.texture);
+            Assert.AreEqual(UIImage.Type.Tiled, image.type);
+        }
+
         private DeucarianThemeStyle CreateFrostedStyle()
         {
             DeucarianThemeStyle style = CreateAsset<DeucarianThemeStyle>();
@@ -168,6 +360,28 @@ namespace Deucarian.Theming.Tests
                 new Color(1f, 1f, 1f, 0.08f),
                 32);
             return style;
+        }
+
+        private static float AverageNeighborDelta(Texture2D texture)
+        {
+            Color32[] pixels = texture.GetPixels32();
+            int width = texture.width;
+            int height = texture.height;
+            float total = 0f;
+            int count = 0;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width - 1; x++)
+                {
+                    int left = pixels[y * width + x].r;
+                    int right = pixels[y * width + x + 1].r;
+                    total += Mathf.Abs(left - right);
+                    count++;
+                }
+            }
+
+            return count == 0 ? 0f : total / count;
         }
 
         private DeucarianColorRole CreateRole(string id, Color defaultColor)
@@ -200,6 +414,18 @@ namespace Deucarian.Theming.Tests
             public void ApplyStyle(DeucarianThemeStyle style)
             {
                 AppliedStyle = style;
+                ApplyCount++;
+            }
+        }
+
+        private sealed class ThemeTargetProbe : MonoBehaviour, IDeucarianThemeTarget
+        {
+            public DeucarianTheme AppliedTheme { get; private set; }
+            public int ApplyCount { get; private set; }
+
+            public void ApplyTheme(DeucarianTheme theme)
+            {
+                AppliedTheme = theme;
                 ApplyCount++;
             }
         }
