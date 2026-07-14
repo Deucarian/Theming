@@ -4,13 +4,13 @@
 
 `com.deucarian.theming` is a Unity UPM package for designer-friendly runtime themes, palettes, color roles, theme assets, and runtime UI adapters.
 
-Most users only need a **Palette**.
+Most users only need a **Theme Family** and its two editable palettes.
 
 You do **not** need to manually create:
 
 - Color Roles
 - Color Role Libraries
-- Theme assets
+- Theme variant and family assets
 
 The package can create and maintain those automatically.
 
@@ -61,38 +61,40 @@ Requires Unity 2022.3 or newer.
 
 Recommended workflow:
 
-1. In Unity, choose `Tools > Deucarian > Theming > Create Minimal Palette`.
-2. Edit the colors in the generated palette asset.
-3. Open `Tools > Deucarian > Theming > Open Theme Manager` and click `Apply Theme To Scene` when you are ready to apply the active theme.
+1. In Unity, choose `Tools > Deucarian > Theming > Create Theme Family`.
+2. Edit the generated light and dark palette assets.
+3. Open `Tools > Deucarian > Theming > Open Theme Manager`, preview either mode, and click `Apply Preview To Scene` when you are ready.
 
 Done.
 
 The simple mental model is:
 
 ```text
-Palette
-  -> Theme
-      -> UI
+Light Palette -> Light Theme --+
+                              +-> Theme Family -> Provider -> UI
+Dark Palette  -> Dark Theme  --+
 ```
 
-The palette is the main asset. Theme and role library assets are support assets.
+The two palettes are the main editable assets. Concrete theme variants, the family, and the shared role library are support assets.
+
+Long theming lists in palette, role-library, theme-pack, and UI Toolkit inspectors include case-insensitive search and role-category filtering. Multiple search terms are combined, matching entries remain directly editable and removable, and clearing the filter restores Unity's normal add and reorder controls. Filtering is inspector-only and never changes asset ordering or values by itself.
 
 Deucarian package tools live under `Tools/Deucarian/<PackageName>/...`.
 The Theming menu is intentionally limited to quick entry points:
 
 - `Tools/Deucarian/Theming/Open Theme Manager`
-- `Tools/Deucarian/Theming/Create Minimal Palette`
+- `Tools/Deucarian/Theming/Create Theme Family`
 
 Use the Theme Manager for the full workflow and actions:
 
 - Find, select, and ping theme assets.
 - Create missing defaults.
-- Repair palette setup.
+- Repair the complete light/dark family.
 - Create built-in visual styles.
 - Assign the active style to the active theme.
 - Create game theme assets.
 - Open theme folders.
-- Apply the active theme to the open scene.
+- Preview light or dark and apply the active family to the open scene.
 
 ## Samples
 
@@ -101,14 +103,15 @@ Use the Theme Manager for the full workflow and actions:
 
 ## Public API map
 
-- `DeucarianColorRole`, `DeucarianColorRoleLibrary`, `DeucarianColorPalette`, and `DeucarianTheme`: core semantic color assets.
+- `DeucarianColorRole`, `DeucarianColorRoleLibrary`, `DeucarianColorPalette`, and `DeucarianTheme`: core semantic color and concrete variant assets.
+- `DeucarianThemeMode` and `DeucarianThemeFamily`: explicit light/dark selection and paired theme identity.
 - `DeucarianThemeStyle`: visual surface treatment assets such as frosted glass and material dark.
 - `DeucarianThemeProvider`, `IDeucarianThemeTarget`, and `DeucarianThemeTargetBehaviour`: runtime theme application contracts.
 - `DeucarianThemeRuntimeSettings` and `DeucarianThemeRuntimeResolver`: project default theme lookup.
 - `DeucarianThemePack` and `DeucarianThemePackAssetFactory`: package-owned role and palette asset import/repair.
 - `DeucarianUIToolkitThemeApplier` and `DeucarianUIToolkitThemeVariables`: UI Toolkit bindings and USS text generation.
 - `DeucarianTMPThemeColor`, `DeucarianGraphicThemeColor`, `DeucarianSelectableThemeColors`, `DeucarianRendererThemeColor`: runtime adapters for common Unity UI/rendering targets.
-- `DeucarianThemeProvider.SetTheme` and `DeucarianThemeProvider.SetStyle`: runtime switching for theme and style.
+- `DeucarianThemeProvider.SetThemeFamily`, `SetThemeMode`, `SetTheme`, and `SetStyle`: paired-mode, legacy standalone-theme, and style switching.
 
 ## Integrations
 
@@ -133,22 +136,26 @@ Theming diagnostics use stable package categories: `Theming`, `Theming.Editor`, 
 
 ## What gets created automatically
 
-`Create Minimal Palette` creates everything needed to start editing colors:
+`Create Theme Family` creates everything needed to start editing both modes:
 
-- A `DeucarianColorPalette` asset for the colors you edit.
-- A `DeucarianTheme` asset that points to the palette.
-- A `DeucarianColorRoleLibrary` asset used by the palette.
+- Independently editable light and dark `DeucarianColorPalette` assets.
+- Light and dark `DeucarianTheme` variants that point to those palettes.
+- A `DeucarianThemeFamily` that pairs the variants.
+- One shared `DeucarianColorRoleLibrary` used by both palettes.
 - Built-in role assets for common UI concepts such as background, surface, primary text, error, and button states.
+- One shared adaptive visual style by default; either concrete variant may override it later.
 
-These are support assets. Normal users mostly edit the palette.
+These are support assets. Normal users mostly edit the two palettes.
 
-Palette-first support assets are generated beside the palette under a `<PaletteName> Support/` folder. If anything is missing later, use `Repair Palette Setup`. It repairs required roles, role library links, palette entries, and theme links without overwriting user-chosen colors unless an entry is missing, null, or still using the package missing-color fallback.
+Family support assets are generated together. If anything is missing later, use `Repair Theme Family`. It repairs required roles, role-library links, palette entries, theme links, and the missing mode without overwriting user-chosen colors unless an entry is missing, null, or still using the package missing-color fallback.
+
+Fresh default families use the versioned Deucarian Brand light/dark token snapshot. Existing standalone themes and the legacy `Create Minimal Palette` API remain available for compatibility and advanced workflows. Wrapping an existing standalone theme requires explicitly identifying it as light or dark; the package never guesses or algorithmically derives its opposite.
 
 Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
 
 ## Runtime default theme
 
-Builds can resolve a project default theme through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its `DefaultTheme` field to the theme that runtime-created providers should use.
+Builds can resolve a project default family through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its default family and explicit mode; new settings default to dark. The legacy standalone default-theme field remains supported.
 
 Runtime code can call:
 
@@ -160,7 +167,7 @@ Runtime code can call:
 
 ## Theme packs
 
-Packages that need their own semantic roles can provide a `DeucarianThemePack` instead of writing package-specific theme menus. A theme pack describes role assets, palette defaults, theme metadata, and the default visual style. Editor tooling can import or repair it with `DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(...)` and can create the runtime settings asset with `CreateOrRepairRuntimeSettings(...)`.
+Packages that need their own semantic roles can provide a `DeucarianThemePack` instead of writing package-specific theme menus. A paired pack describes explicit light/dark role colors, both palette/theme variants, family metadata, and the shared default visual style. Editor tooling can import or repair it with `DeucarianThemePackAssetFactory.CreateOrRepairThemePackAssets(...)` and can create family-aware runtime settings with `CreateOrRepairRuntimeSettings(...)`. Legacy single-theme pack configuration remains supported.
 
 Theme packs should keep product-specific role IDs in the owning package, for example `reportviewer.navigation.active`. Deucarian Theming owns the generic import and repair mechanism; it should not absorb every package's domain-specific role names as built-ins.
 
@@ -171,6 +178,7 @@ Colors and styles are deliberately separate.
 - A `DeucarianColorPalette` decides semantic colors such as surface, primary, error, and text.
 - A `DeucarianThemeStyle` decides how chrome is treated: opacity, tinting, borders, corner radius, and optional generated texture.
 - A `DeucarianTheme` can reference both a palette and a style.
+- A `DeucarianThemeFamily` pairs one light and one dark concrete theme. Generated variants share a style by default, but either theme may override it.
 
 The built-in style presets are:
 
@@ -181,6 +189,8 @@ The built-in style presets are:
 This is a good fit for shared visual language, because packages such as a report viewer can keep their own layout and toolbar behavior while asking Theming for the surface treatment. It would be a bad fit if the style asset started owning product-specific UI structure, navigation rules, or a generic UI framework.
 
 Use the Theme Manager's advanced actions to create the built-in style assets under the default theme folder. Assign one to the active theme, or switch at runtime with `DeucarianThemeProvider.SetStyle`. If no provider style override is set, `DeucarianThemeProvider.CurrentStyle` resolves from the current theme's `VisualStyle`.
+
+`DarkSurfaceTint` and `LightSurfaceTint` describe the tint selected for a visually dark or light incoming surface color. They are source-luminance treatments, not application modes, and they do not generate a palette. Light/dark mode always comes from the active theme family.
 
 UI Toolkit and uGUI helpers are available for package-specific UI code that wants to apply a style without copying preset math:
 
@@ -273,7 +283,7 @@ Typical selectable bindings:
 
 ## Runtime theme switching
 
-Use `DeucarianThemeProvider.SetTheme` to switch themes at runtime.
+Use `DeucarianThemeProvider.SetThemeMode` to switch a paired family at runtime. Operating-system detection and preference persistence stay in application code.
 
 ```csharp
 using Deucarian.Theming;
@@ -282,20 +292,25 @@ using UnityEngine;
 public sealed class ThemeSwitcher : MonoBehaviour
 {
     [SerializeField] private DeucarianThemeProvider provider;
-    [SerializeField] private DeucarianTheme lightTheme;
+    [SerializeField] private DeucarianThemeFamily themeFamily;
+
+    private void Awake()
+    {
+        provider.SetThemeFamily(themeFamily);
+    }
 
     public void UseLightTheme()
     {
-        provider.SetTheme(lightTheme);
+        provider.SetThemeMode(DeucarianThemeMode.Light);
     }
 }
 ```
 
-`DeucarianThemeProvider.SetTheme` reapplies the theme to child components that implement `IDeucarianThemeTarget`. Theme target components listen to their nearest provider while enabled, so they reapply automatically when the provider theme changes.
+`SetThemeFamily` and `SetThemeMode` resolve a concrete variant and reapply it to child components that implement `IDeucarianThemeTarget`. Theme targets therefore keep the existing `DeucarianTheme` contract. `SetTheme` remains available for legacy standalone themes.
 
 ## Advanced workflow
 
-The palette-first workflow is recommended, but the full asset model remains available.
+The paired family workflow is recommended, but the full asset model remains available.
 
 Advanced users can manually create and manage:
 
@@ -303,6 +318,7 @@ Advanced users can manually create and manage:
 - `DeucarianColorRoleLibrary`
 - `DeucarianColorPalette`
 - `DeucarianTheme`
+- `DeucarianThemeFamily`
 - `DeucarianThemeStyle`
 - `DeucarianThemeProvider`
 
@@ -311,9 +327,9 @@ Manual workflow:
 1. Create or refine color role assets with `Assets/Create/Deucarian/Theming/Color Role`.
 2. Add role assets to a `DeucarianColorRoleLibrary`.
 3. Add roles to a `DeucarianColorPalette` and choose the colors.
-4. Link a `DeucarianTheme` to the palette.
+4. Link a light and dark `DeucarianTheme` to their palettes and pair them in a `DeucarianThemeFamily`.
 5. Assign roles to uGUI, TMP, renderer, or UI Toolkit adapters.
-6. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+6. Switch modes by calling `DeucarianThemeProvider.SetThemeMode`.
 
 Game-specific roles are optional. Use the Theme Manager's `Create Game Theme Assets` action only when gameplay, faction, and item rarity roles are useful for the project.
 
@@ -338,7 +354,7 @@ Editor tooling guideline: never create a separate Select button row for an asset
 
 - If UI does not update, confirm a `DeucarianThemeProvider` is present and the target implements or uses a supported theme adapter.
 - If a UI Toolkit binding does not resolve, check selector priority: `ussSelector`, then `elementName`, then `elementClass`, then UIDocument root.
-- If generated palette support assets are missing, use `Repair Palette Setup` instead of recreating role libraries manually.
+- If generated family support assets are missing, use `Repair Theme Family` instead of recreating role libraries or variants manually.
 - If a package needs domain-specific color roles, create a `DeucarianThemePack` in the owning package rather than adding those roles as Theming built-ins.
 
 ## Validation
@@ -349,7 +365,7 @@ Run the shared package validator from the repository root:
 python C:/Repositories/Package-Registry/Tools/deucarian_package_validator.py --registry-root C:/Repositories/Package-Registry --repository-root . --config deucarian-package.json
 ```
 
-Run the package's Runtime and EditMode tests in Unity after code or assembly definition changes. Runtime tests cover palette/theme behavior, and editor tests cover palette-first creation, repair, default asset creation, active asset settings, and manager workflows.
+Run the package's Runtime and EditMode tests in Unity after code or assembly definition changes. Runtime tests cover palette, family, mode, provider, and fallback behavior; editor tests cover paired creation, repair, migration, default assets, active mode settings, theme packs, and manager workflows.
 
 Documentation-only updates should still pass:
 

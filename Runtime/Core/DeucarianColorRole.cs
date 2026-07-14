@@ -14,6 +14,9 @@ namespace Deucarian.Theming
         [SerializeField] private string category = DeucarianColorRoleCategories.Semantic;
         [SerializeField] private string description = string.Empty;
         [SerializeField] private Color defaultColor = Color.white;
+        [SerializeField] private bool hasPairedDefaultColors;
+        [SerializeField] private Color lightDefaultColor = Color.white;
+        [SerializeField] private Color darkDefaultColor = Color.white;
         [SerializeField] private bool isCoreRole;
 
         /// <summary>Stable role identifier, such as <c>deucarian.primary</c>.</summary>
@@ -30,6 +33,15 @@ namespace Deucarian.Theming
 
         /// <summary>Fallback color used when a palette does not override this role.</summary>
         public Color DefaultColor => defaultColor;
+
+        /// <summary>Whether this role defines distinct light and dark fallback colors.</summary>
+        public bool HasPairedDefaultColors => hasPairedDefaultColors;
+
+        /// <summary>Light fallback color, or the legacy default when this role is not paired.</summary>
+        public Color LightDefaultColor => hasPairedDefaultColors ? lightDefaultColor : defaultColor;
+
+        /// <summary>Dark fallback color, or the legacy default when this role is not paired.</summary>
+        public Color DarkDefaultColor => hasPairedDefaultColors ? darkDefaultColor : defaultColor;
 
         /// <summary>Whether this role is part of the built-in Deucarian role set.</summary>
         public bool IsCoreRole => isCoreRole;
@@ -53,8 +65,39 @@ namespace Deucarian.Theming
             category = roleCategory ?? string.Empty;
             description = roleDescription ?? string.Empty;
             defaultColor = roleDefaultColor;
+            hasPairedDefaultColors = false;
+            lightDefaultColor = roleDefaultColor;
+            darkDefaultColor = roleDefaultColor;
             isCoreRole = coreRole;
             NotifyChanged();
+        }
+
+        /// <summary>Configures distinct light and dark defaults while retaining dark as the legacy default.</summary>
+        public void Configure(
+            string roleId,
+            string roleDisplayName,
+            string roleCategory,
+            string roleDescription,
+            Color roleLightDefaultColor,
+            Color roleDarkDefaultColor,
+            bool coreRole)
+        {
+            id = NormalizeId(roleId);
+            displayName = roleDisplayName ?? string.Empty;
+            category = roleCategory ?? string.Empty;
+            description = roleDescription ?? string.Empty;
+            lightDefaultColor = roleLightDefaultColor;
+            darkDefaultColor = roleDarkDefaultColor;
+            defaultColor = roleDarkDefaultColor;
+            hasPairedDefaultColors = true;
+            isCoreRole = coreRole;
+            NotifyChanged();
+        }
+
+        /// <summary>Returns the fallback color for an explicit light or dark mode.</summary>
+        public Color GetDefaultColor(DeucarianThemeMode mode)
+        {
+            return mode == DeucarianThemeMode.Light ? LightDefaultColor : DarkDefaultColor;
         }
 
         /// <summary>Returns a validation warning for this role, or null when the role is valid.</summary>
@@ -140,6 +183,16 @@ namespace Deucarian.Theming
             displayName = displayName ?? string.Empty;
             category = category ?? string.Empty;
             description = description ?? string.Empty;
+            if (hasPairedDefaultColors)
+            {
+                defaultColor = darkDefaultColor;
+            }
+            else
+            {
+                lightDefaultColor = defaultColor;
+                darkDefaultColor = defaultColor;
+            }
+
             NotifyChanged();
         }
 

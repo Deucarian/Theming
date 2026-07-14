@@ -14,6 +14,8 @@ namespace Deucarian.Theming.Editor
         public const string DefaultThemeAssetFolder = DefaultProjectFolder + "/Defaults";
 
         private const string ActiveThemeGuidKey = "Deucarian.Theming.ActiveThemeGuid";
+        private const string ActiveThemeFamilyGuidKey = "Deucarian.Theming.ActiveThemeFamilyGuid";
+        private const string ActiveThemeModeKey = "Deucarian.Theming.ActiveThemeMode";
         private const string ActivePaletteGuidKey = "Deucarian.Theming.ActivePaletteGuid";
         private const string ActiveRoleLibraryGuidKey = "Deucarian.Theming.ActiveRoleLibraryGuid";
         private const string ActiveStyleGuidKey = "Deucarian.Theming.ActiveStyleGuid";
@@ -23,6 +25,28 @@ namespace Deucarian.Theming.Editor
         {
             get => EditorPrefs.GetString(ActiveThemeGuidKey, string.Empty);
             set => SetGuid(ActiveThemeGuidKey, value);
+        }
+
+        public static string ActiveThemeFamilyGuid
+        {
+            get => EditorPrefs.GetString(ActiveThemeFamilyGuidKey, string.Empty);
+            set => SetGuid(ActiveThemeFamilyGuidKey, value);
+        }
+
+        public static DeucarianThemeMode ActiveThemeMode
+        {
+            get
+            {
+                int stored = EditorPrefs.GetInt(ActiveThemeModeKey, (int)DeucarianThemeMode.Dark);
+                return stored == (int)DeucarianThemeMode.Light
+                    ? DeucarianThemeMode.Light
+                    : DeucarianThemeMode.Dark;
+            }
+            set => EditorPrefs.SetInt(
+                ActiveThemeModeKey,
+                value == DeucarianThemeMode.Light
+                    ? (int)DeucarianThemeMode.Light
+                    : (int)DeucarianThemeMode.Dark);
         }
 
         public static string ActivePaletteGuid
@@ -61,6 +85,12 @@ namespace Deucarian.Theming.Editor
         {
             get => LoadAssetByGuid<DeucarianTheme>(ActiveThemeGuid);
             set => ActiveThemeGuid = GetAssetGuid(value);
+        }
+
+        public static DeucarianThemeFamily ActiveThemeFamily
+        {
+            get => LoadAssetByGuid<DeucarianThemeFamily>(ActiveThemeFamilyGuid);
+            set => ActiveThemeFamilyGuid = GetAssetGuid(value);
         }
 
         public static DeucarianColorPalette ActivePalette
@@ -114,6 +144,7 @@ namespace Deucarian.Theming.Editor
         public static void ClearActiveAssets()
         {
             ActiveThemeGuid = string.Empty;
+            ActiveThemeFamilyGuid = string.Empty;
             ActivePaletteGuid = string.Empty;
             ActiveRoleLibraryGuid = string.Empty;
             ActiveStyleGuid = string.Empty;
@@ -122,6 +153,8 @@ namespace Deucarian.Theming.Editor
         public static void ResetToDefaults()
         {
             EditorPrefs.DeleteKey(ActiveThemeGuidKey);
+            EditorPrefs.DeleteKey(ActiveThemeFamilyGuidKey);
+            EditorPrefs.DeleteKey(ActiveThemeModeKey);
             EditorPrefs.DeleteKey(ActivePaletteGuidKey);
             EditorPrefs.DeleteKey(ActiveRoleLibraryGuidKey);
             EditorPrefs.DeleteKey(ActiveStyleGuidKey);

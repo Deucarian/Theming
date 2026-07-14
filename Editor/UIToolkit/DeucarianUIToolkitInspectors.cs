@@ -8,12 +8,19 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianUIToolkitThemeApplier))]
     public sealed class DeucarianUIToolkitThemeApplierEditor : UnityEditor.Editor
     {
+        private readonly DeucarianThemingInspectorListFilterState bindingsFilter =
+            new DeucarianThemingInspectorListFilterState();
         private List<string> validationWarnings = new List<string>();
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawDefaultInspector();
+            DeucarianThemingInspectorListFilter.DrawInspectorProperties(
+                serializedObject,
+                "bindings",
+                DeucarianThemingInspectorListKind.UIToolkitBindings,
+                bindingsFilter,
+                "Search bindings");
             serializedObject.ApplyModifiedProperties();
 
             DeucarianUIToolkitThemeApplier applier = (DeucarianUIToolkitThemeApplier)target;
@@ -29,11 +36,13 @@ namespace Deucarian.Theming.Editor
                 validationWarnings = applier.ValidateBindings();
             }
 
-            DrawBindingSummary(applier);
+            DrawBindingSummary(applier, bindingsFilter.VisibleIndices);
             DrawWarnings(validationWarnings);
         }
 
-        private static void DrawBindingSummary(DeucarianUIToolkitThemeApplier applier)
+        private static void DrawBindingSummary(
+            DeucarianUIToolkitThemeApplier applier,
+            IReadOnlyList<int> visibleIndices)
         {
             IReadOnlyList<DeucarianUIToolkitThemeBinding> bindings = applier.Bindings;
             if (bindings == null || bindings.Count == 0)
@@ -42,29 +51,44 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            for (int i = 0; i < bindings.Count; i++)
+            if (visibleIndices == null)
             {
-                DeucarianUIToolkitThemeBinding binding = bindings[i];
+                return;
+            }
+
+            for (int i = 0; i < visibleIndices.Count; i++)
+            {
+                int bindingIndex = visibleIndices[i];
+                if (bindingIndex < 0 || bindingIndex >= bindings.Count)
+                {
+                    continue;
+                }
+
+                DeucarianUIToolkitThemeBinding binding = bindings[bindingIndex];
                 if (binding == null)
                 {
-                    EditorGUILayout.HelpBox($"Binding {i} is null.", MessageType.Warning);
+                    EditorGUILayout.HelpBox($"Binding {bindingIndex} is null.", MessageType.Warning);
                     continue;
                 }
 
                 string selector = GetSelectorLabel(binding);
                 int matchCount = applier.CountMatches(binding);
-                EditorGUILayout.LabelField($"Binding {i}", $"{selector} -> {binding.StyleProperty} ({matchCount} matches)");
+                EditorGUILayout.LabelField(
+                    $"Binding {bindingIndex}",
+                    $"{selector} -> {binding.StyleProperty} ({matchCount} matches)");
 
                 if (binding.ColorRole == null)
                 {
-                    EditorGUILayout.HelpBox($"Binding {i} has no color role.", MessageType.Warning);
+                    EditorGUILayout.HelpBox($"Binding {bindingIndex} has no color role.", MessageType.Warning);
                 }
 
                 if (string.IsNullOrWhiteSpace(binding.UssSelector)
                     && string.IsNullOrWhiteSpace(binding.ElementName)
                     && string.IsNullOrWhiteSpace(binding.ElementClass))
                 {
-                    EditorGUILayout.HelpBox($"Binding {i} targets the UIDocument root.", MessageType.Info);
+                    EditorGUILayout.HelpBox(
+                        $"Binding {bindingIndex} targets the UIDocument root.",
+                        MessageType.Info);
                 }
             }
         }
@@ -106,12 +130,19 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianUIToolkitThemeVariables))]
     public sealed class DeucarianUIToolkitThemeVariablesEditor : UnityEditor.Editor
     {
+        private readonly DeucarianThemingInspectorListFilterState variableMappingsFilter =
+            new DeucarianThemingInspectorListFilterState();
         private List<string> previewNames = new List<string>();
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawDefaultInspector();
+            DeucarianThemingInspectorListFilter.DrawInspectorProperties(
+                serializedObject,
+                "explicitVariableMappings",
+                DeucarianThemingInspectorListKind.UIToolkitVariableMappings,
+                variableMappingsFilter,
+                "Search variable mappings");
             serializedObject.ApplyModifiedProperties();
 
             DeucarianUIToolkitThemeVariables variables = (DeucarianUIToolkitThemeVariables)target;

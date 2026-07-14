@@ -26,10 +26,18 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianColorRoleLibrary))]
     public sealed class DeucarianColorRoleLibraryEditor : UnityEditor.Editor
     {
+        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
+            new DeucarianThemingInspectorListFilterState();
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawDefaultInspector();
+            DrawPropertiesExcluding(serializedObject, "roles");
+            DeucarianThemingInspectorListFilter.Draw(
+                serializedObject.FindProperty("roles"),
+                DeucarianThemingInspectorListKind.ColorRoleLibraryRoles,
+                rolesFilter,
+                "Search roles");
             serializedObject.ApplyModifiedProperties();
 
             DeucarianColorRoleLibrary library = (DeucarianColorRoleLibrary)target;
@@ -44,11 +52,14 @@ namespace Deucarian.Theming.Editor
                 EditorUtility.SetDirty(library);
             }
 
-            if (GUILayout.Button("Sort By Category Then Display Name"))
+            using (new EditorGUI.DisabledScope(rolesFilter.IsFiltering))
             {
-                Undo.RecordObject(library, "Sort Color Roles");
-                library.SortRolesByCategoryAndName();
-                EditorUtility.SetDirty(library);
+                if (GUILayout.Button("Sort By Category Then Display Name"))
+                {
+                    Undo.RecordObject(library, "Sort Color Roles");
+                    library.SortRolesByCategoryAndName();
+                    EditorUtility.SetDirty(library);
+                }
             }
         }
 
@@ -75,17 +86,25 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianColorPalette))]
     public sealed class DeucarianColorPaletteEditor : UnityEditor.Editor
     {
+        private readonly DeucarianThemingInspectorListFilterState entriesFilter =
+            new DeucarianThemingInspectorListFilterState();
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawDefaultInspector();
+            DrawPropertiesExcluding(serializedObject, "entries");
+            DeucarianThemingInspectorListFilter.Draw(
+                serializedObject.FindProperty("entries"),
+                DeucarianThemingInspectorListKind.ColorPaletteEntries,
+                entriesFilter,
+                "Search palette entries");
             serializedObject.ApplyModifiedProperties();
 
             DeucarianColorPalette palette = (DeucarianColorPalette)target;
             DrawWarnings(palette.GetValidationWarnings());
 
             EditorGUILayout.Space();
-            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null))
+            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null || entriesFilter.IsFiltering))
             {
                 if (GUILayout.Button("Add Missing Roles From Library"))
                 {
@@ -104,11 +123,14 @@ namespace Deucarian.Theming.Editor
                 ThemingLog.Editor.Info($"Removed {removed} null entries from {palette.name}.", palette);
             }
 
-            if (GUILayout.Button("Sort By Category Then Display Name"))
+            using (new EditorGUI.DisabledScope(entriesFilter.IsFiltering))
             {
-                Undo.RecordObject(palette, "Sort Palette Entries");
-                palette.SortEntriesByCategoryAndName();
-                EditorUtility.SetDirty(palette);
+                if (GUILayout.Button("Sort By Category Then Display Name"))
+                {
+                    Undo.RecordObject(palette, "Sort Palette Entries");
+                    palette.SortEntriesByCategoryAndName();
+                    EditorUtility.SetDirty(palette);
+                }
             }
 
             using (new EditorGUI.DisabledScope(palette.Entries.Count == 0))
@@ -158,6 +180,34 @@ namespace Deucarian.Theming.Editor
         }
     }
 
+    [CustomEditor(typeof(DeucarianThemePack))]
+    [CanEditMultipleObjects]
+    public sealed class DeucarianThemePackEditor : UnityEditor.Editor
+    {
+        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
+            new DeucarianThemingInspectorListFilterState();
+
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            if (serializedObject.isEditingMultipleObjects)
+            {
+                DrawDefaultInspector();
+            }
+            else
+            {
+                DrawPropertiesExcluding(serializedObject, "roles");
+                DeucarianThemingInspectorListFilter.Draw(
+                    serializedObject.FindProperty("roles"),
+                    DeucarianThemingInspectorListKind.ThemePackRoles,
+                    rolesFilter,
+                    "Search theme pack roles");
+            }
+
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+
     [CustomEditor(typeof(DeucarianTheme))]
     public sealed class DeucarianThemeEditor : UnityEditor.Editor
     {
@@ -180,6 +230,125 @@ namespace Deucarian.Theming.Editor
                     Selection.activeObject = theme.ColorPalette;
                     EditorGUIUtility.PingObject(theme.ColorPalette);
                 }
+            }
+        }
+    }
+
+    [CustomEditor(typeof(DeucarianThemeFamily))]
+    public sealed class DeucarianThemeFamilyEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            DrawDefaultInspector();
+            serializedObject.ApplyModifiedProperties();
+
+            DeucarianThemeFamily family = (DeucarianThemeFamily)target;
+            if (string.IsNullOrWhiteSpace(family.FamilyId))
+            {
+                EditorGUILayout.HelpBox("Theme family has no stable family ID.", MessageType.Warning);
+            }
+
+            if (string.IsNullOrWhiteSpace(family.DisplayName))
+            {
+                EditorGUILayout.HelpBox("Theme family has no display name.", MessageType.Warning);
+            }
+
+            if (!family.IsComplete)
+            {
+                EditorGUILayout.HelpBox(
+                    "Theme families require both a light theme and a dark theme for authoring. Runtime will fall back to the available variant when one is missing.",
+                    MessageType.Error);
+            }
+
+            EditorGUILayout.Space();
+            EditorGUILayout.BeginHorizontal();
+            DrawSelectThemeButton("Select Light Theme", family.LightTheme);
+            DrawSelectThemeButton("Select Dark Theme", family.DarkTheme);
+            EditorGUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Repair Theme Family"))
+            {
+                DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairThemeFamilySetup(family);
+                DeucarianThemingEditorSettings.ActiveThemeFamily = assets.ThemeFamily;
+            }
+        }
+
+        private static void DrawSelectThemeButton(string label, DeucarianTheme theme)
+        {
+            using (new EditorGUI.DisabledScope(theme == null))
+            {
+                if (GUILayout.Button(label))
+                {
+                    Selection.activeObject = theme;
+                    EditorGUIUtility.PingObject(theme);
+                }
+            }
+        }
+    }
+
+    [CustomEditor(typeof(DeucarianThemeProvider))]
+    public sealed class DeucarianThemeProviderEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            DrawDefaultInspector();
+            serializedObject.ApplyModifiedProperties();
+
+            SerializedProperty standaloneTheme = serializedObject.FindProperty("currentTheme");
+            SerializedProperty familyProperty = serializedObject.FindProperty("currentThemeFamily");
+            DeucarianThemeFamily family = familyProperty != null
+                ? familyProperty.objectReferenceValue as DeucarianThemeFamily
+                : null;
+
+            if (standaloneTheme != null
+                && standaloneTheme.objectReferenceValue != null
+                && family != null)
+            {
+                EditorGUILayout.HelpBox(
+                    "A provider cannot author both a standalone theme and a theme family. Use SetTheme or SetThemeFamily to choose one source.",
+                    MessageType.Error);
+            }
+
+            if (family != null && !family.IsComplete)
+            {
+                EditorGUILayout.HelpBox(
+                    "The assigned theme family is incomplete. Runtime will fall back to its available variant, but authoring requires both light and dark themes.",
+                    MessageType.Error);
+            }
+        }
+    }
+
+    [CustomEditor(typeof(DeucarianThemeRuntimeSettings))]
+    public sealed class DeucarianThemeRuntimeSettingsEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            DrawDefaultInspector();
+            serializedObject.ApplyModifiedProperties();
+
+            SerializedProperty standaloneTheme = serializedObject.FindProperty("defaultTheme");
+            SerializedProperty familyProperty = serializedObject.FindProperty("defaultThemeFamily");
+            DeucarianThemeFamily family = familyProperty != null
+                ? familyProperty.objectReferenceValue as DeucarianThemeFamily
+                : null;
+
+            if (standaloneTheme != null
+                && standaloneTheme.objectReferenceValue != null
+                && family != null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Runtime settings cannot author both a standalone default theme and a default theme family. Configure one source only.",
+                    MessageType.Error);
+            }
+
+            if (family != null && !family.IsComplete)
+            {
+                EditorGUILayout.HelpBox(
+                    "The default theme family is incomplete. Runtime will fall back to its available variant, but authoring requires both light and dark themes.",
+                    MessageType.Error);
             }
         }
     }

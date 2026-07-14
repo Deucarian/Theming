@@ -20,13 +20,69 @@ namespace Deucarian.Theming
             return Resources.Load<DeucarianThemeRuntimeSettings>(DeucarianThemeRuntimeSettings.ResourceName);
         }
 
+        /// <summary>Resolves the configured runtime default family, or null for legacy standalone settings.</summary>
+        public static DeucarianThemeFamily ResolveDefaultThemeFamily()
+        {
+            DeucarianThemeRuntimeSettings settings = LoadSettings();
+            return settings != null ? settings.DefaultThemeFamily : null;
+        }
+
+        /// <summary>Resolves the configured runtime default mode, defaulting to dark when settings are absent.</summary>
+        public static DeucarianThemeMode ResolveDefaultThemeMode()
+        {
+            DeucarianThemeRuntimeSettings settings = LoadSettings();
+            return settings != null ? settings.DefaultThemeMode : DeucarianThemeMode.Dark;
+        }
+
         /// <summary>Resolves the runtime default theme from settings, or null when none is configured.</summary>
         public static DeucarianTheme ResolveDefaultTheme(UnityObject context = null)
         {
-            DeucarianThemeRuntimeSettings settings = LoadSettings();
-            if (settings != null && settings.DefaultTheme != null)
+            return ResolveDefaultThemeFromSettings(LoadSettings(), context);
+        }
+
+        private static DeucarianTheme ResolveDefaultThemeFromSettings(
+            DeucarianThemeRuntimeSettings settings,
+            UnityObject context)
+        {
+            if (settings != null && settings.DefaultThemeFamily != null)
             {
-                return settings.DefaultTheme;
+                DeucarianThemeFamily family = settings.DefaultThemeFamily;
+                if (!family.IsComplete)
+                {
+                    bool missingLight = family.LightTheme == null;
+                    bool missingDark = family.DarkTheme == null;
+                    string missingVariant = missingLight && missingDark
+                        ? "light and dark"
+                        : missingLight ? "light" : "dark";
+                    string fallbackMessage = family.ResolveTheme(settings.DefaultThemeMode) != null
+                        ? " The available variant will be used as a runtime fallback."
+                        : " No runtime fallback is available.";
+                    WarnOnce(
+                        "incomplete-default-family-" + family.GetInstanceID(),
+                        "Deucarian runtime theme family '"
+                        + family.name
+                        + "' is incomplete because its "
+                        + missingVariant
+                        + " theme is not assigned."
+                        + fallbackMessage,
+                        context != null ? context : family);
+                }
+
+                DeucarianTheme familyTheme = family.ResolveTheme(settings.DefaultThemeMode);
+                if (familyTheme != null)
+                {
+                    return familyTheme;
+                }
+            }
+
+            if (settings != null && settings.LegacyDefaultTheme != null)
+            {
+                return settings.LegacyDefaultTheme;
+            }
+
+            if (settings != null && settings.DefaultThemeFamily != null)
+            {
+                return null;
             }
 
             if (settings == null)
@@ -42,7 +98,7 @@ namespace Deucarian.Theming
             {
                 WarnOnce(
                     "missing-default-theme",
-                    "Deucarian runtime theme settings has no default theme assigned.",
+                    "Deucarian runtime theme settings has no usable default theme or theme family assigned.",
                     context);
             }
 
@@ -84,12 +140,32 @@ namespace Deucarian.Theming
                 return false;
             }
 
+            if (provider.CurrentThemeFamily != null)
+            {
+                return provider.CurrentTheme != null;
+            }
+
             if (provider.CurrentTheme != null)
             {
                 return true;
             }
 
-            DeucarianTheme theme = ResolveDefaultTheme(context);
+            return EnsureProviderHasThemeFromSettings(provider, LoadSettings(), context);
+        }
+
+        private static bool EnsureProviderHasThemeFromSettings(
+            DeucarianThemeProvider provider,
+            DeucarianThemeRuntimeSettings settings,
+            UnityObject context)
+        {
+            DeucarianThemeFamily family = settings != null ? settings.DefaultThemeFamily : null;
+            if (family != null && family.ResolveTheme(settings.DefaultThemeMode) != null)
+            {
+                provider.SetThemeFamily(family, settings.DefaultThemeMode);
+                return true;
+            }
+
+            DeucarianTheme theme = ResolveDefaultThemeFromSettings(settings, context);
             if (theme != null)
             {
                 provider.SetTheme(theme);

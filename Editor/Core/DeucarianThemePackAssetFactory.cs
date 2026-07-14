@@ -24,6 +24,21 @@ namespace Deucarian.Theming.Editor
                 throw new ArgumentNullException(nameof(themePack));
             }
 
+            return themePack.SupportsThemeFamily
+                ? CreateOrRepairThemeFamilyPackAssets(themePack, rootFolder, overwriteExisting)
+                : CreateOrRepairLegacyThemePackAssets(themePack, rootFolder, overwriteExisting);
+        }
+
+        private static DeucarianDefaultThemeAssets CreateOrRepairLegacyThemePackAssets(
+            DeucarianThemePack themePack,
+            string rootFolder,
+            bool overwriteExisting = false)
+        {
+            if (themePack == null)
+            {
+                throw new ArgumentNullException(nameof(themePack));
+            }
+
             string normalizedRoot = NormalizeAssetPath(rootFolder);
             ValidateAssetFolder(normalizedRoot, nameof(rootFolder));
             EnsureFolder(normalizedRoot);
@@ -140,6 +155,226 @@ namespace Deucarian.Theming.Editor
             return result;
         }
 
+        private static DeucarianDefaultThemeAssets CreateOrRepairThemeFamilyPackAssets(
+            DeucarianThemePack themePack,
+            string rootFolder,
+            bool overwriteExisting)
+        {
+            string normalizedRoot = NormalizeAssetPath(rootFolder);
+            ValidateAssetFolder(normalizedRoot, nameof(rootFolder));
+            EnsureFolder(normalizedRoot);
+
+            string rolesFolder = CombineAssetPath(normalizedRoot, RolesFolderName);
+            EnsureFolder(rolesFolder);
+
+            DeucarianThemeFamily family = LoadOrCreateAsset(
+                CombineAssetPath(normalizedRoot, themePack.FamilyFileName),
+                () => ScriptableObject.CreateInstance<DeucarianThemeFamily>(),
+                overwriteExisting,
+                out bool familyCreated);
+
+            DeucarianTheme lightTheme;
+            bool lightThemeCreated;
+            if (!overwriteExisting && family.LightTheme != null)
+            {
+                lightTheme = family.LightTheme;
+                lightThemeCreated = false;
+            }
+            else
+            {
+                lightTheme = LoadOrCreateAsset(
+                    CombineAssetPath(normalizedRoot, themePack.LightThemeFileName),
+                    () => ScriptableObject.CreateInstance<DeucarianTheme>(),
+                    overwriteExisting,
+                    out lightThemeCreated);
+            }
+
+            DeucarianTheme darkTheme;
+            bool darkThemeCreated;
+            if (!overwriteExisting && family.DarkTheme != null)
+            {
+                darkTheme = family.DarkTheme;
+                darkThemeCreated = false;
+            }
+            else
+            {
+                darkTheme = LoadOrCreateAsset(
+                    CombineAssetPath(normalizedRoot, themePack.DarkThemeFileName),
+                    () => ScriptableObject.CreateInstance<DeucarianTheme>(),
+                    overwriteExisting,
+                    out darkThemeCreated);
+            }
+
+            DeucarianColorPalette lightPalette;
+            bool lightPaletteCreated;
+            if (!overwriteExisting && lightTheme.ColorPalette != null)
+            {
+                lightPalette = lightTheme.ColorPalette;
+                lightPaletteCreated = false;
+            }
+            else
+            {
+                lightPalette = LoadOrCreateAsset(
+                    CombineAssetPath(normalizedRoot, themePack.LightPaletteFileName),
+                    () => ScriptableObject.CreateInstance<DeucarianColorPalette>(),
+                    overwriteExisting,
+                    out lightPaletteCreated);
+            }
+
+            DeucarianColorPalette darkPalette;
+            bool darkPaletteCreated;
+            if (!overwriteExisting && darkTheme.ColorPalette != null)
+            {
+                darkPalette = darkTheme.ColorPalette;
+                darkPaletteCreated = false;
+            }
+            else
+            {
+                darkPalette = LoadOrCreateAsset(
+                    CombineAssetPath(normalizedRoot, themePack.DarkPaletteFileName),
+                    () => ScriptableObject.CreateInstance<DeucarianColorPalette>(),
+                    overwriteExisting,
+                    out darkPaletteCreated);
+            }
+
+            DeucarianColorRoleLibrary library = !overwriteExisting
+                ? lightPalette.RoleLibrary ?? darkPalette.RoleLibrary
+                : null;
+            bool libraryCreated = false;
+            if (library == null)
+            {
+                library = LoadOrCreateAsset(
+                    CombineAssetPath(normalizedRoot, themePack.RoleLibraryFileName),
+                    () => ScriptableObject.CreateInstance<DeucarianColorRoleLibrary>(),
+                    overwriteExisting,
+                    out libraryCreated);
+            }
+
+            DeucarianDefaultThemeAssets result = new DeucarianDefaultThemeAssets();
+            IReadOnlyList<DeucarianThemePackRole> definitions = themePack.Roles;
+            List<DeucarianThemePackRole> createdDefinitions = new List<DeucarianThemePackRole>();
+            bool libraryChanged = library.RemoveNullRoles() > 0;
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DeucarianThemePackRole definition = definitions[i];
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                DeucarianColorRole role = FindRoleInLibrary(library, definition.Id);
+                bool roleCreated = false;
+                if (role == null)
+                {
+                    string roleAssetName = string.IsNullOrWhiteSpace(definition.AssetName)
+                        ? definition.DisplayName
+                        : definition.AssetName;
+                    role = LoadOrCreateAsset(
+                        CombineAssetPath(rolesFolder, SafeAssetName(roleAssetName) + ".asset"),
+                        () => ScriptableObject.CreateInstance<DeucarianColorRole>(),
+                        overwriteExisting,
+                        out roleCreated);
+                }
+
+                if (RepairPairedRole(role, definition, roleCreated, overwriteExisting))
+                {
+                    EditorUtility.SetDirty(role);
+                }
+
+                libraryChanged |= library.AddRole(role);
+                result.AddRole(role);
+                createdDefinitions.Add(definition);
+            }
+
+            if (libraryChanged || libraryCreated || overwriteExisting)
+            {
+                library.SortRolesByCategoryAndName();
+                EditorUtility.SetDirty(library);
+            }
+
+            RepairPairedPalette(
+                lightPalette,
+                lightPaletteCreated,
+                overwriteExisting,
+                themePack.LightPaletteId,
+                themePack.LightPaletteDisplayName,
+                DeucarianThemeMode.Light,
+                library,
+                result.Roles,
+                createdDefinitions);
+            RepairPairedPalette(
+                darkPalette,
+                darkPaletteCreated,
+                overwriteExisting,
+                themePack.DarkPaletteId,
+                themePack.DarkPaletteDisplayName,
+                DeucarianThemeMode.Dark,
+                library,
+                result.Roles,
+                createdDefinitions);
+
+            string stylesFolder = CombineAssetPath(
+                normalizedRoot,
+                DeucarianDefaultThemeAssetFactory.BuiltinStylesFolderName);
+            IReadOnlyList<DeucarianThemeStyle> styles =
+                DeucarianDefaultThemeAssetFactory.CreateBuiltinThemeStyleAssets(stylesFolder, overwriteExisting);
+            for (int i = 0; i < styles.Count; i++)
+            {
+                result.AddStyle(styles[i]);
+            }
+
+            DeucarianThemeStyle defaultStyle = FindStyleById(styles, themePack.DefaultStyleId);
+            RepairPairedTheme(
+                lightTheme,
+                lightThemeCreated,
+                overwriteExisting,
+                themePack.LightThemeId,
+                themePack.LightThemeDisplayName,
+                lightPalette,
+                defaultStyle);
+            RepairPairedTheme(
+                darkTheme,
+                darkThemeCreated,
+                overwriteExisting,
+                themePack.DarkThemeId,
+                themePack.DarkThemeDisplayName,
+                darkPalette,
+                defaultStyle);
+
+            if (familyCreated
+                || overwriteExisting
+                || family.LightTheme != lightTheme
+                || family.DarkTheme != darkTheme
+                || string.IsNullOrWhiteSpace(family.FamilyId)
+                || string.IsNullOrWhiteSpace(family.DisplayName))
+            {
+                family.Configure(
+                    familyCreated || overwriteExisting || string.IsNullOrWhiteSpace(family.FamilyId)
+                        ? themePack.FamilyId
+                        : family.FamilyId,
+                    familyCreated || overwriteExisting || string.IsNullOrWhiteSpace(family.DisplayName)
+                        ? themePack.FamilyDisplayName
+                        : family.DisplayName,
+                    lightTheme,
+                    darkTheme);
+                EditorUtility.SetDirty(family);
+            }
+
+            result.RoleLibrary = library;
+            result.ThemeFamily = family;
+            result.LightPalette = lightPalette;
+            result.DarkPalette = darkPalette;
+            result.LightTheme = lightTheme;
+            result.DarkTheme = darkTheme;
+            result.Palette = darkPalette;
+            result.Theme = darkTheme;
+            result.DefaultStyle = defaultStyle;
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            return result;
+        }
+
         public static DeucarianThemeRuntimeSettings CreateOrRepairRuntimeSettings(
             string resourcesFolder,
             DeucarianTheme defaultTheme,
@@ -158,9 +393,46 @@ namespace Deucarian.Theming.Editor
                 overwriteExisting,
                 out bool settingsCreated);
 
-            if (settingsCreated || overwriteExisting || settings.DefaultTheme != defaultTheme)
+            if (settingsCreated
+                || overwriteExisting
+                || settings.DefaultThemeFamily != null
+                || settings.LegacyDefaultTheme != defaultTheme)
             {
                 settings.Configure(defaultTheme);
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+            }
+
+            return settings;
+        }
+
+        public static DeucarianThemeRuntimeSettings CreateOrRepairRuntimeSettings(
+            string resourcesFolder,
+            DeucarianThemeFamily defaultThemeFamily,
+            DeucarianThemeMode defaultThemeMode,
+            bool overwriteExisting = false)
+        {
+            string normalizedFolder = NormalizeAssetPath(resourcesFolder);
+            ValidateAssetFolder(normalizedFolder, nameof(resourcesFolder));
+            EnsureFolder(normalizedFolder);
+
+            string settingsPath = CombineAssetPath(
+                normalizedFolder,
+                DeucarianThemeRuntimeSettings.ResourceName + ".asset");
+            DeucarianThemeRuntimeSettings settings = LoadOrCreateAsset(
+                settingsPath,
+                () => ScriptableObject.CreateInstance<DeucarianThemeRuntimeSettings>(),
+                overwriteExisting,
+                out bool settingsCreated);
+
+            if (settingsCreated
+                || overwriteExisting
+                || settings.DefaultThemeFamily != defaultThemeFamily
+                || settings.LegacyDefaultTheme != null
+                || settings.DefaultThemeMode != defaultThemeMode)
+            {
+                settings.Configure(defaultThemeFamily, defaultThemeMode);
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
@@ -199,10 +471,236 @@ namespace Deucarian.Theming.Editor
             return role;
         }
 
+        private static DeucarianColorRole FindRoleInLibrary(
+            DeucarianColorRoleLibrary library,
+            string roleId)
+        {
+            if (library != null && library.TryGetRoleById(roleId, out DeucarianColorRole role))
+            {
+                return role;
+            }
+
+            return null;
+        }
+
+        private static bool RepairPairedRole(
+            DeucarianColorRole role,
+            DeucarianThemePackRole definition,
+            bool roleCreated,
+            bool overwriteExisting)
+        {
+            if (role == null || definition == null)
+            {
+                return false;
+            }
+
+            if (roleCreated || overwriteExisting)
+            {
+                role.Configure(
+                    definition.Id,
+                    definition.DisplayName,
+                    definition.Category,
+                    definition.Description,
+                    definition.LightColor,
+                    definition.DarkColor,
+                    definition.IsCoreRole);
+                return true;
+            }
+
+            Color lightColor;
+            Color darkColor;
+            bool changed = false;
+            if (role.HasPairedDefaultColors)
+            {
+                lightColor = role.LightDefaultColor;
+                darkColor = role.DarkDefaultColor;
+                if (IsPackageMissingColor(lightColor))
+                {
+                    lightColor = definition.LightColor;
+                    changed = true;
+                }
+
+                if (IsPackageMissingColor(darkColor))
+                {
+                    darkColor = definition.DarkColor;
+                    changed = true;
+                }
+            }
+            else
+            {
+                lightColor = definition.LightColor;
+                darkColor = IsPackageMissingColor(role.DefaultColor)
+                    ? definition.DarkColor
+                    : role.DefaultColor;
+                changed = true;
+            }
+
+            string roleId = role.Id;
+            if (!string.Equals(roleId, definition.Id, StringComparison.Ordinal))
+            {
+                roleId = definition.Id;
+                changed = true;
+            }
+
+            string displayName = role.DisplayName;
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = definition.DisplayName;
+                changed = true;
+            }
+
+            string category = role.Category;
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                category = definition.Category;
+                changed = true;
+            }
+
+            if (!changed)
+            {
+                return false;
+            }
+
+            role.Configure(
+                roleId,
+                displayName,
+                category,
+                role.Description,
+                lightColor,
+                darkColor,
+                role.IsCoreRole);
+            return true;
+        }
+
+        private static void RepairPairedPalette(
+            DeucarianColorPalette palette,
+            bool paletteCreated,
+            bool overwriteExisting,
+            string paletteId,
+            string paletteDisplayName,
+            DeucarianThemeMode mode,
+            DeucarianColorRoleLibrary library,
+            IReadOnlyList<DeucarianColorRole> roles,
+            IReadOnlyList<DeucarianThemePackRole> definitions)
+        {
+            bool paletteChanged = paletteCreated || overwriteExisting;
+            if (paletteCreated || overwriteExisting)
+            {
+                palette.Configure(paletteId, paletteDisplayName, library, mode);
+                palette.ClearEntries();
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(palette.PaletteId)
+                    || string.IsNullOrWhiteSpace(palette.DisplayName))
+                {
+                    palette.Configure(
+                        string.IsNullOrWhiteSpace(palette.PaletteId) ? paletteId : palette.PaletteId,
+                        string.IsNullOrWhiteSpace(palette.DisplayName) ? paletteDisplayName : palette.DisplayName,
+                        library,
+                        mode);
+                    paletteChanged = true;
+                }
+                else
+                {
+                    if (palette.RoleLibrary != library)
+                    {
+                        palette.SetRoleLibrary(library);
+                        paletteChanged = true;
+                    }
+
+                    if (!palette.HasThemeMode || palette.ThemeMode != mode)
+                    {
+                        palette.SetThemeMode(mode);
+                        paletteChanged = true;
+                    }
+                }
+
+                paletteChanged |= palette.RemoveNullEntries() > 0;
+            }
+
+            for (int i = 0; i < roles.Count; i++)
+            {
+                DeucarianThemePackRole definition = definitions[i];
+                Color desiredColor = mode == DeucarianThemeMode.Light
+                    ? definition.LightColor
+                    : definition.DarkColor;
+                if (RepairPaletteEntry(
+                        palette,
+                        roles[i],
+                        definition,
+                        desiredColor,
+                        overwriteExisting))
+                {
+                    paletteChanged = true;
+                }
+            }
+
+            if (library != null)
+            {
+                paletteChanged |= palette.AddMissingRolesFromLibrary() > 0;
+            }
+
+            if (paletteChanged)
+            {
+                palette.SortEntriesByCategoryAndName();
+                EditorUtility.SetDirty(palette);
+            }
+        }
+
+        private static void RepairPairedTheme(
+            DeucarianTheme theme,
+            bool themeCreated,
+            bool overwriteExisting,
+            string themeId,
+            string themeDisplayName,
+            DeucarianColorPalette palette,
+            DeucarianThemeStyle defaultStyle)
+        {
+            if (themeCreated
+                || overwriteExisting
+                || theme.ColorPalette != palette
+                || string.IsNullOrWhiteSpace(theme.ThemeId)
+                || string.IsNullOrWhiteSpace(theme.DisplayName))
+            {
+                theme.Configure(
+                    themeCreated || overwriteExisting || string.IsNullOrWhiteSpace(theme.ThemeId)
+                        ? themeId
+                        : theme.ThemeId,
+                    themeCreated || overwriteExisting || string.IsNullOrWhiteSpace(theme.DisplayName)
+                        ? themeDisplayName
+                        : theme.DisplayName,
+                    palette,
+                    theme.VisualStyle);
+                EditorUtility.SetDirty(theme);
+            }
+
+            if (defaultStyle != null && (overwriteExisting || theme.VisualStyle == null))
+            {
+                theme.SetVisualStyle(defaultStyle);
+                EditorUtility.SetDirty(theme);
+            }
+        }
+
         private static bool RepairPaletteEntry(
             DeucarianColorPalette palette,
             DeucarianColorRole role,
             DeucarianThemePackRole definition,
+            bool overwriteExisting)
+        {
+            return RepairPaletteEntry(
+                palette,
+                role,
+                definition,
+                definition != null ? definition.DefaultColor : default(Color),
+                overwriteExisting);
+        }
+
+        private static bool RepairPaletteEntry(
+            DeucarianColorPalette palette,
+            DeucarianColorRole role,
+            DeucarianThemePackRole definition,
+            Color desiredColor,
             bool overwriteExisting)
         {
             if (palette == null || role == null || definition == null)
@@ -215,7 +713,7 @@ namespace Deucarian.Theming.Editor
                 || entryRole == null
                 || IsPackageMissingColor(entryColor))
             {
-                palette.SetColor(role, definition.DefaultColor, definition.Description);
+                palette.SetColor(role, desiredColor, definition.Description);
                 return true;
             }
 

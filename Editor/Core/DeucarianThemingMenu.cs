@@ -15,7 +15,12 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerWindow.OpenWindow();
         }
 
-        [MenuItem(ToolsMenuRoot + "Create Minimal Palette", priority = 105)]
+        [MenuItem(ToolsMenuRoot + "Create Theme Family", priority = 105)]
+        public static void CreateThemeFamily()
+        {
+            DeucarianThemingMenuActions.CreateThemeFamilyFromSavePanel();
+        }
+
         public static void CreateMinimalPalette()
         {
             DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel();
@@ -24,7 +29,7 @@ namespace Deucarian.Theming.Editor
         public static void CreateMissingDefaultThemeAssets()
         {
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
-            DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+            DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
         }
 
         public static void CreateGameThemeAssets()
