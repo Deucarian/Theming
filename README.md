@@ -77,6 +77,8 @@ Dark Palette  -> Dark Theme  --+
 
 The two palettes are the main editable assets. Concrete theme variants, the family, and the shared role library are support assets.
 
+Long theming lists in palette, role-library, theme-pack, and UI Toolkit inspectors include case-insensitive search and role-category filtering. Multiple search terms are combined, matching entries remain directly editable and removable, and clearing the filter restores Unity's normal add and reorder controls. Filtering is inspector-only and never changes asset ordering or values by itself.
+
 Deucarian package tools live under `Tools/Deucarian/<PackageName>/...`.
 The Theming menu is intentionally limited to quick entry points:
 
