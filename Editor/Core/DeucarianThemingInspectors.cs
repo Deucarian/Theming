@@ -26,18 +26,10 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianColorRoleLibrary))]
     public sealed class DeucarianColorRoleLibraryEditor : UnityEditor.Editor
     {
-        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, "roles");
-            DeucarianThemingInspectorListFilter.Draw(
-                serializedObject.FindProperty("roles"),
-                DeucarianThemingInspectorListKind.ColorRoleLibraryRoles,
-                rolesFilter,
-                "Search roles");
+            DrawDefaultInspector();
             serializedObject.ApplyModifiedProperties();
 
             DeucarianColorRoleLibrary library = (DeucarianColorRoleLibrary)target;
@@ -52,14 +44,11 @@ namespace Deucarian.Theming.Editor
                 EditorUtility.SetDirty(library);
             }
 
-            using (new EditorGUI.DisabledScope(rolesFilter.IsFiltering))
+            if (GUILayout.Button("Sort By Category Then Display Name"))
             {
-                if (GUILayout.Button("Sort By Category Then Display Name"))
-                {
-                    Undo.RecordObject(library, "Sort Color Roles");
-                    library.SortRolesByCategoryAndName();
-                    EditorUtility.SetDirty(library);
-                }
+                Undo.RecordObject(library, "Sort Color Roles");
+                library.SortRolesByCategoryAndName();
+                EditorUtility.SetDirty(library);
             }
         }
 
@@ -86,25 +75,17 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianColorPalette))]
     public sealed class DeucarianColorPaletteEditor : UnityEditor.Editor
     {
-        private readonly DeucarianThemingInspectorListFilterState entriesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, "entries");
-            DeucarianThemingInspectorListFilter.Draw(
-                serializedObject.FindProperty("entries"),
-                DeucarianThemingInspectorListKind.ColorPaletteEntries,
-                entriesFilter,
-                "Search palette entries");
+            DrawDefaultInspector();
             serializedObject.ApplyModifiedProperties();
 
             DeucarianColorPalette palette = (DeucarianColorPalette)target;
             DrawWarnings(palette.GetValidationWarnings());
 
             EditorGUILayout.Space();
-            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null || entriesFilter.IsFiltering))
+            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null))
             {
                 if (GUILayout.Button("Add Missing Roles From Library"))
                 {
@@ -123,14 +104,11 @@ namespace Deucarian.Theming.Editor
                 ThemingLog.Editor.Info($"Removed {removed} null entries from {palette.name}.", palette);
             }
 
-            using (new EditorGUI.DisabledScope(entriesFilter.IsFiltering))
+            if (GUILayout.Button("Sort By Category Then Display Name"))
             {
-                if (GUILayout.Button("Sort By Category Then Display Name"))
-                {
-                    Undo.RecordObject(palette, "Sort Palette Entries");
-                    palette.SortEntriesByCategoryAndName();
-                    EditorUtility.SetDirty(palette);
-                }
+                Undo.RecordObject(palette, "Sort Palette Entries");
+                palette.SortEntriesByCategoryAndName();
+                EditorUtility.SetDirty(palette);
             }
 
             using (new EditorGUI.DisabledScope(palette.Entries.Count == 0))
@@ -177,34 +155,6 @@ namespace Deucarian.Theming.Editor
             {
                 EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
             }
-        }
-    }
-
-    [CustomEditor(typeof(DeucarianThemePack))]
-    [CanEditMultipleObjects]
-    public sealed class DeucarianThemePackEditor : UnityEditor.Editor
-    {
-        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-            if (serializedObject.isEditingMultipleObjects)
-            {
-                DrawDefaultInspector();
-            }
-            else
-            {
-                DrawPropertiesExcluding(serializedObject, "roles");
-                DeucarianThemingInspectorListFilter.Draw(
-                    serializedObject.FindProperty("roles"),
-                    DeucarianThemingInspectorListKind.ThemePackRoles,
-                    rolesFilter,
-                    "Search theme pack roles");
-            }
-
-            serializedObject.ApplyModifiedProperties();
         }
     }
 

@@ -2,7 +2,6 @@
 
 ## Unreleased
 
-- Added searchable, category-filtered inspector lists for palettes, role libraries, theme packs, and UI Toolkit theme mappings.
 - Added backward-compatible light/dark `DeucarianThemeFamily` assets, explicit provider mode switching, family-aware runtime defaults, and resilient incomplete-family fallback.
 - Reworked primary authoring around paired light/dark palette and theme generation, preview, repair, migration, and paired theme packs.
 - Added versioned Deucarian Brand token defaults without introducing a Brand package dependency.
