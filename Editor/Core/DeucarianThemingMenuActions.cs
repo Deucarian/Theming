@@ -60,6 +60,80 @@ namespace Deucarian.Theming.Editor
             return result;
         }
 
+        /// <summary>
+        /// Loads the source-controlled runtime settings used as the project theme default.
+        /// </summary>
+        public static DeucarianThemeRuntimeSettings ResolveProjectRuntimeSettings()
+        {
+            return DeucarianThemeRuntimeResolver.LoadSettings();
+        }
+
+        /// <summary>
+        /// Populates an empty or invalid local preview selection from the project runtime default.
+        /// Existing valid family selections remain local editor overrides.
+        /// </summary>
+        public static bool TryHydrateActiveAssetsFromProjectDefault()
+        {
+            return TryHydrateActiveAssetsFromProjectDefault(ResolveProjectRuntimeSettings());
+        }
+
+        /// <summary>
+        /// Populates an empty or invalid local preview selection from the supplied runtime settings.
+        /// </summary>
+        public static bool TryHydrateActiveAssetsFromProjectDefault(
+            DeucarianThemeRuntimeSettings settings)
+        {
+            if (DeucarianThemingEditorSettings.ActiveThemeFamily != null
+                || settings == null
+                || settings.DefaultThemeFamily == null)
+            {
+                return false;
+            }
+
+            SetActiveThemeFamilySelection(settings.DefaultThemeFamily, settings.DefaultThemeMode);
+            return true;
+        }
+
+        /// <summary>
+        /// Writes the active preview family and mode to the source-controlled runtime settings asset.
+        /// </summary>
+        public static bool SetActiveThemeFamilyAsProjectDefault()
+        {
+            return SetActiveThemeFamilyAsProjectDefault(ResolveProjectRuntimeSettings());
+        }
+
+        /// <summary>
+        /// Writes the active preview family and mode to the supplied runtime settings asset.
+        /// </summary>
+        public static bool SetActiveThemeFamilyAsProjectDefault(
+            DeucarianThemeRuntimeSettings settings)
+        {
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (settings == null)
+            {
+                ThemingLog.Editor.Warning(
+                    "No Deucarian runtime theme settings were found. Create an asset named '"
+                    + DeucarianThemeRuntimeSettings.ResourceName
+                    + ".asset' in a Resources folder before setting the project default.");
+                return false;
+            }
+
+            if (family == null)
+            {
+                ThemingLog.Editor.Warning("Choose an active Deucarian theme family before setting the project default.");
+                return false;
+            }
+
+            Undo.RecordObject(settings, "Set Deucarian Project Theme Default");
+            settings.Configure(family, DeucarianThemingEditorSettings.ActiveThemeMode);
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            ThemingLog.Editor.Info(
+                $"Set '{family.name}' ({DeucarianThemingEditorSettings.ActiveThemeMode}) as the Deucarian project theme default.",
+                settings);
+            return true;
+        }
+
         public static IReadOnlyList<T> FindAssets<T>(string[] searchFolders = null)
             where T : UnityEngine.Object
         {

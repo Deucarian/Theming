@@ -157,6 +157,8 @@ Default generic assets can still be created from the Theme Manager. Game-specifi
 
 Builds can resolve a project default family through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its default family and explicit mode; new settings default to dark. The legacy standalone default-theme field remains supported.
 
+The Theme Manager hydrates an empty local preview from this source-controlled project default. Valid editor preview selections remain machine-local overrides until **Set Active as Project Default** is used. Its optional starter-asset generator is separate from project-default health, so product-specific theme families do not need generically named duplicate assets.
+
 Runtime code can call:
 
 - `DeucarianThemeRuntimeResolver.ResolveDefaultTheme(...)`

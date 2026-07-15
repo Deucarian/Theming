@@ -112,6 +112,76 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void ProjectDefaultHydratesEveryActiveFamilyAssetWhenLocalPreviewIsEmpty()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/ProjectDefaultFamily.asset");
+            DeucarianThemeRuntimeSettings settings = CreateAsset<DeucarianThemeRuntimeSettings>(
+                testRoot + "/RuntimeSettings.asset");
+            settings.Configure(assets.ThemeFamily, DeucarianThemeMode.Light);
+            DeucarianThemingEditorSettings.ClearActiveAssets();
+
+            Assert.IsTrue(DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault(settings));
+            Assert.AreSame(assets.ThemeFamily, DeucarianThemingEditorSettings.ActiveThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Light, DeucarianThemingEditorSettings.ActiveThemeMode);
+            Assert.AreSame(assets.LightTheme, DeucarianThemingEditorSettings.ActiveTheme);
+            Assert.AreSame(assets.LightPalette, DeucarianThemingEditorSettings.ActivePalette);
+            Assert.AreSame(assets.RoleLibrary, DeucarianThemingEditorSettings.ActiveRoleLibrary);
+            Assert.AreSame(assets.LightTheme.VisualStyle, DeucarianThemingEditorSettings.ActiveStyle);
+        }
+
+        [Test]
+        public void ProjectDefaultHydrationPreservesValidLocalFamilyPreview()
+        {
+            DeucarianDefaultThemeAssets projectAssets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/ProjectFamily.asset");
+            DeucarianDefaultThemeAssets localAssets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/LocalFamily.asset");
+            DeucarianThemeRuntimeSettings settings = CreateAsset<DeucarianThemeRuntimeSettings>(
+                testRoot + "/RuntimeSettings.asset");
+            settings.Configure(projectAssets.ThemeFamily, DeucarianThemeMode.Light);
+            DeucarianThemingMenuActions.SetActiveThemeFamilyAndApply(localAssets.ThemeFamily);
+
+            Assert.IsFalse(DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault(settings));
+            Assert.AreSame(localAssets.ThemeFamily, DeucarianThemingEditorSettings.ActiveThemeFamily);
+            Assert.AreSame(localAssets.DarkTheme, DeucarianThemingEditorSettings.ActiveTheme);
+        }
+
+        [Test]
+        public void SetActiveAsProjectDefaultChangesRuntimeSettingsOnlyWhenInvoked()
+        {
+            DeucarianDefaultThemeAssets originalAssets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/OriginalFamily.asset");
+            DeucarianDefaultThemeAssets activeAssets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/ActiveFamily.asset");
+            DeucarianThemeRuntimeSettings settings = CreateAsset<DeucarianThemeRuntimeSettings>(
+                testRoot + "/RuntimeSettings.asset");
+            settings.Configure(originalAssets.ThemeFamily, DeucarianThemeMode.Dark);
+            DeucarianThemingMenuActions.SetActiveThemeFamilyAndApply(activeAssets.ThemeFamily);
+            DeucarianThemingMenuActions.SetActiveThemeModeAndApply(DeucarianThemeMode.Light);
+
+            Assert.AreSame(originalAssets.ThemeFamily, settings.DefaultThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Dark, settings.DefaultThemeMode);
+            Assert.IsTrue(DeucarianThemingMenuActions.SetActiveThemeFamilyAsProjectDefault(settings));
+            Assert.AreSame(activeAssets.ThemeFamily, settings.DefaultThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Light, settings.DefaultThemeMode);
+        }
+
+        [Test]
+        public void MissingProjectRuntimeSettingsDoesNotCreateAssets()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/ActiveFamily.asset");
+            DeucarianThemingMenuActions.SetActiveThemeFamilyAndApply(assets.ThemeFamily);
+            int assetCountBefore = AssetDatabase.FindAssets(string.Empty, new[] { testRoot }).Length;
+
+            Assert.IsFalse(DeucarianThemingMenuActions.SetActiveThemeFamilyAsProjectDefault(null));
+            Assert.AreEqual(
+                assetCountBefore,
+                AssetDatabase.FindAssets(string.Empty, new[] { testRoot }).Length);
+        }
+
+        [Test]
         public void FindExistingAssetsReturnsFamiliesThemesPalettesAndRoleLibraries()
         {
             DeucarianThemeFamily family = CreateAsset<DeucarianThemeFamily>(testRoot + "/ThemeFamily.asset");

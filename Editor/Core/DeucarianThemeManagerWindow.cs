@@ -71,7 +71,8 @@ namespace Deucarian.Theming.Editor
                 "Create, discover, select, and apply runtime theme assets.");
 
             DrawActiveAssetFields();
-            DrawDefaultAssetsSection();
+            DrawProjectThemeDefaultSection();
+            DrawStarterAssetsSection();
             DrawAssetSummary();
             DrawAdvancedSection();
             DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", "0.4.2");
@@ -191,9 +192,81 @@ namespace Deucarian.Theming.Editor
             DeucarianEditorChrome.EndSection();
         }
 
-        private void DrawDefaultAssetsSection()
+        private void DrawProjectThemeDefaultSection()
         {
-            DeucarianEditorChrome.DrawSectionHeader("Default Assets");
+            DeucarianEditorChrome.DrawSectionHeader("Project Theme Default");
+            DeucarianEditorChrome.BeginSection();
+
+            DeucarianThemeRuntimeSettings settings =
+                DeucarianThemingMenuActions.ResolveProjectRuntimeSettings();
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.ObjectField(
+                    "Runtime Settings",
+                    settings,
+                    typeof(DeucarianThemeRuntimeSettings),
+                    false);
+                EditorGUILayout.ObjectField(
+                    "Default Family",
+                    settings != null ? settings.DefaultThemeFamily : null,
+                    typeof(DeucarianThemeFamily),
+                    false);
+                EditorGUILayout.EnumPopup(
+                    "Default Mode",
+                    settings != null ? settings.DefaultThemeMode : DeucarianThemeMode.Dark);
+            }
+
+            if (settings == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "No runtime settings asset was found. Create '"
+                    + DeucarianThemeRuntimeSettings.ResourceName
+                    + ".asset' in a Resources folder to source-control the project default.",
+                    MessageType.Warning);
+            }
+            else if (settings.DefaultThemeFamily == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Runtime settings are present, but no default theme family is assigned.",
+                    MessageType.Warning);
+            }
+            else if (!settings.DefaultThemeFamily.IsComplete)
+            {
+                EditorGUILayout.HelpBox(
+                    "The project default family is incomplete. Assign both light and dark themes before shipping.",
+                    MessageType.Warning);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Status", "Project theme default ready");
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(
+                       settings == null || DeucarianThemingEditorSettings.ActiveThemeFamily == null))
+            {
+                if (GUILayout.Button("Set Active as Project Default", GUILayout.Width(220)))
+                {
+                    DeucarianThemingMenuActions.SetActiveThemeFamilyAsProjectDefault(settings);
+                    RefreshAssets(false);
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(settings == null))
+            {
+                if (GUILayout.Button("Select Settings", GUILayout.Width(112)))
+                {
+                    DeucarianThemingMenuActions.SelectAndPing(settings);
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+            DeucarianEditorChrome.EndSection();
+        }
+
+        private void DrawStarterAssetsSection()
+        {
+            DeucarianEditorChrome.DrawSectionHeader("Starter Assets (Optional)");
             DeucarianEditorChrome.BeginSection();
 
             EditorGUI.BeginChangeCheck();
@@ -211,13 +284,13 @@ namespace Deucarian.Theming.Editor
             }
 
             bool defaultsReady = AreDefaultAssetsReady();
-            EditorGUILayout.LabelField("Status", defaultsReady ? "Default assets ready" : "Missing defaults");
+            EditorGUILayout.LabelField("Status", defaultsReady ? "Starter assets ready" : "Not created");
 
             if (!defaultsReady)
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Create Missing Defaults", GUILayout.Width(172)))
+                if (GUILayout.Button("Create Starter Assets", GUILayout.Width(172)))
                 {
                     DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
                     DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
@@ -519,6 +592,7 @@ namespace Deucarian.Theming.Editor
 
         private void RefreshAssets(bool autoSelectSingles)
         {
+            DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault();
             searchResult = DeucarianThemingMenuActions.FindExistingAssets(null, autoSelectSingles);
             Repaint();
         }
