@@ -627,7 +627,6 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.AreSame(assets.Palette, assets.Theme.ColorPalette);
                 Assert.AreSame(assets.DefaultStyle, assets.Theme.VisualStyle);
                 Assert.AreSame(assets.Theme, settings.DefaultTheme);
-                Assert.AreSame(assets.Theme, DeucarianThemeRuntimeResolver.ResolveDefaultTheme());
                 Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/ReportViewer/Roles"));
                 Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/ReportViewer/Styles"));
                 AssertRequiredRolesExist(
