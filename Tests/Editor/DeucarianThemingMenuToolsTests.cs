@@ -423,7 +423,13 @@ namespace Deucarian.Theming.Editor.Tests
 
             try
             {
-                Assert.IsTrue(DeucarianThemeRuntimeResolver.EnsureProviderHasTheme(provider, provider));
+                MethodInfo ensureFromSettings = typeof(DeucarianThemeRuntimeResolver).GetMethod(
+                    "EnsureProviderHasThemeFromSettings",
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.NotNull(ensureFromSettings);
+                Assert.IsTrue((bool)ensureFromSettings.Invoke(
+                    null,
+                    new object[] { provider, settings, provider }));
                 Assert.IsNull(provider.CurrentThemeFamily);
                 Assert.AreSame(legacyTheme, provider.CurrentTheme);
             }
