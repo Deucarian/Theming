@@ -60,6 +60,10 @@ namespace Deucarian.Theming.Editor
         public const string DefaultRootFolder = "Assets/Deucarian/Theming/Defaults";
         public const string GameRootFolder = "Assets/Deucarian/Theming/Game";
         public const string BuiltinStylesFolderName = "Styles";
+        public const string BuiltinStyleComponentsFolderName = "Components";
+        public const string BuiltinSurfaceProfilesFolderName = "Surfaces";
+        public const string BuiltinShapeProfilesFolderName = "Shapes";
+        public const string BuiltinStrokeProfilesFolderName = "Strokes";
         public const string MinimalPaletteRootFolder = "Assets/Deucarian/Theming";
         public const string MinimalPaletteFileName = "DeucarianMinimalPalette.asset";
         public const string MinimalThemeFileName = "DeucarianMinimalTheme.asset";
@@ -166,6 +170,21 @@ namespace Deucarian.Theming.Editor
             }
 
             EnsureFolder(normalizedRoot);
+            IReadOnlyList<DeucarianThemeSurfaceProfile> surfaces = CreateBuiltinSurfaceProfiles(
+                CombineAssetPath(
+                    CombineAssetPath(normalizedRoot, BuiltinStyleComponentsFolderName),
+                    BuiltinSurfaceProfilesFolderName),
+                overwriteExisting);
+            IReadOnlyList<DeucarianThemeShapeProfile> shapes = CreateBuiltinShapeProfiles(
+                CombineAssetPath(
+                    CombineAssetPath(normalizedRoot, BuiltinStyleComponentsFolderName),
+                    BuiltinShapeProfilesFolderName),
+                overwriteExisting);
+            IReadOnlyList<DeucarianThemeStrokeProfile> strokes = CreateBuiltinStrokeProfiles(
+                CombineAssetPath(
+                    CombineAssetPath(normalizedRoot, BuiltinStyleComponentsFolderName),
+                    BuiltinStrokeProfilesFolderName),
+                overwriteExisting);
             IReadOnlyList<DeucarianThemeStylePreset> definitions = DeucarianThemeStylePresets.BuiltinStyles;
             List<DeucarianThemeStyle> styles = new List<DeucarianThemeStyle>();
 
@@ -179,9 +198,13 @@ namespace Deucarian.Theming.Editor
                     overwriteExisting,
                     out bool styleCreated);
 
+                DeucarianThemeSurfaceProfile surface = FindSurfaceProfile(surfaces, definition.SurfaceProfileId);
+                DeucarianThemeShapeProfile shape = FindShapeProfile(shapes, definition.ShapeProfileId);
+                DeucarianThemeStrokeProfile stroke = FindStrokeProfile(strokes, definition.StrokeProfileId);
                 if (styleCreated || overwriteExisting || ShouldRepairGeneratedStyle(style, definition))
                 {
                     definition.Configure(style);
+                    style.SetComposition(surface, shape, stroke, definition.Density);
                     EditorUtility.SetDirty(style);
                 }
 
@@ -191,6 +214,90 @@ namespace Deucarian.Theming.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return styles;
+        }
+
+        private static IReadOnlyList<DeucarianThemeSurfaceProfile> CreateBuiltinSurfaceProfiles(
+            string folder,
+            bool overwriteExisting)
+        {
+            EnsureFolder(folder);
+            IReadOnlyList<DeucarianThemeSurfaceProfilePreset> definitions =
+                DeucarianThemePresentationProfilePresets.BuiltinSurfaces;
+            List<DeucarianThemeSurfaceProfile> profiles = new List<DeucarianThemeSurfaceProfile>();
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DeucarianThemeSurfaceProfilePreset definition = definitions[i];
+                DeucarianThemeSurfaceProfile profile = LoadOrCreateAsset(
+                    CombineAssetPath(folder, definition.FileName),
+                    () => ScriptableObject.CreateInstance<DeucarianThemeSurfaceProfile>(),
+                    overwriteExisting,
+                    out bool created);
+                if (created || overwriteExisting || ShouldRepairSurfaceProfile(profile, definition))
+                {
+                    definition.Configure(profile);
+                    EditorUtility.SetDirty(profile);
+                }
+
+                profiles.Add(profile);
+            }
+
+            return profiles;
+        }
+
+        private static IReadOnlyList<DeucarianThemeShapeProfile> CreateBuiltinShapeProfiles(
+            string folder,
+            bool overwriteExisting)
+        {
+            EnsureFolder(folder);
+            IReadOnlyList<DeucarianThemeShapeProfilePreset> definitions =
+                DeucarianThemePresentationProfilePresets.BuiltinShapes;
+            List<DeucarianThemeShapeProfile> profiles = new List<DeucarianThemeShapeProfile>();
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DeucarianThemeShapeProfilePreset definition = definitions[i];
+                DeucarianThemeShapeProfile profile = LoadOrCreateAsset(
+                    CombineAssetPath(folder, definition.FileName),
+                    () => ScriptableObject.CreateInstance<DeucarianThemeShapeProfile>(),
+                    overwriteExisting,
+                    out bool created);
+                if (created || overwriteExisting || ShouldRepairShapeProfile(profile, definition))
+                {
+                    definition.Configure(profile);
+                    EditorUtility.SetDirty(profile);
+                }
+
+                profiles.Add(profile);
+            }
+
+            return profiles;
+        }
+
+        private static IReadOnlyList<DeucarianThemeStrokeProfile> CreateBuiltinStrokeProfiles(
+            string folder,
+            bool overwriteExisting)
+        {
+            EnsureFolder(folder);
+            IReadOnlyList<DeucarianThemeStrokeProfilePreset> definitions =
+                DeucarianThemePresentationProfilePresets.BuiltinStrokes;
+            List<DeucarianThemeStrokeProfile> profiles = new List<DeucarianThemeStrokeProfile>();
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                DeucarianThemeStrokeProfilePreset definition = definitions[i];
+                DeucarianThemeStrokeProfile profile = LoadOrCreateAsset(
+                    CombineAssetPath(folder, definition.FileName),
+                    () => ScriptableObject.CreateInstance<DeucarianThemeStrokeProfile>(),
+                    overwriteExisting,
+                    out bool created);
+                if (created || overwriteExisting || ShouldRepairStrokeProfile(profile, definition))
+                {
+                    definition.Configure(profile);
+                    EditorUtility.SetDirty(profile);
+                }
+
+                profiles.Add(profile);
+            }
+
+            return profiles;
         }
 
         /// <summary>
@@ -1454,7 +1561,89 @@ namespace Deucarian.Theming.Editor
 
             return !string.Equals(style.StyleId, definition.Id, StringComparison.Ordinal)
                 || string.IsNullOrWhiteSpace(style.DisplayName)
-                || string.IsNullOrWhiteSpace(style.Description);
+                || string.IsNullOrWhiteSpace(style.Description)
+                || style.SurfaceProfile == null
+                || !string.Equals(style.SurfaceProfile.ProfileId, definition.SurfaceProfileId, StringComparison.Ordinal)
+                || style.ShapeProfile == null
+                || !string.Equals(style.ShapeProfile.ProfileId, definition.ShapeProfileId, StringComparison.Ordinal)
+                || style.StrokeProfile == null
+                || !string.Equals(style.StrokeProfile.ProfileId, definition.StrokeProfileId, StringComparison.Ordinal)
+                || style.Density != definition.Density;
+        }
+
+        private static bool ShouldRepairSurfaceProfile(
+            DeucarianThemeSurfaceProfile profile,
+            DeucarianThemeSurfaceProfilePreset definition)
+        {
+            return profile != null
+                && (!string.Equals(profile.ProfileId, definition.Id, StringComparison.Ordinal)
+                    || string.IsNullOrWhiteSpace(profile.DisplayName)
+                    || string.IsNullOrWhiteSpace(profile.Description));
+        }
+
+        private static bool ShouldRepairShapeProfile(
+            DeucarianThemeShapeProfile profile,
+            DeucarianThemeShapeProfilePreset definition)
+        {
+            return profile != null
+                && (!string.Equals(profile.ProfileId, definition.Id, StringComparison.Ordinal)
+                    || string.IsNullOrWhiteSpace(profile.DisplayName)
+                    || string.IsNullOrWhiteSpace(profile.Description));
+        }
+
+        private static bool ShouldRepairStrokeProfile(
+            DeucarianThemeStrokeProfile profile,
+            DeucarianThemeStrokeProfilePreset definition)
+        {
+            return profile != null
+                && (!string.Equals(profile.ProfileId, definition.Id, StringComparison.Ordinal)
+                    || string.IsNullOrWhiteSpace(profile.DisplayName)
+                    || string.IsNullOrWhiteSpace(profile.Description));
+        }
+
+        private static DeucarianThemeSurfaceProfile FindSurfaceProfile(
+            IReadOnlyList<DeucarianThemeSurfaceProfile> profiles,
+            string id)
+        {
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                if (profiles[i] != null && string.Equals(profiles[i].ProfileId, id, StringComparison.Ordinal))
+                {
+                    return profiles[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static DeucarianThemeShapeProfile FindShapeProfile(
+            IReadOnlyList<DeucarianThemeShapeProfile> profiles,
+            string id)
+        {
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                if (profiles[i] != null && string.Equals(profiles[i].ProfileId, id, StringComparison.Ordinal))
+                {
+                    return profiles[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static DeucarianThemeStrokeProfile FindStrokeProfile(
+            IReadOnlyList<DeucarianThemeStrokeProfile> profiles,
+            string id)
+        {
+            for (int i = 0; i < profiles.Count; i++)
+            {
+                if (profiles[i] != null && string.Equals(profiles[i].ProfileId, id, StringComparison.Ordinal))
+                {
+                    return profiles[i];
+                }
+            }
+
+            return null;
         }
 
         private static bool PaletteHasEntryForRole(DeucarianColorPalette palette, DeucarianColorRole role)

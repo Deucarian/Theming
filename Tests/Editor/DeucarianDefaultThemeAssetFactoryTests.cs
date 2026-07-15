@@ -124,6 +124,9 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.IsTrue(AssetDatabase.Contains(assets.DefaultStyle));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Roles"));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Styles"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Styles/Components/Surfaces"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Styles/Components/Shapes"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Defaults/Styles/Components/Strokes"));
             AssertRequiredRolesExist(assets.RoleLibrary, RequiredMinimalRoleIds);
             AssertRequiredStylesExist(assets.Styles, RequiredStyleIds);
             Assert.IsTrue(assets.ThemeFamily.IsComplete);
@@ -169,6 +172,9 @@ namespace Deucarian.Theming.Editor.Tests
             AssertStyle(styles, DeucarianThemeStyleIds.FrostedGlass, DeucarianThemeStyleSurfaceTreatment.FrostedGlass, true);
             AssertStyle(styles, DeucarianThemeStyleIds.MaterialDark, DeucarianThemeStyleSurfaceTreatment.Material, false);
             AssertStyle(styles, DeucarianThemeStyleIds.FluentAcrylic, DeucarianThemeStyleSurfaceTreatment.FluentAcrylic, true);
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Surfaces"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Shapes"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Strokes"));
         }
 
         [Test]
@@ -1073,6 +1079,35 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.AreEqual(treatment, style.SurfaceTreatment);
             Assert.AreEqual(usesTexture, style.UseGeneratedNoiseTexture);
             Assert.IsFalse(string.IsNullOrWhiteSpace(style.Description));
+            Assert.IsTrue(style.IsComposed, styleId);
+            Assert.NotNull(style.SurfaceProfile, styleId);
+            Assert.NotNull(style.ShapeProfile, styleId);
+            Assert.NotNull(style.StrokeProfile, styleId);
+
+            if (styleId == DeucarianThemeStyleIds.FrostedGlass)
+            {
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Surface.FrostedGlass, style.SurfaceProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Shape.Rounded, style.ShapeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Stroke.Frosted, style.StrokeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemeDensity.Comfortable, style.Density);
+                Assert.AreEqual(16f, style.CornerRadius);
+            }
+            else if (styleId == DeucarianThemeStyleIds.FluentAcrylic)
+            {
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Surface.FluentAcrylic, style.SurfaceProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Shape.Soft, style.ShapeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Stroke.Acrylic, style.StrokeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemeDensity.Standard, style.Density);
+                Assert.AreEqual(8f, style.CornerRadius);
+            }
+            else if (styleId == DeucarianThemeStyleIds.MaterialDark)
+            {
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Surface.Material, style.SurfaceProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Shape.Tight, style.ShapeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemePresentationProfileIds.Stroke.Material, style.StrokeProfile.ProfileId);
+                Assert.AreEqual(DeucarianThemeDensity.Compact, style.Density);
+                Assert.AreEqual(4f, style.CornerRadius);
+            }
         }
 
         private static bool ContainsStyle(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)

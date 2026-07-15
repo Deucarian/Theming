@@ -767,6 +767,158 @@ namespace Deucarian.Theming.Editor
             return true;
         }
 
+        /// <summary>
+        /// Opens a project save panel and creates a reusable style variant from the active composition.
+        /// No asset is created until the user confirms the save location.
+        /// </summary>
+        public static DeucarianThemeStyle CreateStyleVariantFromActiveFromSavePanel()
+        {
+            DeucarianThemeStyle source = DeucarianThemingEditorSettings.ActiveStyle;
+            if (source == null)
+            {
+                ThemingLog.Editor.Warning("Creating a style variant requires an active Deucarian style.");
+                return null;
+            }
+
+            string sourcePath = AssetDatabase.GetAssetPath(source);
+            string defaultFolder = string.IsNullOrEmpty(sourcePath)
+                ? DeucarianThemingEditorSettings.DefaultAssetFolder
+                : sourcePath.Substring(0, sourcePath.LastIndexOf('/'));
+            string suggestedName = string.IsNullOrWhiteSpace(source.DisplayName)
+                ? "Theme Style Variant"
+                : source.DisplayName + " Variant";
+            string variantPath = EditorUtility.SaveFilePanelInProject(
+                "Create Deucarian Style Variant",
+                suggestedName,
+                "asset",
+                "Choose a source-controlled location for the reusable presentation variant.",
+                defaultFolder);
+            return string.IsNullOrWhiteSpace(variantPath)
+                ? null
+                : CreateStyleVariant(source, variantPath);
+        }
+
+        /// <summary>Creates and activates a source-controlled style variant at the supplied project path.</summary>
+        public static DeucarianThemeStyle CreateStyleVariant(
+            DeucarianThemeStyle source,
+            string assetPath)
+        {
+            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
+            if (source == null
+                || string.IsNullOrWhiteSpace(normalizedPath)
+                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal)
+                || !normalizedPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            {
+                ThemingLog.Editor.Warning("A style variant requires an active source style and an .asset path under Assets.");
+                return null;
+            }
+
+            if (AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null)
+            {
+                ThemingLog.Editor.Warning($"A Deucarian asset already exists at '{normalizedPath}'.");
+                return null;
+            }
+
+            string fileName = PathWithoutExtension(normalizedPath);
+            string variantId = BuildVariantStyleId(fileName);
+            int slashIndex = normalizedPath.LastIndexOf('/');
+            if (slashIndex > 0)
+            {
+                EnsureAssetFolder(normalizedPath.Substring(0, slashIndex));
+            }
+
+            DeucarianThemeStyle variant = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            variant.name = fileName;
+            variant.Configure(
+                variantId,
+                fileName,
+                $"Reusable presentation variant created from {source.DisplayName}.",
+                source.SurfaceTreatment,
+                source.DarkSurfaceTint,
+                source.LightSurfaceTint,
+                source.SurfaceTintStrength,
+                source.SurfaceAlphaMultiplier,
+                source.MinimumSurfaceAlpha,
+                source.MaximumSurfaceAlpha,
+                source.BorderTint,
+                source.BorderTintStrength,
+                source.BorderAlpha,
+                source.BorderWidth,
+                source.CornerRadius,
+                source.UseGeneratedNoiseTexture,
+                source.TextureTint,
+                source.GeneratedTextureSize,
+                source.GeneratedTextureBlurRadius,
+                source.GeneratedTextureBlurStrength);
+            variant.SetVariantMetadata(
+                variantId,
+                fileName,
+                $"Reusable presentation variant created from {source.DisplayName}.");
+            variant.SetComposition(
+                source.SurfaceProfile,
+                source.ShapeProfile,
+                source.StrokeProfile,
+                source.Density,
+                true);
+
+            AssetDatabase.CreateAsset(variant, normalizedPath);
+            AssetDatabase.SaveAssets();
+            DeucarianThemingEditorSettings.ActiveStyle = variant;
+            SetActiveStyleAndApply(variant);
+            SelectAndPing(variant);
+            return variant;
+        }
+
+        private static string BuildVariantStyleId(string fileName)
+        {
+            string source = string.IsNullOrWhiteSpace(fileName) ? "custom" : fileName.Trim();
+            System.Text.StringBuilder slug = new System.Text.StringBuilder(source.Length);
+            bool pendingSeparator = false;
+            for (int i = 0; i < source.Length; i++)
+            {
+                char character = char.ToLowerInvariant(source[i]);
+                if (char.IsLetterOrDigit(character))
+                {
+                    if (pendingSeparator && slug.Length > 0)
+                    {
+                        slug.Append('-');
+                    }
+
+                    slug.Append(character);
+                    pendingSeparator = false;
+                }
+                else
+                {
+                    pendingSeparator = slug.Length > 0;
+                }
+            }
+
+            return "deucarian.style.variant." + (slug.Length > 0 ? slug.ToString() : "custom");
+        }
+
+        /// <summary>Updates the composition of a project-authored variant and refreshes active providers.</summary>
+        public static bool UpdateStyleVariantComposition(
+            DeucarianThemeStyle style,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile shape,
+            DeucarianThemeStrokeProfile stroke,
+            DeucarianThemeDensity density)
+        {
+            if (style == null || !style.IsVariant)
+            {
+                ThemingLog.Editor.Warning("Only explicit Deucarian style variants can be edited as compositions.");
+                return false;
+            }
+
+            Undo.RecordObject(style, "Edit Deucarian Style Variant");
+            style.SetComposition(surface, shape, stroke, density, true);
+            EditorUtility.SetDirty(style);
+            AssetDatabase.SaveAssets();
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+            RefreshOpenSceneProvidersUsingAsset(style);
+            return true;
+        }
+
         public static bool AssignActiveStyleToActiveTheme()
         {
             DeucarianTheme theme = ResolveOrCreateActiveTheme();

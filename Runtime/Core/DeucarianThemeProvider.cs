@@ -198,6 +198,11 @@ namespace Deucarian.Theming
                 return true;
             }
 
+            if (currentStyle != null && currentStyle.UsesComponentAsset(asset))
+            {
+                return true;
+            }
+
             if (asset is DeucarianThemeRuntimeSettings)
             {
                 return currentThemeFamily == null && currentTheme == null;
@@ -369,6 +374,11 @@ namespace Deucarian.Theming
             }
 
             if (asset == theme || asset == theme.VisualStyle)
+            {
+                return true;
+            }
+
+            if (theme.VisualStyle != null && theme.VisualStyle.UsesComponentAsset(asset))
             {
                 return true;
             }

@@ -137,6 +137,8 @@ namespace Deucarian.Theming.Editor
                 null,
                 () => DeucarianThemingMenuActions.ResolveOrCreateActiveStyle());
 
+            DrawActiveStyleComposition();
+
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Create Theme Family", GUILayout.Width(156)))
@@ -190,6 +192,66 @@ namespace Deucarian.Theming.Editor
 
             EditorGUILayout.EndHorizontal();
             DeucarianEditorChrome.EndSection();
+        }
+
+        private static void DrawActiveStyleComposition()
+        {
+            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle;
+            if (style == null)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("Presentation Composition", EditorStyles.boldLabel);
+            if (!style.IsComposed)
+            {
+                EditorGUILayout.HelpBox(
+                    "This style uses backward-compatible inline values. Create a variant from a composed preset to edit reusable presentation components.",
+                    MessageType.Info);
+            }
+
+            DeucarianThemeSurfaceProfile surface;
+            DeucarianThemeShapeProfile shape;
+            DeucarianThemeStrokeProfile stroke;
+            DeucarianThemeDensity density;
+            using (new EditorGUI.DisabledScope(!style.IsVariant))
+            {
+                EditorGUI.BeginChangeCheck();
+                surface = (DeucarianThemeSurfaceProfile)EditorGUILayout.ObjectField(
+                    "Surface",
+                    style.SurfaceProfile,
+                    typeof(DeucarianThemeSurfaceProfile),
+                    false);
+                shape = (DeucarianThemeShapeProfile)EditorGUILayout.ObjectField(
+                    "Shape",
+                    style.ShapeProfile,
+                    typeof(DeucarianThemeShapeProfile),
+                    false);
+                stroke = (DeucarianThemeStrokeProfile)EditorGUILayout.ObjectField(
+                    "Stroke",
+                    style.StrokeProfile,
+                    typeof(DeucarianThemeStrokeProfile),
+                    false);
+                density = (DeucarianThemeDensity)EditorGUILayout.EnumPopup("Density", style.Density);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    DeucarianThemingMenuActions.UpdateStyleVariantComposition(
+                        style,
+                        surface,
+                        shape,
+                        stroke,
+                        density);
+                }
+            }
+
+            string buttonLabel = style.IsVariant
+                ? "Create Variant From This Variant"
+                : "Create Variant From Active";
+            if (GUILayout.Button(buttonLabel, GUILayout.Width(218f)))
+            {
+                DeucarianThemingMenuActions.CreateStyleVariantFromActiveFromSavePanel();
+            }
         }
 
         private void DrawProjectThemeDefaultSection()

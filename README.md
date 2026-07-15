@@ -105,7 +105,8 @@ Use the Theme Manager for the full workflow and actions:
 
 - `DeucarianColorRole`, `DeucarianColorRoleLibrary`, `DeucarianColorPalette`, and `DeucarianTheme`: core semantic color and concrete variant assets.
 - `DeucarianThemeMode` and `DeucarianThemeFamily`: explicit light/dark selection and paired theme identity.
-- `DeucarianThemeStyle`: visual surface treatment assets such as frosted glass and material dark.
+- `DeucarianThemeStyle`: a presentation composition referencing reusable surface, shape, and stroke profiles plus a semantic density.
+- `DeucarianThemeSurfaceProfile`, `DeucarianThemeShapeProfile`, `DeucarianThemeStrokeProfile`, and `DeucarianThemeDensity`: independently reusable presentation axes.
 - `DeucarianThemeProvider`, `IDeucarianThemeTarget`, and `DeucarianThemeTargetBehaviour`: runtime theme application contracts.
 - `DeucarianThemeRuntimeSettings` and `DeucarianThemeRuntimeResolver`: project default theme lookup.
 - `DeucarianThemePack` and `DeucarianThemePackAssetFactory`: package-owned role and palette asset import/repair.
@@ -187,6 +188,10 @@ The built-in style presets are:
 - `Frosted Glass`: translucent glass-like surfaces with cool tinting, fine texture, and soft borders.
 - `Material Dark`: opaque layered dark surfaces with restrained radius and crisp dividers.
 - `Fluent Acrylic`: acrylic-inspired translucent surfaces with subtle tint and texture.
+
+These names remain curated presets, but each preset is a composition of four reusable axes: surface treatment, shape, stroke, and density. The built-ins preserve their existing output exactly. Use **Create Variant From Active** in Theme Manager to persist a source-controlled combination such as Frosted Glass + Square + Compact; editing a preview selection alone never creates a variant asset. Theme-family assignment keeps that variant shared by Light and Dark modes.
+
+Existing third-party style assets continue to resolve their legacy inline fields when component references or density are absent. Providers observe edits to referenced component assets and emit the existing `StyleChanged` notification so active consumers refresh immediately.
 
 This is a good fit for shared visual language, because packages such as a report viewer can keep their own layout and toolbar behavior while asking Theming for the surface treatment. It would be a bad fit if the style asset started owning product-specific UI structure, navigation rules, or a generic UI framework.
 

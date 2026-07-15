@@ -552,6 +552,58 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void ExplicitVariantIsSourceControlledSharedByFamilyAndComposable()
+        {
+            DeucarianDefaultThemeAssets assets =
+                DeucarianDefaultThemeAssetFactory.CreateThemeFamily(testRoot + "/VariantThemeFamily.asset");
+            DeucarianThemeStyle source = assets.DefaultStyle;
+            DeucarianThemeSurfaceProfile sourceSurface = source.SurfaceProfile;
+            DeucarianThemeStrokeProfile sourceStroke = source.StrokeProfile;
+            DeucarianThemeShapeProfile sourceShape = source.ShapeProfile;
+            DeucarianThemeShapeProfile square = CreateAsset<DeucarianThemeShapeProfile>(
+                testRoot + "/SquareShape.asset");
+            square.Configure(
+                DeucarianThemePresentationProfileIds.Shape.Square,
+                "Square",
+                "Square test shape.",
+                0f);
+            EditorUtility.SetDirty(square);
+            AssetDatabase.SaveAssets();
+            DeucarianThemingEditorSettings.ActiveThemeFamily = assets.ThemeFamily;
+            DeucarianThemingEditorSettings.ActiveTheme = assets.LightTheme;
+            DeucarianThemingEditorSettings.ActiveStyle = source;
+
+            DeucarianThemeStyle variant = DeucarianThemingMenuActions.CreateStyleVariant(
+                source,
+                testRoot + "/Frosted Square Compact.asset");
+
+            Assert.NotNull(variant);
+            Assert.IsTrue(variant.IsVariant);
+            Assert.AreEqual("deucarian.style.variant.frosted-square-compact", variant.StyleId);
+            Assert.IsTrue(DeucarianColorRole.IsValidId(variant.StyleId));
+            Assert.IsTrue(AssetDatabase.Contains(variant));
+            Assert.AreSame(variant, assets.LightTheme.VisualStyle);
+            Assert.AreSame(variant, assets.DarkTheme.VisualStyle);
+            Assert.AreSame(sourceSurface, variant.SurfaceProfile);
+            Assert.AreSame(sourceShape, variant.ShapeProfile);
+            Assert.AreSame(sourceStroke, variant.StrokeProfile);
+
+            Assert.IsTrue(DeucarianThemingMenuActions.UpdateStyleVariantComposition(
+                variant,
+                sourceSurface,
+                square,
+                sourceStroke,
+                DeucarianThemeDensity.Compact));
+
+            Assert.AreSame(square, variant.ShapeProfile);
+            Assert.AreEqual(0f, variant.CornerRadius);
+            Assert.AreEqual(DeucarianThemeDensity.Compact, variant.Density);
+            Assert.AreSame(sourceShape, source.ShapeProfile);
+            Assert.AreEqual(16f, source.CornerRadius);
+            Assert.AreEqual(DeucarianThemeDensity.Comfortable, source.Density);
+        }
+
+        [Test]
         public void ApplyingActiveThemeAssignsItToProviders()
         {
             DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");

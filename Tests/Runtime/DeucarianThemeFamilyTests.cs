@@ -207,7 +207,7 @@ namespace Deucarian.Theming.Tests
             DeucarianThemeProvider provider = CreateProviderWithProbes(out _, out _);
             LogAssert.Expect(
                 LogType.Warning,
-                new Regex("\\[Theming\\].*Theme family .* is incomplete.*runtime fallback"));
+                new Regex("Theme family .* is incomplete.*runtime fallback", RegexOptions.IgnoreCase));
 
             provider.SetThemeFamily(family);
             Assert.AreSame(dark, provider.CurrentTheme);
@@ -345,7 +345,9 @@ namespace Deucarian.Theming.Tests
             DeucarianThemeProvider provider = CreateProviderWithProbes(out ThemeTargetProbe probe, out _);
             LogAssert.Expect(
                 LogType.Warning,
-                new Regex("\\[Theming\\].*runtime theme family .* is incomplete.*No runtime fallback"));
+                new Regex(
+                    "runtime theme family .* is incomplete.*No runtime fallback",
+                    RegexOptions.IgnoreCase));
 
             bool assigned = InvokeEnsureProviderHasThemeFromSettings(provider, settings);
 

@@ -84,6 +84,101 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void ComposedStyleResolvesIndependentSurfaceShapeStrokeAndDensity()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            DeucarianThemeSurfaceProfile surface = CreateAsset<DeucarianThemeSurfaceProfile>();
+            DeucarianThemeShapeProfile square = CreateAsset<DeucarianThemeShapeProfile>();
+            DeucarianThemeStrokeProfile borderless = CreateAsset<DeucarianThemeStrokeProfile>();
+            surface.Configure(
+                DeucarianThemePresentationProfileIds.Surface.FrostedGlass,
+                "Frosted Glass",
+                "Test surface.",
+                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                style.DarkSurfaceTint,
+                style.LightSurfaceTint,
+                style.SurfaceTintStrength,
+                style.SurfaceAlphaMultiplier,
+                style.MinimumSurfaceAlpha,
+                style.MaximumSurfaceAlpha,
+                true,
+                style.TextureTint,
+                style.GeneratedTextureSize,
+                4,
+                0.92f);
+            square.Configure(
+                DeucarianThemePresentationProfileIds.Shape.Square,
+                "Square",
+                "Test shape.",
+                0f);
+            borderless.Configure(
+                DeucarianThemePresentationProfileIds.Stroke.Borderless,
+                "Borderless",
+                "Test stroke.",
+                Color.clear,
+                0f,
+                0f,
+                0f);
+
+            style.SetComposition(
+                surface,
+                square,
+                borderless,
+                DeucarianThemeDensity.Compact,
+                true);
+
+            Assert.IsTrue(style.IsComposed);
+            Assert.IsTrue(style.IsVariant);
+            Assert.AreSame(surface, style.SurfaceProfile);
+            Assert.AreEqual(DeucarianThemeStyleSurfaceTreatment.FrostedGlass, style.SurfaceTreatment);
+            Assert.AreEqual(0f, style.CornerRadius);
+            Assert.AreEqual(0f, style.BorderWidth);
+            Assert.AreEqual(DeucarianThemeDensity.Compact, style.Density);
+            Assert.IsNotNull(style.GetGeneratedTexture());
+        }
+
+        [Test]
+        public void ComponentMutationRefreshesStyleProvider()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            DeucarianThemeShapeProfile shape = CreateAsset<DeucarianThemeShapeProfile>();
+            shape.Configure(
+                DeucarianThemePresentationProfileIds.Shape.Rounded,
+                "Rounded",
+                "Test shape.",
+                16f);
+            style.SetComposition(null, shape, null, DeucarianThemeDensity.Comfortable, true);
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
+            provider.SetStyle(style);
+            StartProviderAssetChangeTracking(provider);
+            int countBeforeMutation = probe.ApplyCount;
+            int eventCount = 0;
+            provider.StyleChanged += _ => eventCount++;
+
+            try
+            {
+                shape.Configure(
+                    DeucarianThemePresentationProfileIds.Shape.Square,
+                    "Square",
+                    "Updated test shape.",
+                    0f);
+
+                Assert.AreEqual(0f, style.CornerRadius);
+                Assert.AreEqual(countBeforeMutation + 1, probe.ApplyCount);
+                Assert.AreEqual(1, eventCount);
+                Assert.IsTrue(provider.UsesThemeAsset(shape));
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
+        }
+
+        [Test]
         public void ProviderAppliesStyleOverrideToChildTargets()
         {
             DeucarianThemeStyle style = CreateFrostedStyle();

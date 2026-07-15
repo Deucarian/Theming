@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Made visual styles composable from reusable surface, shape, and stroke profiles plus Comfortable, Standard, or Compact density intent.
+- Added explicit source-controlled style variant creation in Theme Manager and live provider refresh for referenced component edits.
+- Preserved legacy inline style resolution and the existing Frosted Glass, Fluent Acrylic, and Material Dark preset identities and output.
 - Added searchable, category-filtered inspector lists for palettes, role libraries, theme packs, and UI Toolkit theme mappings.
 - Added backward-compatible light/dark `DeucarianThemeFamily` assets, explicit provider mode switching, family-aware runtime defaults, and resilient incomplete-family fallback.
 - Reworked primary authoring around paired light/dark palette and theme generation, preview, repair, migration, and paired theme packs.
