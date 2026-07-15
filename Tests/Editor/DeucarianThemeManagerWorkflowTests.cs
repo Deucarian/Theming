@@ -773,6 +773,16 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.IsNotNull(workbench);
                 Assert.IsNotNull(workbench.Toolbar);
                 Assert.IsNotNull(workbench.Content);
+                Assert.IsNotNull(workbench.Footer);
+                Assert.IsNotNull(window.FooterForTests);
+                Assert.AreSame(workbench.Footer, window.FooterForTests.Root.parent);
+                Assert.AreEqual("deucarian-theme-manager-footer", window.FooterForTests.Root.name);
+                Assert.IsTrue(window.FooterForTests.Root.ClassListContains(
+                    DeucarianEditorWorkbenchSurfaces.FooterClass));
+                Assert.AreEqual("Refresh", window.FooterForTests.Action.text);
+                StringAssert.StartsWith(
+                    "com.deucarian.theming ",
+                    window.FooterForTests.Version.text);
                 Button themeButton = workbench.Toolbar.Q<Button>(
                     "deucarian-theme-manager-view-theme");
                 Button styleButton = workbench.Toolbar.Q<Button>(
@@ -796,6 +806,7 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.IsNotNull(content);
                 Assert.AreEqual(1f, content.style.flexGrow.value);
                 Assert.AreEqual(0f, content.style.minHeight.value.value);
+                Assert.AreEqual(Color.clear, content.style.backgroundColor.value);
                 Assert.AreSame(themeButton, workbench.Toolbar.ElementAt(0));
                 Assert.AreSame(styleButton, workbench.Toolbar.ElementAt(1));
                 Assert.AreSame(settingsButton, workbench.Toolbar.ElementAt(2));
@@ -829,6 +840,18 @@ namespace Deucarian.Theming.Editor.Tests
             }
         }
 
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        public void ThemeManagerStartupGuardClosesOnlyLayoutRestoredWindows(
+            bool explicitlyOpenedThisSession,
+            bool expectedClose)
+        {
+            Assert.AreEqual(
+                expectedClose,
+                DeucarianThemeManagerStartupGuard.ShouldCloseRestoredWindows(
+                    explicitlyOpenedThisSession));
+        }
+
         [Test]
         public void ThemeManagerSourceUsesWorkbenchWithoutLegacyLargeHeader()
         {
@@ -844,6 +867,8 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.BeginSurface", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
+                StringAssert.DoesNotContain("DeucarianEditorWorkbenchGUI.MainBackgroundColor", source);
+                StringAssert.DoesNotContain("DrawFooterVersion", source);
                 StringAssert.DoesNotContain("CreateWindowShell", source);
                 StringAssert.DoesNotContain("DrawHeaderCard", source);
                 StringAssert.DoesNotContain("BeginScrollView", source);

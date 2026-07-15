@@ -44,6 +44,7 @@ namespace Deucarian.Theming.Editor
         private DeucarianThemeDensity composerSize;
 
         private DeucarianEditorWorkbench workbench;
+        private DeucarianEditorWorkbenchFooter workbenchFooter;
         private Button themeViewButton;
         private Button styleComposerViewButton;
         private Button runtimeSettingsViewButton;
@@ -52,10 +53,13 @@ namespace Deucarian.Theming.Editor
         private Button toolbarPrimaryAction;
 
         internal DeucarianEditorWorkbench WorkbenchForTests => workbench;
+        internal DeucarianEditorWorkbenchFooter FooterForTests => workbenchFooter;
 
         public static void OpenWindow()
         {
+            DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
+            window.hideFlags |= HideFlags.DontSave;
             window.minSize = new Vector2(440f, 420f);
             window.RefreshAssets();
             window.Show();
@@ -64,7 +68,9 @@ namespace Deucarian.Theming.Editor
         /// <summary>Opens the focused composer for a preset or project-authored custom style.</summary>
         public static void OpenStyleComposer(DeucarianThemeStyle style)
         {
+            DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
+            window.hideFlags |= HideFlags.DontSave;
             window.minSize = new Vector2(440f, 420f);
             window.RefreshAssets();
             if (style != null)
@@ -94,6 +100,7 @@ namespace Deucarian.Theming.Editor
             EditorApplication.projectChanged -= HandleProjectChanged;
             workbench?.Dispose();
             workbench = null;
+            workbenchFooter = null;
         }
 
         internal void CreateGUI()
@@ -105,7 +112,7 @@ namespace Deucarian.Theming.Editor
                 {
                     IncludeToolbar = true,
                     IncludeDrawer = false,
-                    IncludeFooter = false,
+                    IncludeFooter = true,
                     TopSafeFadeName = WallpaperFadeName
                 });
             if (workbench.Content == null || workbench.Toolbar == null)
@@ -119,7 +126,28 @@ namespace Deucarian.Theming.Editor
                 "deucarian-theme-manager-content");
             content.style.flexGrow = 1f;
             content.style.minHeight = 0f;
+            content.style.backgroundColor = Color.clear;
+            BuildWorkbenchFooter();
             UpdateWorkbenchToolbar();
+        }
+
+        private void BuildWorkbenchFooter()
+        {
+            if (workbench?.Footer == null)
+            {
+                return;
+            }
+
+            workbench.Footer.Clear();
+            workbenchFooter = DeucarianEditorWorkbenchSurfaces.CreateFooter(
+                "●",
+                "Ready",
+                "Theme assets are ready.",
+                "Refresh",
+                RefreshAssets,
+                $"com.deucarian.theming {ResolvePackageVersion()}");
+            workbenchFooter.Root.name = "deucarian-theme-manager-footer";
+            workbench.Footer.Add(workbenchFooter.Root);
         }
 
         private void BuildWorkbenchToolbar()
@@ -223,6 +251,50 @@ namespace Deucarian.Theming.Editor
                     toolbarPrimaryAction.SetEnabled(status.CanActivate && !isPlaying);
                     break;
             }
+
+            UpdateWorkbenchFooter();
+        }
+
+        private void UpdateWorkbenchFooter()
+        {
+            if (workbenchFooter == null)
+            {
+                return;
+            }
+
+            DeucarianEditorStatus visualStatus = DeucarianEditorStatus.Info;
+            string statusLabel = "Ready";
+            string summary = searchResult == null
+                ? "Theme assets have not been scanned."
+                : $"{searchResult.ThemeFamilies.Count} families · "
+                  + $"{searchResult.Themes.Count} themes · "
+                  + $"{searchResult.Palettes.Count} palettes · "
+                  + $"{searchResult.Styles.Count} styles";
+
+            DeucarianThemeManagerSelection selection =
+                DeucarianThemeManagerSelection.FromEditorPrefs();
+            DeucarianThemeManagerActivationStatus status =
+                DeucarianThemeManagerWorkflow.Evaluate(
+                    projectRuntimeSettings,
+                    selection,
+                    projectRuntimeSettingsResourceReady,
+                    projectRuntimeSettingsResourceMessage);
+            if (status.IsActive)
+            {
+                visualStatus = DeucarianEditorStatus.Success;
+                statusLabel = "Active";
+            }
+            else if (!status.CanActivate)
+            {
+                visualStatus = DeucarianEditorStatus.Warning;
+                statusLabel = "Attention";
+            }
+
+            workbenchFooter.StatusLabel.text = statusLabel;
+            workbenchFooter.Summary.text = summary;
+            workbenchFooter.Version.text = $"com.deucarian.theming {ResolvePackageVersion()}";
+            DeucarianEditorWorkbenchSurfaces.SetFooterStatus(workbenchFooter, visualStatus);
+            DeucarianEditorWorkbenchSurfaces.SetFooterBusy(workbenchFooter, false);
         }
 
         private void NavigateToTheme()
@@ -300,11 +372,7 @@ namespace Deucarian.Theming.Editor
 
         private void DrawWindowGui()
         {
-            using (DeucarianEditorWorkbenchPanelScope surface =
-                   DeucarianEditorWorkbenchGUI.BeginSurface(
-                       DeucarianEditorWorkbenchGUI.WindowStyle,
-                       DeucarianEditorWorkbenchGUI.MainBackgroundColor,
-                       DeucarianEditorWorkbenchGUI.PanelBorderColor))
+            using (new EditorGUILayout.VerticalScope(DeucarianEditorWorkbenchGUI.WindowStyle))
             {
                 using (var scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
                 {
@@ -325,9 +393,7 @@ namespace Deucarian.Theming.Editor
                     }
 
                     UpdateWorkbenchToolbar();
-                    GUILayout.Space(4f);
-                    DeucarianEditorChrome.DrawFooterVersion("com.deucarian.theming", ResolvePackageVersion());
-                    GUILayout.Space(4f);
+                    GUILayout.Space(8f);
                 }
             }
         }
@@ -863,21 +929,8 @@ namespace Deucarian.Theming.Editor
 
         private void DrawDeveloperTools()
         {
-            EnsureSearchResult();
-            string counts = $"{searchResult.ThemeFamilies.Count} families | "
-                            + $"{searchResult.Themes.Count} themes | "
-                            + $"{searchResult.Palettes.Count} palettes | "
-                            + $"{searchResult.Styles.Count} styles";
-            EditorGUILayout.LabelField(counts, EditorStyles.wordWrappedMiniLabel);
-            GUILayout.Space(6f);
-
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (DrawWorkbenchAction("Refresh Assets"))
-                {
-                    RefreshAssets();
-                }
-
                 if (DrawWorkbenchAction("Open Assets Folder"))
                 {
                     DeucarianThemingMenuActions.OpenThemeAssetsFolder();

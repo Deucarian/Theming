@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2 - 2026-07-16
+
+- Prevented Unity layout restoration from reopening Theme Manager on editor startup while preserving explicitly opened windows across domain reloads.
+- Removed the opaque full-content IMGUI background so the shared Deucarian wallpaper remains visible behind Theme Manager content.
+- Moved Theme Manager status, asset counts, refresh action, and package version into the shared fixed workbench footer instead of rendering a pseudo-footer inside the scroll view.
+
 ## 1.0.1 - 2026-07-15
 
 - Added nonserialized Theme Manager live preview across loaded providers, including domain-reload and Play Mode restoration, runtime-setter precedence, scene/prefab save guards, and build-time suspension through the actual end of the player pipeline so staged choices never leak into serialized or player configuration.

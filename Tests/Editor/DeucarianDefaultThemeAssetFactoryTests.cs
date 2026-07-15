@@ -902,6 +902,9 @@ namespace Deucarian.Theming.Editor.Tests
 
             for (int i = 0; i < windows.Length; i++)
             {
+                Assert.AreNotEqual(
+                    0,
+                    (int)(windows[i].hideFlags & HideFlags.DontSave));
                 windows[i].Close();
             }
         }
