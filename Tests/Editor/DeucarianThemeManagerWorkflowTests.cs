@@ -5,7 +5,6 @@ using Deucarian.Editor;
 using Deucarian.Theming.Editor;
 using NUnit.Framework;
 using UnityEditor;
-using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.UIElements;
@@ -946,7 +945,8 @@ namespace Deucarian.Theming.Editor.Tests
                 return projectRelativePath;
             }
 
-            PackageInfo package = PackageInfo.FindForAssetPath(assetPath);
+            UnityEditor.PackageManager.PackageInfo package =
+                UnityEditor.PackageManager.PackageInfo.FindForAssetPath(assetPath);
             Assert.IsNotNull(package, "Could not resolve the theming package for its manager source.");
             string prefix = "Packages/" + package.name + "/";
             Assert.IsTrue(assetPath.StartsWith(prefix, StringComparison.Ordinal));
