@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Redesigned Theme Manager around EditorPrefs-backed staged Family, Mode, and Visual Style choices, independent dirty markers, one validated **Activate** transaction, compact cards, searchable asset pickers, contextual setup, and collapsed developer tools.
+- Added a focused four-axis Custom Style composer whose existing-style edits commit atomically with theme activation and whose preview reflects surface, corner, border-width, texture, and size choices.
+- Clarified composed-style authoring with explicit legacy, preset, custom, and incomplete composition states while preserving variant serialization and APIs.
+- Added focused style and presentation-profile inspectors that hide overridden inline fallbacks and use the user-facing Surface, Corners, Border, and Size vocabulary.
+- Made Borderless presentation profiles fully clear uGUI `Outline` effects instead of leaving a zero-offset tint pass active, while preserving caller-owned component state.
+- Made visual styles composable from reusable surface, shape, and stroke profiles plus Comfortable, Standard, or Compact density intent.
+- Added explicit source-controlled custom style creation in Theme Manager and live provider refresh for referenced component edits.
+- Preserved legacy inline style resolution and the existing Frosted Glass, Fluent Acrylic, and Material Dark preset identities and output.
+- Added searchable, category-filtered inspector lists for palettes, role libraries, theme packs, and UI Toolkit theme mappings.
+- Added backward-compatible light/dark `DeucarianThemeFamily` assets, explicit provider mode switching, family-aware runtime defaults, and resilient incomplete-family fallback.
+- Reworked primary authoring around paired light/dark palette and theme generation, preview, repair, migration, and paired theme packs.
+- Added versioned Deucarian Brand token defaults without introducing a Brand package dependency.
 - Added `DeucarianThemeStyle` visual style assets and optional `DeucarianTheme.VisualStyle` references.
 - Added built-in Frosted Glass, Material Dark, and Fluent Acrylic style generation.
 - Added provider style overrides and UI Toolkit/uGUI style helpers for package-specific panel chrome.

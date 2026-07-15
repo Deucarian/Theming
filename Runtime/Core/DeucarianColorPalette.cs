@@ -16,6 +16,8 @@ namespace Deucarian.Theming
         [SerializeField] private string paletteId = "deucarian.palette.default";
         [SerializeField] private string displayName = "Default";
         [SerializeField] private DeucarianColorRoleLibrary roleLibrary;
+        [SerializeField] private bool hasThemeMode;
+        [SerializeField] private DeucarianThemeMode themeMode = DeucarianThemeMode.Dark;
         [SerializeField] private List<DeucarianColorEntry> entries = new List<DeucarianColorEntry>();
 
         [NonSerialized] private Dictionary<DeucarianColorRole, Color> colorByRole;
@@ -30,6 +32,12 @@ namespace Deucarian.Theming
         /// <summary>Optional library used for role ID fallback lookups and editor helpers.</summary>
         public DeucarianColorRoleLibrary RoleLibrary => roleLibrary;
 
+        /// <summary>Whether this palette is an explicit light or dark family variant.</summary>
+        public bool HasThemeMode => hasThemeMode;
+
+        /// <summary>Mode used for paired role defaults. Legacy palettes report dark for compatibility.</summary>
+        public DeucarianThemeMode ThemeMode => hasThemeMode ? themeMode : DeucarianThemeMode.Dark;
+
         /// <summary>Ordered palette entries. Duplicate entries are allowed but validated.</summary>
         public IReadOnlyList<DeucarianColorEntry> Entries => entries;
 
@@ -39,7 +47,52 @@ namespace Deucarian.Theming
             paletteId = DeucarianColorRole.NormalizeId(id);
             displayName = name ?? string.Empty;
             roleLibrary = library;
+            hasThemeMode = false;
+            themeMode = DeucarianThemeMode.Dark;
             RebuildCache();
+            NotifyChanged();
+        }
+
+        /// <summary>Configures palette metadata as an explicit light or dark family variant.</summary>
+        public void Configure(
+            string id,
+            string name,
+            DeucarianColorRoleLibrary library,
+            DeucarianThemeMode mode)
+        {
+            paletteId = DeucarianColorRole.NormalizeId(id);
+            displayName = name ?? string.Empty;
+            roleLibrary = library;
+            hasThemeMode = true;
+            themeMode = NormalizeThemeMode(mode);
+            RebuildCache();
+            NotifyChanged();
+        }
+
+        /// <summary>Marks this palette as a light or dark variant without changing its entries.</summary>
+        public void SetThemeMode(DeucarianThemeMode mode)
+        {
+            mode = NormalizeThemeMode(mode);
+            if (hasThemeMode && themeMode == mode)
+            {
+                return;
+            }
+
+            hasThemeMode = true;
+            themeMode = mode;
+            NotifyChanged();
+        }
+
+        /// <summary>Returns this palette to legacy dark-compatible fallback behavior.</summary>
+        public void ClearThemeMode()
+        {
+            if (!hasThemeMode && themeMode == DeucarianThemeMode.Dark)
+            {
+                return;
+            }
+
+            hasThemeMode = false;
+            themeMode = DeucarianThemeMode.Dark;
             NotifyChanged();
         }
 
@@ -80,7 +133,7 @@ namespace Deucarian.Theming
                 return true;
             }
 
-            color = role.DefaultColor;
+            color = GetRoleDefaultColor(role);
             return true;
         }
 
@@ -111,7 +164,7 @@ namespace Deucarian.Theming
 
             if (roleLibrary != null && roleLibrary.TryGetRoleById(normalizedId, out DeucarianColorRole role))
             {
-                color = role.DefaultColor;
+                color = GetRoleDefaultColor(role);
                 return true;
             }
 
@@ -195,7 +248,7 @@ namespace Deucarian.Theming
                 return false;
             }
 
-            entry.Configure(entry.Role, entry.Role.DefaultColor, entry.Note);
+            entry.Configure(entry.Role, GetRoleDefaultColor(entry.Role), entry.Note);
             RebuildCache();
             NotifyChanged();
             return true;
@@ -221,7 +274,7 @@ namespace Deucarian.Theming
                     continue;
                 }
 
-                entries.Add(new DeucarianColorEntry(role, role.DefaultColor));
+                entries.Add(new DeucarianColorEntry(role, GetRoleDefaultColor(role)));
                 added++;
             }
 
@@ -335,6 +388,17 @@ namespace Deucarian.Theming
             }
         }
 
+        /// <summary>Returns the role fallback appropriate for this palette's variant metadata.</summary>
+        public Color GetRoleDefaultColor(DeucarianColorRole role)
+        {
+            if (role == null)
+            {
+                return MissingColor;
+            }
+
+            return hasThemeMode ? role.GetDefaultColor(themeMode) : role.DefaultColor;
+        }
+
         private bool HasEntryForRole(DeucarianColorRole role)
         {
             EnsureEntryList();
@@ -427,6 +491,9 @@ namespace Deucarian.Theming
         {
             paletteId = DeucarianColorRole.NormalizeId(paletteId);
             displayName = displayName ?? string.Empty;
+            themeMode = hasThemeMode
+                ? NormalizeThemeMode(themeMode)
+                : DeucarianThemeMode.Dark;
             RebuildCache();
             NotifyChanged();
         }
@@ -434,6 +501,13 @@ namespace Deucarian.Theming
         private void NotifyChanged()
         {
             DeucarianThemeAssetChangeBus.NotifyChanged(this);
+        }
+
+        private static DeucarianThemeMode NormalizeThemeMode(DeucarianThemeMode mode)
+        {
+            return mode == DeucarianThemeMode.Light
+                ? DeucarianThemeMode.Light
+                : DeucarianThemeMode.Dark;
         }
     }
 }

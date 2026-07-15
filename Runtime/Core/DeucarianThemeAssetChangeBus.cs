@@ -9,8 +9,30 @@ namespace Deucarian.Theming
     /// </summary>
     public static class DeucarianThemeAssetChangeBus
     {
+        private static int batchDepth;
+        private static UnityObject batchConsolidatedAsset;
+        private static UnityObject firstBatchedAsset;
+        private static bool batchChanged;
+
         /// <summary>Raised when a package-owned theme asset changes.</summary>
         public static event Action<UnityObject> AssetChanged;
+
+        /// <summary>
+        /// Suppresses child notifications until the returned scope is disposed, then emits one consolidated change.
+        /// Nested batches participate in the outermost batch.
+        /// </summary>
+        public static IDisposable BeginBatch(UnityObject consolidatedAsset)
+        {
+            if (batchDepth == 0)
+            {
+                batchConsolidatedAsset = consolidatedAsset;
+                firstBatchedAsset = null;
+                batchChanged = false;
+            }
+
+            batchDepth++;
+            return new BatchScope();
+        }
 
         /// <summary>Notifies listeners that a package-owned theme asset changed.</summary>
         public static void NotifyChanged(UnityObject asset)
@@ -20,7 +42,86 @@ namespace Deucarian.Theming
                 return;
             }
 
-            AssetChanged?.Invoke(asset);
+            if (batchDepth > 0)
+            {
+                batchChanged = true;
+                if (firstBatchedAsset == null)
+                {
+                    firstBatchedAsset = asset;
+                }
+
+                return;
+            }
+
+            PublishChanged(asset);
+        }
+
+        private static void EndBatch()
+        {
+            if (batchDepth <= 0)
+            {
+                return;
+            }
+
+            batchDepth--;
+            if (batchDepth > 0)
+            {
+                return;
+            }
+
+            UnityObject changedAsset = batchConsolidatedAsset != null
+                ? batchConsolidatedAsset
+                : firstBatchedAsset;
+            bool shouldNotify = batchChanged && changedAsset != null;
+            batchConsolidatedAsset = null;
+            firstBatchedAsset = null;
+            batchChanged = false;
+
+            if (shouldNotify)
+            {
+                PublishChanged(changedAsset);
+            }
+        }
+
+        private static void PublishChanged(UnityObject asset)
+        {
+            Action<UnityObject> subscribers = AssetChanged;
+            if (subscribers == null)
+            {
+                return;
+            }
+
+            Delegate[] invocationList = subscribers.GetInvocationList();
+            for (int i = 0; i < invocationList.Length; i++)
+            {
+                try
+                {
+                    ((Action<UnityObject>)invocationList[i]).Invoke(asset);
+                }
+                catch (Exception exception)
+                {
+                    ThemingLog.General.Exception(
+                        exception,
+                        "A theme asset change subscriber failed. Remaining subscribers will still be notified.",
+                        asset);
+                }
+            }
+        }
+
+        private sealed class BatchScope : IDisposable
+        {
+            private bool disposed;
+
+            public void Dispose()
+            {
+                if (disposed)
+                {
+                    return;
+                }
+
+                disposed = true;
+                EndBatch();
+            }
         }
     }
 }

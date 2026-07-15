@@ -43,6 +43,80 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void PairedRoleKeepsDarkAsLegacyDefault()
+        {
+            DeucarianColorRole role = CreatePairedRole(
+                "deucarian.test.paired",
+                Color.white,
+                Color.black);
+
+            Assert.IsTrue(role.HasPairedDefaultColors);
+            Assert.AreEqual(Color.white, role.LightDefaultColor);
+            Assert.AreEqual(Color.black, role.DarkDefaultColor);
+            Assert.AreEqual(Color.black, role.DefaultColor);
+            Assert.AreEqual(Color.white, role.GetDefaultColor(DeucarianThemeMode.Light));
+            Assert.AreEqual(Color.black, role.GetDefaultColor(DeucarianThemeMode.Dark));
+        }
+
+        [Test]
+        public void PaletteVariantUsesMatchingPairedRoleDefault()
+        {
+            DeucarianColorRole role = CreatePairedRole(
+                "deucarian.test.variant",
+                Color.white,
+                Color.black);
+            DeucarianColorRoleLibrary library = CreateAsset<DeucarianColorRoleLibrary>();
+            library.AddRole(role);
+            DeucarianColorPalette lightPalette = CreateAsset<DeucarianColorPalette>();
+            DeucarianColorPalette darkPalette = CreateAsset<DeucarianColorPalette>();
+            lightPalette.Configure("deucarian.test.palette.light", "Light", library, DeucarianThemeMode.Light);
+            darkPalette.Configure("deucarian.test.palette.dark", "Dark", library, DeucarianThemeMode.Dark);
+
+            Assert.IsTrue(lightPalette.HasThemeMode);
+            Assert.AreEqual(DeucarianThemeMode.Light, lightPalette.ThemeMode);
+            Assert.AreEqual(Color.white, lightPalette.GetColor(role));
+            Assert.AreEqual(Color.black, darkPalette.GetColor(role));
+            Assert.IsTrue(lightPalette.TryGetColorById(role.Id, out Color lightById));
+            Assert.AreEqual(Color.white, lightById);
+        }
+
+        [Test]
+        public void PaletteVariantResetAndAddMissingUseMatchingDefaults()
+        {
+            DeucarianColorRole role = CreatePairedRole(
+                "deucarian.test.variant-tools",
+                Color.yellow,
+                Color.blue);
+            DeucarianColorRoleLibrary library = CreateAsset<DeucarianColorRoleLibrary>();
+            library.AddRole(role);
+            DeucarianColorPalette lightPalette = CreateAsset<DeucarianColorPalette>();
+            lightPalette.Configure("deucarian.test.palette.light", "Light", library, DeucarianThemeMode.Light);
+            lightPalette.AddEntry(role, Color.red);
+
+            Assert.IsTrue(lightPalette.ResetEntryToRoleDefault(0));
+            Assert.AreEqual(Color.yellow, lightPalette.Entries[0].Color);
+
+            lightPalette.ClearEntries();
+            Assert.AreEqual(1, lightPalette.AddMissingRolesFromLibrary());
+            Assert.AreEqual(Color.yellow, lightPalette.Entries[0].Color);
+        }
+
+        [Test]
+        public void LegacyPaletteUsesDarkCompatibleDefaultForPairedRole()
+        {
+            DeucarianColorRole role = CreatePairedRole(
+                "deucarian.test.legacy-palette",
+                Color.white,
+                Color.black);
+            DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>();
+            palette.Configure("deucarian.test.palette", "Legacy", null);
+
+            Assert.IsFalse(palette.HasThemeMode);
+            Assert.AreEqual(DeucarianThemeMode.Dark, palette.ThemeMode);
+            Assert.AreEqual(Color.black, palette.GetColor(role));
+        }
+
+        [Test]
         public void PaletteReturnsMagentaForNullRole()
         {
             DeucarianColorPalette palette = CreateAsset<DeucarianColorPalette>();
@@ -93,6 +167,14 @@ namespace Deucarian.Theming.Tests
             DeucarianColorRole role = CreateAsset<DeucarianColorRole>();
             role.name = id;
             role.Configure(id, id, "Tests", string.Empty, defaultColor, false);
+            return role;
+        }
+
+        private DeucarianColorRole CreatePairedRole(string id, Color lightColor, Color darkColor)
+        {
+            DeucarianColorRole role = CreateAsset<DeucarianColorRole>();
+            role.name = id;
+            role.Configure(id, id, "Tests", string.Empty, lightColor, darkColor, false);
             return role;
         }
 

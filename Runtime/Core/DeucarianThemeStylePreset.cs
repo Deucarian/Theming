@@ -9,6 +9,7 @@ namespace Deucarian.Theming
     /// </summary>
     public readonly struct DeucarianThemeStylePreset
     {
+        /// <summary>Backward-compatible constructor for legacy inline style presets.</summary>
         public DeucarianThemeStylePreset(
             string fileName,
             string id,
@@ -31,12 +32,71 @@ namespace Deucarian.Theming
             int generatedTextureSize,
             int generatedTextureBlurRadius,
             float generatedTextureBlurStrength)
+            : this(
+                fileName,
+                id,
+                displayName,
+                description,
+                surfaceTreatment,
+                null,
+                null,
+                null,
+                DeucarianThemeDensity.Unspecified,
+                darkSurfaceTint,
+                lightSurfaceTint,
+                surfaceTintStrength,
+                surfaceAlphaMultiplier,
+                minimumSurfaceAlpha,
+                maximumSurfaceAlpha,
+                borderTint,
+                borderTintStrength,
+                borderAlpha,
+                borderWidth,
+                cornerRadius,
+                useGeneratedNoiseTexture,
+                textureTint,
+                generatedTextureSize,
+                generatedTextureBlurRadius,
+                generatedTextureBlurStrength)
+        {
+        }
+
+        public DeucarianThemeStylePreset(
+            string fileName,
+            string id,
+            string displayName,
+            string description,
+            DeucarianThemeStyleSurfaceTreatment surfaceTreatment,
+            string surfaceProfileId,
+            string shapeProfileId,
+            string strokeProfileId,
+            DeucarianThemeDensity density,
+            Color darkSurfaceTint,
+            Color lightSurfaceTint,
+            float surfaceTintStrength,
+            float surfaceAlphaMultiplier,
+            float minimumSurfaceAlpha,
+            float maximumSurfaceAlpha,
+            Color borderTint,
+            float borderTintStrength,
+            float borderAlpha,
+            float borderWidth,
+            float cornerRadius,
+            bool useGeneratedNoiseTexture,
+            Color textureTint,
+            int generatedTextureSize,
+            int generatedTextureBlurRadius,
+            float generatedTextureBlurStrength)
         {
             FileName = fileName;
             Id = id;
             DisplayName = displayName;
             Description = description;
             SurfaceTreatment = surfaceTreatment;
+            SurfaceProfileId = surfaceProfileId;
+            ShapeProfileId = shapeProfileId;
+            StrokeProfileId = strokeProfileId;
+            Density = density;
             DarkSurfaceTint = darkSurfaceTint;
             LightSurfaceTint = lightSurfaceTint;
             SurfaceTintStrength = surfaceTintStrength;
@@ -60,6 +120,10 @@ namespace Deucarian.Theming
         public string DisplayName { get; }
         public string Description { get; }
         public DeucarianThemeStyleSurfaceTreatment SurfaceTreatment { get; }
+        public string SurfaceProfileId { get; }
+        public string ShapeProfileId { get; }
+        public string StrokeProfileId { get; }
+        public DeucarianThemeDensity Density { get; }
         public Color DarkSurfaceTint { get; }
         public Color LightSurfaceTint { get; }
         public float SurfaceTintStrength { get; }
@@ -122,6 +186,10 @@ namespace Deucarian.Theming
                 "Frosted Glass",
                 "Translucent glass-like surfaces with cool tinting, fine texture, and soft borders.",
                 DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                DeucarianThemePresentationProfileIds.Surface.FrostedGlass,
+                DeucarianThemePresentationProfileIds.Shape.Rounded,
+                DeucarianThemePresentationProfileIds.Stroke.Frosted,
+                DeucarianThemeDensity.Comfortable,
                 new Color(0.78f, 0.9f, 1f, 1f),
                 new Color(0.86f, 0.94f, 1f, 1f),
                 0.24f,
@@ -144,6 +212,10 @@ namespace Deucarian.Theming
                 "Material Dark",
                 "Solid layered surfaces with restrained radius, crisp borders, and opaque dark chrome.",
                 DeucarianThemeStyleSurfaceTreatment.Material,
+                DeucarianThemePresentationProfileIds.Surface.Material,
+                DeucarianThemePresentationProfileIds.Shape.Tight,
+                DeucarianThemePresentationProfileIds.Stroke.Material,
+                DeucarianThemeDensity.Compact,
                 Hex("#18202A"),
                 Hex("#F7FAFC"),
                 0.04f,
@@ -166,6 +238,10 @@ namespace Deucarian.Theming
                 "Fluent Acrylic",
                 "Acrylic-inspired translucent surfaces with subtle tint, texture, and medium-radius chrome.",
                 DeucarianThemeStyleSurfaceTreatment.FluentAcrylic,
+                DeucarianThemePresentationProfileIds.Surface.FluentAcrylic,
+                DeucarianThemePresentationProfileIds.Shape.Soft,
+                DeucarianThemePresentationProfileIds.Stroke.Acrylic,
+                DeucarianThemeDensity.Standard,
                 Hex("#D7E8FF"),
                 Hex("#F7FBFF"),
                 0.18f,

@@ -14,29 +14,51 @@ namespace Deucarian.Theming
         private static readonly List<DeucarianThemeProvider> EnabledProviders = new List<DeucarianThemeProvider>();
 
         [SerializeField] private DeucarianTheme currentTheme;
+        [SerializeField] private DeucarianThemeFamily currentThemeFamily;
+        [SerializeField] private DeucarianThemeMode themeMode = DeucarianThemeMode.Dark;
         [SerializeField] private DeucarianThemeStyle styleOverride;
         [SerializeField] private bool applyToChildrenOnEnable = true;
         [SerializeField] private bool includeInactiveChildren = true;
         [NonSerialized] private DeucarianThemeStyle lastAppliedStyle;
+        [NonSerialized] private bool warnedIncompleteThemeFamily;
 
         /// <summary>
         /// Last enabled provider. This is a convenience fallback, not a required singleton.
         /// </summary>
         public static DeucarianThemeProvider Active { get; private set; }
 
-        /// <summary>Currently active theme for this provider.</summary>
-        public DeucarianTheme CurrentTheme => currentTheme;
+        /// <summary>Currently active concrete theme for this provider.</summary>
+        public DeucarianTheme CurrentTheme => ResolveCurrentTheme(true);
+
+        /// <summary>Currently assigned paired theme family, or null when using a standalone theme.</summary>
+        public DeucarianThemeFamily CurrentThemeFamily => currentThemeFamily;
+
+        /// <summary>Mode used to resolve the assigned theme family.</summary>
+        public DeucarianThemeMode ThemeMode => themeMode;
 
         /// <summary>Explicit style override. When null, the current theme's visual style is used.</summary>
         public DeucarianThemeStyle StyleOverride => styleOverride;
 
         /// <summary>Resolved active visual style for this provider.</summary>
-        public DeucarianThemeStyle CurrentStyle => styleOverride != null
-            ? styleOverride
-            : currentTheme != null ? currentTheme.VisualStyle : null;
+        public DeucarianThemeStyle CurrentStyle
+        {
+            get
+            {
+                if (styleOverride != null)
+                {
+                    return styleOverride;
+                }
+
+                DeucarianTheme theme = CurrentTheme;
+                return theme != null ? theme.VisualStyle : null;
+            }
+        }
 
         /// <summary>Raised after this provider changes theme and reapplies child targets.</summary>
         public event Action<DeucarianTheme> ThemeChanged;
+
+        /// <summary>Raised after this provider changes mode and reapplies child targets.</summary>
+        public event Action<DeucarianThemeMode> ThemeModeChanged;
 
         /// <summary>Raised after this provider changes resolved style and reapplies child style targets.</summary>
         public event Action<DeucarianThemeStyle> StyleChanged;
@@ -44,19 +66,72 @@ namespace Deucarian.Theming
         /// <summary>Sets the active theme and reapplies it to child theme targets.</summary>
         public void SetTheme(DeucarianTheme theme)
         {
-            if (currentTheme == theme)
+            if (currentThemeFamily == null && currentTheme == theme)
             {
                 RefreshThemeGraph();
                 return;
             }
 
             currentTheme = theme;
+            currentThemeFamily = null;
             if (isActiveAndEnabled)
             {
                 Active = this;
             }
 
             RefreshThemeGraph();
+        }
+
+        /// <summary>Sets the paired theme family and reapplies its current mode to child targets.</summary>
+        public void SetThemeFamily(DeucarianThemeFamily family)
+        {
+            SetThemeFamily(family, themeMode);
+        }
+
+        /// <summary>Atomically sets a paired family and mode, then reapplies the resolved variant once.</summary>
+        public void SetThemeFamily(DeucarianThemeFamily family, DeucarianThemeMode mode)
+        {
+            mode = NormalizeThemeMode(mode);
+            bool modeChanged = themeMode != mode;
+            bool familyAssignmentChanged = currentThemeFamily != family || currentTheme != null;
+            currentThemeFamily = family;
+            currentTheme = null;
+            themeMode = mode;
+            if (familyAssignmentChanged)
+            {
+                warnedIncompleteThemeFamily = false;
+            }
+
+            if (isActiveAndEnabled)
+            {
+                Active = this;
+            }
+
+            RefreshThemeGraph();
+            if (modeChanged)
+            {
+                ThemeModeChanged?.Invoke(themeMode);
+            }
+        }
+
+        /// <summary>Sets the explicit light or dark mode and reapplies the resolved family variant.</summary>
+        public void SetThemeMode(DeucarianThemeMode mode)
+        {
+            mode = NormalizeThemeMode(mode);
+            if (themeMode == mode)
+            {
+                RefreshThemeGraph();
+                return;
+            }
+
+            themeMode = mode;
+            if (isActiveAndEnabled)
+            {
+                Active = this;
+            }
+
+            RefreshThemeGraph();
+            ThemeModeChanged?.Invoke(themeMode);
         }
 
         /// <summary>Sets the provider style override and reapplies it to child style targets.</summary>
@@ -102,8 +177,9 @@ namespace Deucarian.Theming
         /// <summary>Reapplies the resolved theme and style through the provider's target APIs.</summary>
         public bool RefreshThemeGraph()
         {
-            ApplyThemeToChildren();
-            ThemeChanged?.Invoke(currentTheme);
+            DeucarianTheme theme = ResolveCurrentTheme(true);
+            ApplyThemeToChildren(theme, includeInactiveChildren);
+            ThemeChanged?.Invoke(theme);
             ApplyResolvedStyleAndNotify();
             return true;
         }
@@ -117,38 +193,29 @@ namespace Deucarian.Theming
             }
 
             DeucarianThemeStyle currentStyle = CurrentStyle;
-            if (asset == currentTheme || asset == styleOverride || asset == currentStyle)
+            if (asset == currentThemeFamily || asset == styleOverride || asset == currentStyle)
+            {
+                return true;
+            }
+
+            if (currentStyle != null && currentStyle.UsesComponentAsset(asset))
             {
                 return true;
             }
 
             if (asset is DeucarianThemeRuntimeSettings)
             {
-                return currentTheme == null;
+                return currentThemeFamily == null && currentTheme == null;
             }
 
-            DeucarianColorPalette palette = currentTheme != null ? currentTheme.ColorPalette : null;
-            if (asset == palette)
+            if (currentThemeFamily != null)
             {
-                return true;
+                return UsesThemeGraphAsset(currentThemeFamily.LightTheme, asset)
+                    || UsesThemeGraphAsset(currentThemeFamily.DarkTheme, asset);
             }
 
-            if (palette == null)
-            {
-                return asset is DeucarianColorRole && currentTheme == null;
-            }
-
-            if (asset == palette.RoleLibrary)
-            {
-                return true;
-            }
-
-            if (asset is DeucarianColorRole)
-            {
-                return true;
-            }
-
-            return false;
+            return UsesThemeGraphAsset(currentTheme, asset)
+                || (currentTheme == null && asset is DeucarianColorRole);
         }
 
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
@@ -160,13 +227,18 @@ namespace Deucarian.Theming
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
         public void ApplyThemeToChildren(bool includeInactive)
         {
+            ApplyThemeToChildren(ResolveCurrentTheme(true), includeInactive);
+        }
+
+        private void ApplyThemeToChildren(DeucarianTheme theme, bool includeInactive)
+        {
             MonoBehaviour[] behaviours = GetComponentsInChildren<MonoBehaviour>(includeInactive);
             for (int i = 0; i < behaviours.Length; i++)
             {
                 MonoBehaviour behaviour = behaviours[i];
                 if (behaviour is IDeucarianThemeTarget target)
                 {
-                    target.ApplyTheme(currentTheme);
+                    target.ApplyTheme(theme);
                 }
             }
         }
@@ -228,6 +300,8 @@ namespace Deucarian.Theming
 
         private void OnValidate()
         {
+            themeMode = NormalizeThemeMode(themeMode);
+            warnedIncompleteThemeFamily = false;
             if (!isActiveAndEnabled)
             {
                 lastAppliedStyle = CurrentStyle;
@@ -251,6 +325,83 @@ namespace Deucarian.Theming
             }
 
             RefreshThemeGraph();
+        }
+
+        private DeucarianTheme ResolveCurrentTheme(bool warnWhenIncomplete)
+        {
+            if (currentThemeFamily == null)
+            {
+                warnedIncompleteThemeFamily = false;
+                return currentTheme;
+            }
+
+            if (currentThemeFamily.IsComplete)
+            {
+                warnedIncompleteThemeFamily = false;
+                return currentThemeFamily.GetTheme(themeMode);
+            }
+
+            DeucarianTheme resolvedTheme = currentThemeFamily.ResolveTheme(themeMode);
+            if (warnWhenIncomplete && !warnedIncompleteThemeFamily)
+            {
+                warnedIncompleteThemeFamily = true;
+                bool missingLight = currentThemeFamily.LightTheme == null;
+                bool missingDark = currentThemeFamily.DarkTheme == null;
+                string missingVariant = missingLight && missingDark
+                    ? "light and dark"
+                    : missingLight ? "light" : "dark";
+                string fallbackMessage = resolvedTheme != null
+                    ? " The available variant will be used as a runtime fallback."
+                    : " No runtime fallback is available.";
+                ThemingLog.General.Warning(
+                    "Theme family '"
+                    + currentThemeFamily.name
+                    + "' is incomplete because its "
+                    + missingVariant
+                    + " theme is not assigned."
+                    + fallbackMessage,
+                    this);
+            }
+
+            return resolvedTheme;
+        }
+
+        private static bool UsesThemeGraphAsset(DeucarianTheme theme, UnityObject asset)
+        {
+            if (theme == null || asset == null)
+            {
+                return false;
+            }
+
+            if (asset == theme || asset == theme.VisualStyle)
+            {
+                return true;
+            }
+
+            if (theme.VisualStyle != null && theme.VisualStyle.UsesComponentAsset(asset))
+            {
+                return true;
+            }
+
+            DeucarianColorPalette palette = theme.ColorPalette;
+            if (asset == palette)
+            {
+                return true;
+            }
+
+            if (palette == null)
+            {
+                return false;
+            }
+
+            return asset == palette.RoleLibrary || asset is DeucarianColorRole;
+        }
+
+        private static DeucarianThemeMode NormalizeThemeMode(DeucarianThemeMode mode)
+        {
+            return mode == DeucarianThemeMode.Light
+                ? DeucarianThemeMode.Light
+                : DeucarianThemeMode.Dark;
         }
     }
 }

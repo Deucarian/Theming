@@ -16,17 +16,20 @@ namespace Deucarian.Theming.Editor
         public sealed class AssetSearchResult
         {
             internal AssetSearchResult(
+                IReadOnlyList<DeucarianThemeFamily> themeFamilies,
                 IReadOnlyList<DeucarianTheme> themes,
                 IReadOnlyList<DeucarianColorPalette> palettes,
                 IReadOnlyList<DeucarianColorRoleLibrary> roleLibraries,
                 IReadOnlyList<DeucarianThemeStyle> styles)
             {
+                ThemeFamilies = themeFamilies;
                 Themes = themes;
                 Palettes = palettes;
                 RoleLibraries = roleLibraries;
                 Styles = styles;
             }
 
+            public IReadOnlyList<DeucarianThemeFamily> ThemeFamilies { get; }
             public IReadOnlyList<DeucarianTheme> Themes { get; }
             public IReadOnlyList<DeucarianColorPalette> Palettes { get; }
             public IReadOnlyList<DeucarianColorRoleLibrary> RoleLibraries { get; }
@@ -36,6 +39,7 @@ namespace Deucarian.Theming.Editor
         public static AssetSearchResult FindExistingAssets(string[] searchFolders = null, bool autoSelectSingleAssets = false)
         {
             AssetSearchResult result = new AssetSearchResult(
+                FindAssets<DeucarianThemeFamily>(searchFolders),
                 FindAssets<DeucarianTheme>(searchFolders),
                 FindAssets<DeucarianColorPalette>(searchFolders),
                 FindAssets<DeucarianColorRoleLibrary>(searchFolders),
@@ -43,6 +47,10 @@ namespace Deucarian.Theming.Editor
 
             if (autoSelectSingleAssets)
             {
+                AutoSelectSingleAsset(
+                    result.ThemeFamilies,
+                    DeucarianThemingEditorSettings.ActiveThemeFamily,
+                    family => SetActiveThemeFamilySelection(family, DeucarianThemingEditorSettings.ActiveThemeMode));
                 AutoSelectSingleAsset(result.Themes, DeucarianThemingEditorSettings.ActiveTheme, theme => DeucarianThemingEditorSettings.ActiveTheme = theme);
                 AutoSelectSingleAsset(result.Palettes, DeucarianThemingEditorSettings.ActivePalette, palette => DeucarianThemingEditorSettings.ActivePalette = palette);
                 AutoSelectSingleAsset(result.RoleLibraries, DeucarianThemingEditorSettings.ActiveRoleLibrary, library => DeucarianThemingEditorSettings.ActiveRoleLibrary = library);
@@ -50,6 +58,108 @@ namespace Deucarian.Theming.Editor
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Loads the source-controlled runtime settings used as the project theme default.
+        /// </summary>
+        public static DeucarianThemeRuntimeSettings ResolveProjectRuntimeSettings()
+        {
+            return DeucarianThemeRuntimeResolver.LoadSettings();
+        }
+
+        /// <summary>
+        /// Populates an empty or invalid local preview selection from the project runtime default.
+        /// Existing valid family selections remain local editor overrides.
+        /// </summary>
+        public static bool TryHydrateActiveAssetsFromProjectDefault()
+        {
+            return TryHydrateActiveAssetsFromProjectDefault(ResolveProjectRuntimeSettings());
+        }
+
+        /// <summary>
+        /// Populates an empty or invalid local preview selection from the supplied runtime settings.
+        /// </summary>
+        public static bool TryHydrateActiveAssetsFromProjectDefault(
+            DeucarianThemeRuntimeSettings settings)
+        {
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            DeucarianThemeMode mode = DeucarianThemingEditorSettings.ActiveThemeMode;
+            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle;
+            bool changed = false;
+
+            if (family == null)
+            {
+                if (settings == null || settings.DefaultThemeFamily == null)
+                {
+                    return false;
+                }
+
+                family = settings.DefaultThemeFamily;
+                mode = settings.DefaultThemeMode;
+                changed = true;
+            }
+
+            DeucarianTheme resolvedTheme = family.ResolveTheme(mode);
+            DeucarianColorPalette resolvedPalette =
+                resolvedTheme != null ? resolvedTheme.ColorPalette : null;
+            DeucarianColorRoleLibrary resolvedLibrary =
+                resolvedPalette != null ? resolvedPalette.RoleLibrary : null;
+            if (style == null && resolvedTheme != null && resolvedTheme.VisualStyle != null)
+            {
+                style = resolvedTheme.VisualStyle;
+                changed = true;
+            }
+
+            if (DeucarianThemingEditorSettings.ActiveTheme != resolvedTheme
+                || DeucarianThemingEditorSettings.ActivePalette != resolvedPalette
+                || DeucarianThemingEditorSettings.ActiveRoleLibrary != resolvedLibrary)
+            {
+                changed = true;
+            }
+
+            DeucarianThemingEditorSettings.SetDraftSelection(family, mode, style);
+            return changed;
+        }
+
+        /// <summary>
+        /// Writes the active preview family and mode to the source-controlled runtime settings asset.
+        /// </summary>
+        public static bool SetActiveThemeFamilyAsProjectDefault()
+        {
+            return SetActiveThemeFamilyAsProjectDefault(ResolveProjectRuntimeSettings());
+        }
+
+        /// <summary>
+        /// Writes the active preview family and mode to the supplied runtime settings asset.
+        /// </summary>
+        public static bool SetActiveThemeFamilyAsProjectDefault(
+            DeucarianThemeRuntimeSettings settings)
+        {
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (settings == null)
+            {
+                ThemingLog.Editor.Warning(
+                    "No Deucarian runtime theme settings were found. Create an asset named '"
+                    + DeucarianThemeRuntimeSettings.ResourceName
+                    + ".asset' in a Resources folder before setting the project default.");
+                return false;
+            }
+
+            if (family == null)
+            {
+                ThemingLog.Editor.Warning("Choose an active Deucarian theme family before setting the project default.");
+                return false;
+            }
+
+            Undo.RecordObject(settings, "Set Deucarian Project Theme Default");
+            settings.Configure(family, DeucarianThemingEditorSettings.ActiveThemeMode);
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            ThemingLog.Editor.Info(
+                $"Set '{family.name}' ({DeucarianThemingEditorSettings.ActiveThemeMode}) as the Deucarian project theme default.",
+                settings);
+            return true;
         }
 
         public static IReadOnlyList<T> FindAssets<T>(string[] searchFolders = null)
@@ -151,6 +261,117 @@ namespace Deucarian.Theming.Editor
 
             ThemingLog.Editor.Info($"Deucarian built-in theme styles are ready in {assetFolder}.", defaultStyle);
             return styles;
+        }
+
+        public static DeucarianDefaultThemeAssets CreateThemeFamily()
+        {
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string familyPath = CombineAssetPath(folder, DeucarianDefaultThemeAssetFactory.ThemeFamilyFileName);
+            return CreateThemeFamily(familyPath);
+        }
+
+        public static DeucarianDefaultThemeAssets CreateThemeFamily(string familyPath)
+        {
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateThemeFamily(familyPath);
+            StoreDefaultAssetSelections(assets);
+            ThemingLog.Editor.Info(
+                $"Deucarian theme family is ready at {AssetDatabase.GetAssetPath(assets.ThemeFamily)}.",
+                assets.ThemeFamily);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets CreateThemeFamilyFromSavePanel()
+        {
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string familyPath = EditorUtility.SaveFilePanelInProject(
+                "Create Theme Family",
+                PathWithoutExtension(DeucarianDefaultThemeAssetFactory.ThemeFamilyFileName),
+                "asset",
+                "Choose where to create the paired light and dark Deucarian theme family.",
+                folder);
+
+            if (string.IsNullOrEmpty(familyPath))
+            {
+                return null;
+            }
+
+            DeucarianDefaultThemeAssets assets = CreateThemeFamily(familyPath);
+            SelectAndPing(assets.ThemeFamily);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets RepairActiveThemeFamilySetup()
+        {
+            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
+            if (family == null)
+            {
+                ThemingLog.Editor.Warning("No active Deucarian theme family is selected.");
+                return null;
+            }
+
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairThemeFamilySetup(family);
+            StoreDefaultAssetSelections(assets);
+            ThemingLog.Editor.Info($"Repaired Deucarian theme family '{family.name}'.", family);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets WrapActiveThemeInFamily(
+            DeucarianThemeMode existingThemeMode,
+            string familyPath)
+        {
+            if (DeucarianThemingEditorSettings.ActiveThemeFamily != null)
+            {
+                ThemingLog.Editor.Warning(
+                    "The active theme already belongs to a theme family. Select a standalone legacy theme before migration.");
+                return null;
+            }
+
+            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme;
+            if (theme == null)
+            {
+                ThemingLog.Editor.Warning("Choose an active standalone theme before wrapping it in a family.");
+                return null;
+            }
+
+            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.WrapExistingThemeInFamily(
+                theme,
+                existingThemeMode,
+                familyPath);
+            DeucarianThemingEditorSettings.ActiveThemeMode = existingThemeMode;
+            StoreDefaultAssetSelections(assets);
+            ThemingLog.Editor.Info(
+                $"Wrapped theme '{theme.name}' as the {existingThemeMode} variant of '{assets.ThemeFamily.name}'.",
+                assets.ThemeFamily);
+            return assets;
+        }
+
+        public static DeucarianDefaultThemeAssets WrapActiveThemeInFamilyFromSavePanel(
+            DeucarianThemeMode existingThemeMode)
+        {
+            if (DeucarianThemingEditorSettings.ActiveThemeFamily != null)
+            {
+                ThemingLog.Editor.Warning(
+                    "The active theme already belongs to a theme family. Select a standalone legacy theme before migration.");
+                return null;
+            }
+
+            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme;
+            if (theme == null)
+            {
+                ThemingLog.Editor.Warning("Choose an active standalone theme before wrapping it in a family.");
+                return null;
+            }
+
+            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
+            string familyPath = EditorUtility.SaveFilePanelInProject(
+                $"Wrap Theme As {existingThemeMode}",
+                theme.name + "Family",
+                "asset",
+                $"Choose the family asset that will reference '{theme.name}' as its {existingThemeMode} variant.",
+                folder);
+            return string.IsNullOrEmpty(familyPath)
+                ? null
+                : WrapActiveThemeInFamily(existingThemeMode, familyPath);
         }
 
         public static DeucarianDefaultThemeAssets CreateMinimalPalette()
@@ -260,6 +481,7 @@ namespace Deucarian.Theming.Editor
             }
 
             int repaired = 0;
+            repaired += RepairAssetNames<DeucarianThemeFamily>(folders);
             repaired += RepairAssetNames<DeucarianColorRole>(folders);
             repaired += RepairAssetNames<DeucarianColorRoleLibrary>(folders);
             repaired += RepairAssetNames<DeucarianColorPalette>(folders);
@@ -274,6 +496,42 @@ namespace Deucarian.Theming.Editor
 
             ThemingLog.Editor.Info($"Repaired {repaired} Deucarian generated asset name(s).");
             return repaired;
+        }
+
+        public static DeucarianThemeFamily ResolveOrCreateActiveThemeFamily(
+            bool openManagerForMultiple = true,
+            string[] searchFolders = null,
+            string createFolder = null)
+        {
+            DeucarianThemeFamily activeFamily = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (activeFamily != null)
+            {
+                return activeFamily;
+            }
+
+            IReadOnlyList<DeucarianThemeFamily> families = FindAssets<DeucarianThemeFamily>(searchFolders);
+            if (families.Count == 1)
+            {
+                SetActiveThemeFamilySelection(families[0], DeucarianThemingEditorSettings.ActiveThemeMode);
+                return families[0];
+            }
+
+            if (families.Count == 0)
+            {
+                string folder = string.IsNullOrWhiteSpace(createFolder)
+                    ? DeucarianThemingEditorSettings.DefaultAssetFolder
+                    : EnsureAssetFolder(createFolder);
+                string familyPath = CombineAssetPath(folder, "DefaultThemeFamily.asset");
+                DeucarianDefaultThemeAssets assets = CreateThemeFamily(familyPath);
+                return assets.ThemeFamily;
+            }
+
+            if (openManagerForMultiple)
+            {
+                DeucarianThemeManagerWindow.OpenWindow();
+            }
+
+            return null;
         }
 
         public static DeucarianTheme ResolveOrCreateActiveTheme(
@@ -394,6 +652,13 @@ namespace Deucarian.Theming.Editor
             return theme;
         }
 
+        public static DeucarianThemeFamily SelectActiveThemeFamily()
+        {
+            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
+            SelectAndPing(family);
+            return family;
+        }
+
         public static DeucarianColorPalette SelectActivePalette()
         {
             DeucarianColorPalette palette = ResolveOrCreateActivePalette();
@@ -415,8 +680,37 @@ namespace Deucarian.Theming.Editor
             return style;
         }
 
+        public static int SetActiveThemeFamilyAndApply(DeucarianThemeFamily family)
+        {
+            SetActiveThemeFamilySelection(family, DeucarianThemingEditorSettings.ActiveThemeMode);
+            if (family == null)
+            {
+                return 0;
+            }
+
+            return ApplyThemeFamilyToOpenScene(
+                family,
+                DeucarianThemingEditorSettings.ActiveThemeMode,
+                false,
+                false);
+        }
+
+        public static int SetActiveThemeModeAndApply(DeucarianThemeMode mode)
+        {
+            DeucarianThemingEditorSettings.ActiveThemeMode = mode;
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (family == null)
+            {
+                return 0;
+            }
+
+            SetActiveThemeFamilySelection(family, mode);
+            return ApplyThemeFamilyToOpenScene(family, mode, false, false);
+        }
+
         public static int SetActiveThemeAndApply(DeucarianTheme theme)
         {
+            DeucarianThemingEditorSettings.ActiveThemeFamily = null;
             DeucarianThemingEditorSettings.ActiveTheme = theme;
             if (theme == null)
             {
@@ -480,6 +774,12 @@ namespace Deucarian.Theming.Editor
                 return false;
             }
 
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (family != null)
+            {
+                return AssignStyleToThemeFamily(family, style);
+            }
+
             DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme
                 ?? ResolveOrCreateActiveTheme(false);
             if (theme == null)
@@ -492,6 +792,235 @@ namespace Deucarian.Theming.Editor
             EditorUtility.SetDirty(theme);
             AssetDatabase.SaveAssets();
             RefreshOpenSceneProvidersUsingAsset(theme);
+            return true;
+        }
+
+        /// <summary>
+        /// Opens a project save panel and creates a reusable custom style from the active composition.
+        /// No asset is created until the user confirms the save location.
+        /// </summary>
+        public static DeucarianThemeStyle CreateStyleVariantFromActiveFromSavePanel()
+        {
+            DeucarianThemeStyle source = DeucarianThemingEditorSettings.ActiveStyle;
+            if (source == null)
+            {
+                ThemingLog.Editor.Warning("Creating a custom style requires an active Deucarian style.");
+                return null;
+            }
+
+            string sourcePath = AssetDatabase.GetAssetPath(source);
+            string defaultFolder = string.IsNullOrEmpty(sourcePath)
+                ? DeucarianThemingEditorSettings.DefaultAssetFolder
+                : sourcePath.Substring(0, sourcePath.LastIndexOf('/'));
+            string suggestedName = string.IsNullOrWhiteSpace(source.DisplayName)
+                ? "Custom Theme Style"
+                : source.DisplayName + " Custom";
+            string variantPath = EditorUtility.SaveFilePanelInProject(
+                "Create Deucarian Custom Style",
+                suggestedName,
+                "asset",
+                "Choose a source-controlled location for the reusable custom presentation style.",
+                defaultFolder);
+            return string.IsNullOrWhiteSpace(variantPath)
+                ? null
+                : CreateStyleVariant(source, variantPath);
+        }
+
+        /// <summary>Legacy API that creates and activates a source-controlled custom style.</summary>
+        public static DeucarianThemeStyle CreateStyleVariant(
+            DeucarianThemeStyle source,
+            string assetPath)
+        {
+            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
+            if (source == null
+                || string.IsNullOrWhiteSpace(normalizedPath)
+                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal)
+                || !normalizedPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            {
+                ThemingLog.Editor.Warning("A custom style requires an active source style and an .asset path under Assets.");
+                return null;
+            }
+
+            if (AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null)
+            {
+                ThemingLog.Editor.Warning($"A Deucarian asset already exists at '{normalizedPath}'.");
+                return null;
+            }
+
+            string fileName = PathWithoutExtension(normalizedPath);
+            string variantId = BuildVariantStyleId(fileName);
+            int slashIndex = normalizedPath.LastIndexOf('/');
+            if (slashIndex > 0)
+            {
+                EnsureAssetFolder(normalizedPath.Substring(0, slashIndex));
+            }
+
+            DeucarianThemeStyle variant = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            variant.name = fileName;
+            variant.Configure(
+                variantId,
+                fileName,
+                $"Reusable custom presentation style created from {source.DisplayName}.",
+                source.SurfaceTreatment,
+                source.DarkSurfaceTint,
+                source.LightSurfaceTint,
+                source.SurfaceTintStrength,
+                source.SurfaceAlphaMultiplier,
+                source.MinimumSurfaceAlpha,
+                source.MaximumSurfaceAlpha,
+                source.BorderTint,
+                source.BorderTintStrength,
+                source.BorderAlpha,
+                source.BorderWidth,
+                source.CornerRadius,
+                source.UseGeneratedNoiseTexture,
+                source.TextureTint,
+                source.GeneratedTextureSize,
+                source.GeneratedTextureBlurRadius,
+                source.GeneratedTextureBlurStrength);
+            variant.SetVariantMetadata(
+                variantId,
+                fileName,
+                $"Reusable custom presentation style created from {source.DisplayName}.");
+            variant.SetComposition(
+                source.SurfaceProfile,
+                source.ShapeProfile,
+                source.StrokeProfile,
+                source.Density,
+                true);
+
+            AssetDatabase.CreateAsset(variant, normalizedPath);
+            AssetDatabase.SaveAssets();
+            DeucarianThemingEditorSettings.ActiveStyle = variant;
+            SetActiveStyleAndApply(variant);
+            SelectAndPing(variant);
+            return variant;
+        }
+
+        /// <summary>
+        /// Creates a complete project-authored custom style without assigning it to themes or providers.
+        /// The Theme Manager keeps that assignment staged until its explicit Activate action.
+        /// </summary>
+        public static DeucarianThemeStyle CreateCustomStyle(
+            DeucarianThemeStyle source,
+            string assetPath,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size)
+        {
+            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
+            if (source == null
+                || surface == null
+                || corners == null
+                || border == null
+                || size == DeucarianThemeDensity.Unspecified
+                || string.IsNullOrWhiteSpace(normalizedPath)
+                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal)
+                || !normalizedPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            {
+                ThemingLog.Editor.Warning(
+                    "A custom style requires a source, Surface, Corners, Border, Size, and an .asset path under Assets.");
+                return null;
+            }
+
+            if (AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null)
+            {
+                ThemingLog.Editor.Warning($"A Deucarian asset already exists at '{normalizedPath}'.");
+                return null;
+            }
+
+            string fileName = PathWithoutExtension(normalizedPath);
+            int slashIndex = normalizedPath.LastIndexOf('/');
+            if (slashIndex > 0)
+            {
+                EnsureAssetFolder(normalizedPath.Substring(0, slashIndex));
+            }
+
+            string customId = "deucarian.style.custom." + Guid.NewGuid().ToString("N");
+            DeucarianThemeStyle customStyle = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            customStyle.name = fileName;
+            customStyle.Configure(
+                customId,
+                fileName,
+                $"Custom presentation style created from {source.DisplayName}.",
+                source.SurfaceTreatment,
+                source.DarkSurfaceTint,
+                source.LightSurfaceTint,
+                source.SurfaceTintStrength,
+                source.SurfaceAlphaMultiplier,
+                source.MinimumSurfaceAlpha,
+                source.MaximumSurfaceAlpha,
+                source.BorderTint,
+                source.BorderTintStrength,
+                source.BorderAlpha,
+                source.BorderWidth,
+                source.CornerRadius,
+                source.UseGeneratedNoiseTexture,
+                source.TextureTint,
+                source.GeneratedTextureSize,
+                source.GeneratedTextureBlurRadius,
+                source.GeneratedTextureBlurStrength);
+            customStyle.SetCustomStyleMetadata(
+                customId,
+                fileName,
+                $"Custom presentation style created from {source.DisplayName}.");
+            customStyle.SetComposition(surface, corners, border, size, true);
+
+            AssetDatabase.CreateAsset(customStyle, normalizedPath);
+            EditorUtility.SetDirty(customStyle);
+            AssetDatabase.SaveAssetIfDirty(customStyle);
+            DeucarianThemingEditorSettings.ActiveStyle = customStyle;
+            return customStyle;
+        }
+
+        private static string BuildVariantStyleId(string fileName)
+        {
+            string source = string.IsNullOrWhiteSpace(fileName) ? "custom" : fileName.Trim();
+            System.Text.StringBuilder slug = new System.Text.StringBuilder(source.Length);
+            bool pendingSeparator = false;
+            for (int i = 0; i < source.Length; i++)
+            {
+                char character = char.ToLowerInvariant(source[i]);
+                if (char.IsLetterOrDigit(character))
+                {
+                    if (pendingSeparator && slug.Length > 0)
+                    {
+                        slug.Append('-');
+                    }
+
+                    slug.Append(character);
+                    pendingSeparator = false;
+                }
+                else
+                {
+                    pendingSeparator = slug.Length > 0;
+                }
+            }
+
+            return "deucarian.style.variant." + (slug.Length > 0 ? slug.ToString() : "custom");
+        }
+
+        /// <summary>Legacy API that updates a project-authored custom style and refreshes active providers.</summary>
+        public static bool UpdateStyleVariantComposition(
+            DeucarianThemeStyle style,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile shape,
+            DeucarianThemeStrokeProfile stroke,
+            DeucarianThemeDensity density)
+        {
+            if (style == null || !style.IsVariant)
+            {
+                ThemingLog.Editor.Warning("Only project-authored Deucarian custom styles can be edited as compositions.");
+                return false;
+            }
+
+            Undo.RecordObject(style, "Edit Deucarian Custom Style");
+            style.SetComposition(surface, shape, stroke, density, true);
+            EditorUtility.SetDirty(style);
+            AssetDatabase.SaveAssets();
+            DeucarianThemingEditorSettings.ActiveStyle = style;
+            RefreshOpenSceneProvidersUsingAsset(style);
             return true;
         }
 
@@ -515,6 +1044,19 @@ namespace Deucarian.Theming.Editor
                 $"Assigned Deucarian style '{style.name}' to theme '{theme.name}'.{providerNote}",
                 theme);
             return true;
+        }
+
+        public static bool AssignActiveStyleToActiveThemeFamily()
+        {
+            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
+            DeucarianThemeStyle style = ResolveOrCreateActiveStyle();
+            if (family == null || style == null)
+            {
+                ThemingLog.Editor.Warning("Assigning a shared Deucarian style requires an active theme family and style.");
+                return false;
+            }
+
+            return AssignStyleToThemeFamily(family, style);
         }
 
         public static void SelectAndPing(UnityEngine.Object asset)
@@ -543,6 +1085,16 @@ namespace Deucarian.Theming.Editor
 
         public static int ApplyActiveThemeToOpenScene(bool createProviderIfMissing = true, bool askBeforeCreate = true)
         {
+            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
+            if (family != null)
+            {
+                return ApplyThemeFamilyToOpenScene(
+                    family,
+                    DeucarianThemingEditorSettings.ActiveThemeMode,
+                    createProviderIfMissing,
+                    askBeforeCreate);
+            }
+
             DeucarianTheme theme = ResolveOrCreateActiveTheme();
             if (theme == null)
             {
@@ -551,6 +1103,67 @@ namespace Deucarian.Theming.Editor
             }
 
             return ApplyThemeToOpenScene(theme, createProviderIfMissing, askBeforeCreate);
+        }
+
+        public static int ApplyThemeFamilyToOpenScene(
+            DeucarianThemeFamily family,
+            DeucarianThemeMode mode,
+            bool createProviderIfMissing = true,
+            bool askBeforeCreate = true)
+        {
+            if (family == null)
+            {
+                ThemingLog.Editor.Warning("Cannot apply a null Deucarian theme family to the open scene.");
+                return 0;
+            }
+
+            DeucarianTheme resolvedTheme = family.ResolveTheme(mode);
+            if (resolvedTheme == null)
+            {
+                ThemingLog.Editor.Warning(
+                    $"Cannot apply theme family '{family.name}' because neither variant is assigned.",
+                    family);
+                return 0;
+            }
+
+            DeucarianThemeProvider[] providers = FindThemeProvidersInOpenScenes();
+            if (providers.Length == 0)
+            {
+                if (!createProviderIfMissing || !ShouldCreateThemeProvider(askBeforeCreate))
+                {
+                    ThemingLog.Editor.Warning("No DeucarianThemeProvider was found in the open scenes.");
+                    return 0;
+                }
+
+                DeucarianThemeProvider createdProvider = CreateThemeFamilyProvider();
+                providers = new[] { createdProvider };
+                Selection.activeObject = createdProvider.gameObject;
+            }
+
+            int applied = 0;
+            for (int i = 0; i < providers.Length; i++)
+            {
+                DeucarianThemeProvider provider = providers[i];
+                if (provider == null || !provider.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(provider, "Apply Deucarian Theme Family");
+                provider.SetThemeFamily(family, mode);
+                EditorUtility.SetDirty(provider);
+                EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
+                applied++;
+            }
+
+            if (applied > 0)
+            {
+                ThemingLog.Editor.Info(
+                    $"Applied Deucarian theme family '{family.name}' in {mode} mode to {applied} theme provider(s).",
+                    family);
+            }
+
+            return applied;
         }
 
         public static int ApplyThemeToOpenScene(
@@ -737,12 +1350,23 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            if (assets.Theme != null)
+            if (assets.ThemeFamily != null)
+            {
+                SetActiveThemeFamilySelection(
+                    assets.ThemeFamily,
+                    DeucarianThemingEditorSettings.ActiveThemeMode);
+            }
+            else
+            {
+                DeucarianThemingEditorSettings.ActiveThemeFamily = null;
+            }
+
+            if (assets.ThemeFamily == null && assets.Theme != null)
             {
                 DeucarianThemingEditorSettings.ActiveTheme = assets.Theme;
             }
 
-            if (assets.Palette != null)
+            if (assets.ThemeFamily == null && assets.Palette != null)
             {
                 DeucarianThemingEditorSettings.ActivePalette = assets.Palette;
             }
@@ -760,6 +1384,73 @@ namespace Deucarian.Theming.Editor
             {
                 DeucarianThemingEditorSettings.ActiveStyle = assets.Styles[0];
             }
+        }
+
+        private static void SetActiveThemeFamilySelection(
+            DeucarianThemeFamily family,
+            DeucarianThemeMode mode)
+        {
+            DeucarianThemingEditorSettings.ActiveThemeFamily = family;
+            DeucarianThemingEditorSettings.ActiveThemeMode = mode;
+            if (family == null)
+            {
+                return;
+            }
+
+            DeucarianTheme theme = family.ResolveTheme(mode);
+            DeucarianColorPalette palette = theme != null ? theme.ColorPalette : null;
+            DeucarianThemingEditorSettings.ActiveTheme = theme;
+            DeucarianThemingEditorSettings.ActivePalette = palette;
+            DeucarianThemingEditorSettings.ActiveRoleLibrary = palette != null ? palette.RoleLibrary : null;
+            if (theme != null && theme.VisualStyle != null)
+            {
+                DeucarianThemingEditorSettings.ActiveStyle = theme.VisualStyle;
+            }
+        }
+
+        private static bool AssignStyleToThemeFamily(
+            DeucarianThemeFamily family,
+            DeucarianThemeStyle style)
+        {
+            if (family == null || style == null)
+            {
+                return false;
+            }
+
+            DeucarianTheme lightTheme = family.LightTheme;
+            DeucarianTheme darkTheme = family.DarkTheme;
+            if (lightTheme != null)
+            {
+                Undo.RecordObject(lightTheme, "Assign Shared Deucarian Theme Style");
+            }
+
+            if (darkTheme != null && darkTheme != lightTheme)
+            {
+                Undo.RecordObject(darkTheme, "Assign Shared Deucarian Theme Style");
+            }
+
+            bool changed = family.SetSharedVisualStyle(style);
+
+            if (changed)
+            {
+                if (lightTheme != null)
+                {
+                    EditorUtility.SetDirty(lightTheme);
+                }
+
+                if (darkTheme != null)
+                {
+                    EditorUtility.SetDirty(darkTheme);
+                }
+
+                AssetDatabase.SaveAssets();
+                RefreshOpenSceneProvidersUsingAsset(family);
+            }
+
+            ThemingLog.Editor.Info(
+                $"Assigned Deucarian style '{style.name}' to both variants of family '{family.name}'.",
+                family);
+            return true;
         }
 
         private static DeucarianThemeStyle FindStyleById(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)
@@ -869,6 +1560,26 @@ namespace Deucarian.Theming.Editor
             Undo.RegisterCreatedObjectUndo(gameObject, "Create Deucarian Theme Provider");
             DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
             provider.SetTheme(theme);
+            EditorUtility.SetDirty(provider);
+            if (provider.gameObject.scene.IsValid())
+            {
+                EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
+            }
+
+            return provider;
+        }
+
+        private static DeucarianThemeProvider CreateThemeFamilyProvider()
+        {
+            GameObject gameObject = new GameObject("Deucarian Theme Provider");
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && activeScene.isLoaded)
+            {
+                SceneManager.MoveGameObjectToScene(gameObject, activeScene);
+            }
+
+            Undo.RegisterCreatedObjectUndo(gameObject, "Create Deucarian Theme Provider");
+            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
             EditorUtility.SetDirty(provider);
             if (provider.gameObject.scene.IsValid())
             {

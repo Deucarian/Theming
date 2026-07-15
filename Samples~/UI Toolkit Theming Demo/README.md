@@ -31,14 +31,14 @@ Example bindings:
 - `.viewer-button` -> `BackgroundColor`
 - `.viewer-error` -> `TextColor`
 
-Open `Tools/Deucarian/Theming/Open Theme Manager` to create a minimal palette and use **Apply Theme To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
+Open `Tools/Deucarian/Theming/Open Theme Manager` to create a theme family, preview Light/Dark, and use **Apply Preview To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
 
 ## Designer Workflow
 
-1. Create a minimal palette from the Theme Manager.
-2. Edit colors on the palette asset.
+1. Create a light/dark theme family from the Theme Manager.
+2. Edit colors on both palette assets.
 3. Add a `DeucarianUIToolkitThemeApplier` binding for a selector, element name, or class.
 4. Add custom roles only when the built-in minimal roles are not enough.
-5. Switch themes at runtime through `DeucarianThemeProvider.SetTheme`.
+5. Switch modes at runtime through `DeucarianThemeProvider.SetThemeMode`.
 
 `DeucarianUIToolkitThemeVariables` previews or generates USS variable values. Unity 2022.3 does not expose a stable runtime API for assigning USS custom variables directly, so direct style bindings are the recommended runtime path.

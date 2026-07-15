@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using Deucarian.Theming.UIToolkit;
 using NUnit.Framework;
 using UnityEngine;
@@ -83,6 +84,101 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void ComposedStyleResolvesIndependentSurfaceShapeStrokeAndDensity()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            DeucarianThemeSurfaceProfile surface = CreateAsset<DeucarianThemeSurfaceProfile>();
+            DeucarianThemeShapeProfile square = CreateAsset<DeucarianThemeShapeProfile>();
+            DeucarianThemeStrokeProfile borderless = CreateAsset<DeucarianThemeStrokeProfile>();
+            surface.Configure(
+                DeucarianThemePresentationProfileIds.Surface.FrostedGlass,
+                "Frosted Glass",
+                "Test surface.",
+                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                style.DarkSurfaceTint,
+                style.LightSurfaceTint,
+                style.SurfaceTintStrength,
+                style.SurfaceAlphaMultiplier,
+                style.MinimumSurfaceAlpha,
+                style.MaximumSurfaceAlpha,
+                true,
+                style.TextureTint,
+                style.GeneratedTextureSize,
+                4,
+                0.92f);
+            square.Configure(
+                DeucarianThemePresentationProfileIds.Shape.Square,
+                "Square",
+                "Test shape.",
+                0f);
+            borderless.Configure(
+                DeucarianThemePresentationProfileIds.Stroke.Borderless,
+                "Borderless",
+                "Test stroke.",
+                Color.clear,
+                0f,
+                0f,
+                0f);
+
+            style.SetComposition(
+                surface,
+                square,
+                borderless,
+                DeucarianThemeDensity.Compact,
+                true);
+
+            Assert.IsTrue(style.IsComposed);
+            Assert.IsTrue(style.IsVariant);
+            Assert.AreSame(surface, style.SurfaceProfile);
+            Assert.AreEqual(DeucarianThemeStyleSurfaceTreatment.FrostedGlass, style.SurfaceTreatment);
+            Assert.AreEqual(0f, style.CornerRadius);
+            Assert.AreEqual(0f, style.BorderWidth);
+            Assert.AreEqual(DeucarianThemeDensity.Compact, style.Density);
+            Assert.IsNotNull(style.GetGeneratedTexture());
+        }
+
+        [Test]
+        public void ComponentMutationRefreshesStyleProvider()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            DeucarianThemeShapeProfile shape = CreateAsset<DeucarianThemeShapeProfile>();
+            shape.Configure(
+                DeucarianThemePresentationProfileIds.Shape.Rounded,
+                "Rounded",
+                "Test shape.",
+                16f);
+            style.SetComposition(null, shape, null, DeucarianThemeDensity.Comfortable, true);
+            GameObject providerObject = CreateGameObject("Provider");
+            GameObject targetObject = CreateGameObject("Target");
+            targetObject.transform.SetParent(providerObject.transform, false);
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
+            provider.SetStyle(style);
+            StartProviderAssetChangeTracking(provider);
+            int countBeforeMutation = probe.ApplyCount;
+            int eventCount = 0;
+            provider.StyleChanged += _ => eventCount++;
+
+            try
+            {
+                shape.Configure(
+                    DeucarianThemePresentationProfileIds.Shape.Square,
+                    "Square",
+                    "Updated test shape.",
+                    0f);
+
+                Assert.AreEqual(0f, style.CornerRadius);
+                Assert.AreEqual(countBeforeMutation + 1, probe.ApplyCount);
+                Assert.AreEqual(1, eventCount);
+                Assert.IsTrue(provider.UsesThemeAsset(shape));
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
+        }
+
+        [Test]
         public void ProviderAppliesStyleOverrideToChildTargets()
         {
             DeucarianThemeStyle style = CreateFrostedStyle();
@@ -135,18 +231,28 @@ namespace Deucarian.Theming.Tests
             DeucarianThemeStyle broadcastStyle = null;
 
             provider.SetTheme(theme);
+            StartProviderAssetChangeTracking(provider);
+            int countBeforeMutation = probe.ApplyCount;
             provider.StyleChanged += style =>
             {
                 styleChangedCount++;
                 broadcastStyle = style;
             };
 
-            theme.SetVisualStyle(secondStyle);
+            try
+            {
+                theme.SetVisualStyle(secondStyle);
 
-            Assert.AreSame(secondStyle, provider.CurrentStyle);
-            Assert.AreSame(secondStyle, probe.AppliedStyle);
-            Assert.AreSame(secondStyle, broadcastStyle);
-            Assert.AreEqual(1, styleChangedCount);
+                Assert.AreSame(secondStyle, provider.CurrentStyle);
+                Assert.AreSame(secondStyle, probe.AppliedStyle);
+                Assert.AreSame(secondStyle, broadcastStyle);
+                Assert.AreEqual(countBeforeMutation + 1, probe.ApplyCount);
+                Assert.AreEqual(1, styleChangedCount);
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
         }
 
         [Test]
@@ -164,12 +270,20 @@ namespace Deucarian.Theming.Tests
             ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
 
             provider.SetTheme(theme);
+            StartProviderAssetChangeTracking(provider);
             int countAfterSetTheme = probe.ApplyCount;
 
-            palette.SetColor(role, Color.green);
+            try
+            {
+                palette.SetColor(role, Color.green);
 
-            Assert.Greater(probe.ApplyCount, countAfterSetTheme);
-            Assert.AreSame(theme, probe.AppliedTheme);
+                Assert.AreEqual(countAfterSetTheme + 1, probe.ApplyCount);
+                Assert.AreSame(theme, probe.AppliedTheme);
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
         }
 
         [Test]
@@ -186,18 +300,26 @@ namespace Deucarian.Theming.Tests
             ThemeTargetProbe probe = targetObject.AddComponent<ThemeTargetProbe>();
 
             provider.SetTheme(theme);
+            StartProviderAssetChangeTracking(provider);
             int countAfterSetTheme = probe.ApplyCount;
 
-            role.Configure(
-                DeucarianBuiltinColorRoleIds.Core.Primary,
-                "Primary Updated",
-                "Tests",
-                "Updated role.",
-                Color.blue,
-                false);
+            try
+            {
+                role.Configure(
+                    DeucarianBuiltinColorRoleIds.Core.Primary,
+                    "Primary Updated",
+                    "Tests",
+                    "Updated role.",
+                    Color.blue,
+                    false);
 
-            Assert.Greater(probe.ApplyCount, countAfterSetTheme);
-            Assert.AreSame(theme, probe.AppliedTheme);
+                Assert.AreEqual(countAfterSetTheme + 1, probe.ApplyCount);
+                Assert.AreSame(theme, probe.AppliedTheme);
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
         }
 
         [Test]
@@ -211,32 +333,40 @@ namespace Deucarian.Theming.Tests
             StyleTargetProbe probe = targetObject.AddComponent<StyleTargetProbe>();
 
             provider.SetStyle(style);
+            StartProviderAssetChangeTracking(provider);
             int countAfterSetStyle = probe.ApplyCount;
 
-            style.Configure(
-                DeucarianThemeStyleIds.FrostedGlass,
-                "Frosted Glass",
-                "Updated style.",
-                DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
-                style.DarkSurfaceTint,
-                style.LightSurfaceTint,
-                0.42f,
-                style.SurfaceAlphaMultiplier,
-                style.MinimumSurfaceAlpha,
-                style.MaximumSurfaceAlpha,
-                style.BorderTint,
-                style.BorderTintStrength,
-                style.BorderAlpha,
-                style.BorderWidth,
-                style.CornerRadius,
-                true,
-                style.TextureTint,
-                style.GeneratedTextureSize,
-                style.GeneratedTextureBlurRadius,
-                style.GeneratedTextureBlurStrength);
+            try
+            {
+                style.Configure(
+                    DeucarianThemeStyleIds.FrostedGlass,
+                    "Frosted Glass",
+                    "Updated style.",
+                    DeucarianThemeStyleSurfaceTreatment.FrostedGlass,
+                    style.DarkSurfaceTint,
+                    style.LightSurfaceTint,
+                    0.42f,
+                    style.SurfaceAlphaMultiplier,
+                    style.MinimumSurfaceAlpha,
+                    style.MaximumSurfaceAlpha,
+                    style.BorderTint,
+                    style.BorderTintStrength,
+                    style.BorderAlpha,
+                    style.BorderWidth,
+                    style.CornerRadius,
+                    true,
+                    style.TextureTint,
+                    style.GeneratedTextureSize,
+                    style.GeneratedTextureBlurRadius,
+                    style.GeneratedTextureBlurStrength);
 
-            Assert.Greater(probe.ApplyCount, countAfterSetStyle);
-            Assert.AreSame(style, probe.AppliedStyle);
+                Assert.AreEqual(countAfterSetStyle + 1, probe.ApplyCount);
+                Assert.AreSame(style, probe.AppliedStyle);
+            }
+            finally
+            {
+                StopProviderAssetChangeTracking(provider);
+            }
         }
 
         [Test]
@@ -320,7 +450,72 @@ namespace Deucarian.Theming.Tests
             Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(outline, image.color, style));
 
             Assert.AreEqual(style.ResolveSurfaceColor(Color.black), image.color);
+            Assert.IsTrue(outline.enabled);
             Assert.AreEqual(style.ResolveBorderColor(image.color), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(style.BorderWidth, -style.BorderWidth),
+                outline.effectDistance);
+        }
+
+        [Test]
+        public void UGUIStyleUtilityClearsBorderlessOutlineAndRestoresNonzeroOutline()
+        {
+            DeucarianThemeStyle borderlessStyle = CreateFrostedStyle();
+            DeucarianThemeStrokeProfile borderless = CreateAsset<DeucarianThemeStrokeProfile>();
+            borderless.Configure(
+                DeucarianThemePresentationProfileIds.Stroke.Borderless,
+                "Borderless",
+                "No visible uGUI outline.",
+                Color.white,
+                1f,
+                1f,
+                0f);
+            borderlessStyle.SetComposition(
+                null,
+                null,
+                borderless,
+                DeucarianThemeDensity.Unspecified,
+                false);
+            GameObject gameObject = CreateGameObject("UGUI Borderless Panel");
+            Outline outline = gameObject.AddComponent<Outline>();
+
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                borderlessStyle));
+            Assert.IsTrue(outline.enabled);
+            Assert.AreEqual(Color.clear, outline.effectColor);
+            Assert.AreEqual(Vector2.zero, outline.effectDistance);
+
+            DeucarianThemeStyle borderedStyle = CreateFrostedStyle();
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                borderedStyle));
+            Assert.IsTrue(outline.enabled);
+            Assert.AreEqual(borderedStyle.ResolveBorderColor(Color.gray), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(borderedStyle.BorderWidth, -borderedStyle.BorderWidth),
+                outline.effectDistance);
+        }
+
+        [Test]
+        public void UGUIStyleUtilityPreservesCallerOwnedOutlineEnabledState()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            GameObject gameObject = CreateGameObject("UGUI Disabled Outline");
+            Outline outline = gameObject.AddComponent<Outline>();
+            outline.enabled = false;
+
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                style));
+            Assert.IsFalse(outline.enabled);
+            Assert.AreEqual(style.ResolveBorderColor(Color.gray), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(style.BorderWidth, -style.BorderWidth),
+                outline.effectDistance);
         }
 
         [Test]
@@ -404,6 +599,26 @@ namespace Deucarian.Theming.Tests
             T asset = ScriptableObject.CreateInstance<T>();
             createdObjects.Add(asset);
             return asset;
+        }
+
+        private static void StartProviderAssetChangeTracking(DeucarianThemeProvider provider)
+        {
+            InvokeProviderLifecycle(provider, "OnDisable");
+            InvokeProviderLifecycle(provider, "OnEnable");
+        }
+
+        private static void StopProviderAssetChangeTracking(DeucarianThemeProvider provider)
+        {
+            InvokeProviderLifecycle(provider, "OnDisable");
+        }
+
+        private static void InvokeProviderLifecycle(DeucarianThemeProvider provider, string methodName)
+        {
+            MethodInfo method = typeof(DeucarianThemeProvider).GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method, methodName);
+            method.Invoke(provider, null);
         }
 
         private sealed class StyleTargetProbe : MonoBehaviour, IDeucarianThemeStyleTarget

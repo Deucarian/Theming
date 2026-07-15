@@ -2,7 +2,7 @@
 
 This sample is intentionally lightweight for v0.4.2.
 
-Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Minimal Palette**, then **Apply Theme To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
+Open `Tools/Deucarian/Theming/Open Theme Manager` and use **Create Theme Family**, then preview Light/Dark and choose **Apply Preview To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
 
 ## Demo Hierarchy
 
@@ -31,11 +31,11 @@ Use `DeucarianSelectableThemeColors` on any `UnityEngine.UI.Selectable`, includi
 
 ## Designer Workflow
 
-1. Create a minimal palette from the Theme Manager.
-2. Edit colors on the palette asset.
+1. Create a light/dark theme family from the Theme Manager.
+2. Edit colors on both palette assets and use the preview mode to compare them.
 3. Assign roles to theme components such as `DeucarianTMPThemeColor` or `DeucarianSelectableThemeColors`.
 4. Add custom roles only when the built-in minimal roles are not enough.
-5. Switch themes at runtime by calling `DeucarianThemeProvider.SetTheme`.
+5. Switch modes at runtime by calling `DeucarianThemeProvider.SetThemeMode`.
 
 The package resolves colors in this order:
 
