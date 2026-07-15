@@ -84,8 +84,20 @@ namespace Deucarian.Theming
                 return false;
             }
 
+            float borderWidth = Mathf.Max(0f, style.BorderWidth);
+            if (borderWidth <= Mathf.Epsilon)
+            {
+                // An enabled uGUI Outline still redraws and can tint its Graphic when its
+                // distance is zero. Borderless must clear the effect, not merely collapse it.
+                // Preserve enabled so applying a style never overrides caller-owned component state.
+                outline.effectColor = Color.clear;
+                outline.effectDistance = Vector2.zero;
+                outline.useGraphicAlpha = false;
+                return true;
+            }
+
             outline.effectColor = style.ResolveBorderColor(surfaceColor);
-            outline.effectDistance = new Vector2(style.BorderWidth, -style.BorderWidth);
+            outline.effectDistance = new Vector2(borderWidth, -borderWidth);
             outline.useGraphicAlpha = false;
             return true;
         }

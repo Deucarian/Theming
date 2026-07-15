@@ -63,7 +63,7 @@ Recommended workflow:
 
 1. In Unity, choose `Tools > Deucarian > Theming > Create Theme Family`.
 2. Edit the generated light and dark palette assets.
-3. Open `Tools > Deucarian > Theming > Open Theme Manager`, preview either mode, and click `Apply Preview To Scene` when you are ready.
+3. Open `Tools > Deucarian > Theming > Open Theme Manager`, stage the Theme Family, Mode, and Visual Style you want, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
 
 Done.
 
@@ -85,16 +85,7 @@ The Theming menu is intentionally limited to quick entry points:
 - `Tools/Deucarian/Theming/Open Theme Manager`
 - `Tools/Deucarian/Theming/Create Theme Family`
 
-Use the Theme Manager for the full workflow and actions:
-
-- Find, select, and ping theme assets.
-- Create missing defaults.
-- Repair the complete light/dark family.
-- Create built-in visual styles.
-- Assign the active style to the active theme.
-- Create game theme assets.
-- Open theme folders.
-- Preview light or dark and apply the active family to the open scene.
+Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
 
 ## Samples
 
@@ -152,13 +143,13 @@ Family support assets are generated together. If anything is missing later, use 
 
 Fresh default families use the versioned Deucarian Brand light/dark token snapshot. Existing standalone themes and the legacy `Create Minimal Palette` API remain available for compatibility and advanced workflows. Wrapping an existing standalone theme requires explicitly identifying it as light or dark; the package never guesses or algorithmically derives its opposite.
 
-Default generic assets can still be created from the Theme Manager. Game-specific roles are optional and live in the Theme Manager's advanced utilities.
+Generic starter assets and optional game-specific roles remain available under Theme Manager's collapsed **Developer Tools** when a project actually needs them.
 
 ## Runtime default theme
 
 Builds can resolve a project default family through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its default family and explicit mode; new settings default to dark. The legacy standalone default-theme field remains supported.
 
-The Theme Manager hydrates an empty local preview from this source-controlled project default. Valid editor preview selections remain machine-local overrides until **Set Active as Project Default** is used. Its optional starter-asset generator is separate from project-default health, so product-specific theme families do not need generically named duplicate assets.
+The Theme Manager hydrates missing or invalid staged fields from this source-controlled project default while preserving valid machine-local Family, Mode, and Visual Style choices. **Activate** is the single commit point: it validates the complete setup, shares the chosen style across Light and Dark, writes the runtime default, and synchronizes loaded providers. Missing, incomplete, or ambiguous runtime settings expose one contextual **Configure Runtime Settings...** workflow; creation and legacy utilities remain under **Developer Tools** rather than being presented as project health requirements.
 
 Runtime code can call:
 
@@ -189,13 +180,13 @@ The built-in style presets are:
 - `Material Dark`: opaque layered dark surfaces with restrained radius and crisp dividers.
 - `Fluent Acrylic`: acrylic-inspired translucent surfaces with subtle tint and texture.
 
-These names remain curated presets, but each preset is a composition of four reusable axes: surface treatment, shape, stroke, and density. The built-ins preserve their existing output exactly. Use **Create Variant From Active** in Theme Manager to persist a source-controlled combination such as Frosted Glass + Square + Compact; editing a preview selection alone never creates a variant asset. Theme-family assignment keeps that variant shared by Light and Dark modes.
+These names remain curated presets, but each preset is a composition of four reusable axes: Surface, Corners, Border, and Size. The built-ins preserve their existing output exactly. Choose **Customize Style** in Theme Manager to compose a source-controlled **Custom Style**, such as Frosted Glass + Square + Compact. Composer choices remain staged until **Save & Activate**, and the resulting Custom Style stays shared by Light and Dark modes.
 
 Existing third-party style assets continue to resolve their legacy inline fields when component references or density are absent. Providers observe edits to referenced component assets and emit the existing `StyleChanged` notification so active consumers refresh immediately.
 
 This is a good fit for shared visual language, because packages such as a report viewer can keep their own layout and toolbar behavior while asking Theming for the surface treatment. It would be a bad fit if the style asset started owning product-specific UI structure, navigation rules, or a generic UI framework.
 
-Use the Theme Manager's advanced actions to create the built-in style assets under the default theme folder. Assign one to the active theme, or switch at runtime with `DeucarianThemeProvider.SetStyle`. If no provider style override is set, `DeucarianThemeProvider.CurrentStyle` resolves from the current theme's `VisualStyle`.
+Use Theme Manager's collapsed **Developer Tools** for asset creation and repair. Activate a preset or Custom Style through the main workflow, or switch at runtime with `DeucarianThemeProvider.SetStyle`. If no provider style override is set, `DeucarianThemeProvider.CurrentStyle` resolves from the current theme's `VisualStyle`.
 
 `DarkSurfaceTint` and `LightSurfaceTint` describe the tint selected for a visually dark or light incoming surface color. They are source-luminance treatments, not application modes, and they do not generate a palette. Light/dark mode always comes from the active theme family.
 

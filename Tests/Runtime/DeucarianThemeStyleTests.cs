@@ -450,7 +450,72 @@ namespace Deucarian.Theming.Tests
             Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(outline, image.color, style));
 
             Assert.AreEqual(style.ResolveSurfaceColor(Color.black), image.color);
+            Assert.IsTrue(outline.enabled);
             Assert.AreEqual(style.ResolveBorderColor(image.color), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(style.BorderWidth, -style.BorderWidth),
+                outline.effectDistance);
+        }
+
+        [Test]
+        public void UGUIStyleUtilityClearsBorderlessOutlineAndRestoresNonzeroOutline()
+        {
+            DeucarianThemeStyle borderlessStyle = CreateFrostedStyle();
+            DeucarianThemeStrokeProfile borderless = CreateAsset<DeucarianThemeStrokeProfile>();
+            borderless.Configure(
+                DeucarianThemePresentationProfileIds.Stroke.Borderless,
+                "Borderless",
+                "No visible uGUI outline.",
+                Color.white,
+                1f,
+                1f,
+                0f);
+            borderlessStyle.SetComposition(
+                null,
+                null,
+                borderless,
+                DeucarianThemeDensity.Unspecified,
+                false);
+            GameObject gameObject = CreateGameObject("UGUI Borderless Panel");
+            Outline outline = gameObject.AddComponent<Outline>();
+
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                borderlessStyle));
+            Assert.IsTrue(outline.enabled);
+            Assert.AreEqual(Color.clear, outline.effectColor);
+            Assert.AreEqual(Vector2.zero, outline.effectDistance);
+
+            DeucarianThemeStyle borderedStyle = CreateFrostedStyle();
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                borderedStyle));
+            Assert.IsTrue(outline.enabled);
+            Assert.AreEqual(borderedStyle.ResolveBorderColor(Color.gray), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(borderedStyle.BorderWidth, -borderedStyle.BorderWidth),
+                outline.effectDistance);
+        }
+
+        [Test]
+        public void UGUIStyleUtilityPreservesCallerOwnedOutlineEnabledState()
+        {
+            DeucarianThemeStyle style = CreateFrostedStyle();
+            GameObject gameObject = CreateGameObject("UGUI Disabled Outline");
+            Outline outline = gameObject.AddComponent<Outline>();
+            outline.enabled = false;
+
+            Assert.IsTrue(DeucarianUGUIThemeStyleUtility.ApplyOutline(
+                outline,
+                Color.gray,
+                style));
+            Assert.IsFalse(outline.enabled);
+            Assert.AreEqual(style.ResolveBorderColor(Color.gray), outline.effectColor);
+            Assert.AreEqual(
+                new Vector2(style.BorderWidth, -style.BorderWidth),
+                outline.effectDistance);
         }
 
         [Test]

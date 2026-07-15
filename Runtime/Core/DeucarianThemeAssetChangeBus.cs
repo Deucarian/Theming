@@ -21,7 +21,7 @@ namespace Deucarian.Theming
         /// Suppresses child notifications until the returned scope is disposed, then emits one consolidated change.
         /// Nested batches participate in the outermost batch.
         /// </summary>
-        internal static IDisposable BeginBatch(UnityObject consolidatedAsset)
+        public static IDisposable BeginBatch(UnityObject consolidatedAsset)
         {
             if (batchDepth == 0)
             {
@@ -53,7 +53,7 @@ namespace Deucarian.Theming
                 return;
             }
 
-            AssetChanged?.Invoke(asset);
+            PublishChanged(asset);
         }
 
         private static void EndBatch()
@@ -79,7 +79,32 @@ namespace Deucarian.Theming
 
             if (shouldNotify)
             {
-                AssetChanged?.Invoke(changedAsset);
+                PublishChanged(changedAsset);
+            }
+        }
+
+        private static void PublishChanged(UnityObject asset)
+        {
+            Action<UnityObject> subscribers = AssetChanged;
+            if (subscribers == null)
+            {
+                return;
+            }
+
+            Delegate[] invocationList = subscribers.GetInvocationList();
+            for (int i = 0; i < invocationList.Length; i++)
+            {
+                try
+                {
+                    ((Action<UnityObject>)invocationList[i]).Invoke(asset);
+                }
+                catch (Exception exception)
+                {
+                    ThemingLog.General.Exception(
+                        exception,
+                        "A theme asset change subscriber failed. Remaining subscribers will still be notified.",
+                        asset);
+                }
             }
         }
 

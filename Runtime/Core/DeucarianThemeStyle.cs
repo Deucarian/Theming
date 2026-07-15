@@ -59,7 +59,13 @@ namespace Deucarian.Theming
         /// <summary>Explicit semantic density, or Unspecified for legacy style-ID resolution.</summary>
         public DeucarianThemeDensity Density => density;
 
-        /// <summary>True when the style was explicitly created as a reusable project variant.</summary>
+        /// <summary>True when the style was explicitly created as a reusable project custom style.</summary>
+        public bool IsCustomStyle => isVariant;
+
+        /// <summary>
+        /// Backward-compatible alias for <see cref="IsCustomStyle"/>.
+        /// Existing serialized assets continue to use the original isVariant field.
+        /// </summary>
         public bool IsVariant => isVariant;
 
         /// <summary>True when all reusable presentation components and a density are assigned.</summary>
@@ -67,6 +73,31 @@ namespace Deucarian.Theming
                                   && shapeProfile != null
                                   && strokeProfile != null
                                   && density != DeucarianThemeDensity.Unspecified;
+
+        /// <summary>Identifies whether the style is legacy, complete, or only partially composed.</summary>
+        public DeucarianThemeStyleCompositionKind CompositionKind
+        {
+            get
+            {
+                bool hasAnyCompositionValue = surfaceProfile != null
+                                              || shapeProfile != null
+                                              || strokeProfile != null
+                                              || density != DeucarianThemeDensity.Unspecified;
+                if (!hasAnyCompositionValue)
+                {
+                    return DeucarianThemeStyleCompositionKind.LegacyInline;
+                }
+
+                if (!IsComposed)
+                {
+                    return DeucarianThemeStyleCompositionKind.Incomplete;
+                }
+
+                return isVariant
+                    ? DeucarianThemeStyleCompositionKind.CompleteCustom
+                    : DeucarianThemeStyleCompositionKind.CompletePreset;
+            }
+        }
 
         /// <summary>Broad surface treatment used by this style.</summary>
         public DeucarianThemeStyleSurfaceTreatment SurfaceTreatment =>
@@ -245,14 +276,20 @@ namespace Deucarian.Theming
             NotifyChanged();
         }
 
-        /// <summary>Configures metadata for a project-authored style variant.</summary>
-        public void SetVariantMetadata(string id, string name, string styleDescription)
+        /// <summary>Configures metadata for a project-authored custom style.</summary>
+        public void SetCustomStyleMetadata(string id, string name, string styleDescription)
         {
             styleId = DeucarianColorRole.NormalizeId(id);
             displayName = name ?? string.Empty;
             description = styleDescription ?? string.Empty;
             isVariant = true;
             NotifyChanged();
+        }
+
+        /// <summary>Backward-compatible alias for <see cref="SetCustomStyleMetadata"/>.</summary>
+        public void SetVariantMetadata(string id, string name, string styleDescription)
+        {
+            SetCustomStyleMetadata(id, name, styleDescription);
         }
 
         /// <summary>Returns true when this style directly references the supplied component asset.</summary>

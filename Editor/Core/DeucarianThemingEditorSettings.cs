@@ -111,6 +111,26 @@ namespace Deucarian.Theming.Editor
             set => ActiveStyleGuid = GetAssetGuid(value);
         }
 
+        /// <summary>
+        /// Stores a complete Theme Manager draft and refreshes its read-only resolved references.
+        /// This method deliberately does not mutate theme assets or scene providers.
+        /// </summary>
+        public static void SetDraftSelection(
+            DeucarianThemeFamily family,
+            DeucarianThemeMode mode,
+            DeucarianThemeStyle style)
+        {
+            ActiveThemeFamily = family;
+            ActiveThemeMode = mode;
+            ActiveStyle = style;
+
+            DeucarianTheme theme = family != null ? family.ResolveTheme(mode) : null;
+            DeucarianColorPalette palette = theme != null ? theme.ColorPalette : null;
+            ActiveTheme = theme;
+            ActivePalette = palette;
+            ActiveRoleLibrary = palette != null ? palette.RoleLibrary : null;
+        }
+
         public static string GetAssetGuid(UnityEngine.Object asset)
         {
             if (asset == null)
