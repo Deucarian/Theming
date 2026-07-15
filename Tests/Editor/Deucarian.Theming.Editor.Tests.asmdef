@@ -2,6 +2,7 @@
   "name": "Deucarian.Theming.Editor.Tests",
   "rootNamespace": "Deucarian.Theming.Editor.Tests",
   "references": [
+    "Deucarian.Editor",
     "Deucarian.Theming",
     "Deucarian.Theming.Editor",
     "UnityEngine.UIElementsModule"
