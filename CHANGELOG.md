@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.3 - 2026-07-16
+
+- Updated the shared Logging dependency to `1.0.2` for the coordinated package graph alignment.
+
 ## 1.0.2 - 2026-07-16
 
 - Prevented Unity layout restoration from reopening Theme Manager on editor startup while preserving explicitly opened windows across domain reloads.
