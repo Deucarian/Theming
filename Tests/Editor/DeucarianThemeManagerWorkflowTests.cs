@@ -836,6 +836,10 @@ namespace Deucarian.Theming.Editor.Tests
                     "com.deucarian.theming ",
                     window.FooterForTests.Version.text);
                 Assert.AreEqual(2, window.FooterForTests.Actions.childCount);
+                Assert.IsTrue(window.FooterForTests.Action.ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
+                Assert.IsTrue(window.FooterForTests.Actions.ElementAt(1).ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
                 Assert.IsTrue(workbench.Toolbar.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.StableActionLanesClass));
                 Assert.IsTrue(workbench.Drawer.ClassListContains(
@@ -860,6 +864,10 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.IsNotNull(secondary);
                 Assert.That(primary != null || primaryStatus != null, Is.True);
                 Assert.IsNotNull(discard);
+                Assert.IsTrue(secondary.ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
+                Assert.IsTrue(discard.ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
                 VisualElement visiblePrimary = primary != null
                     ? (VisualElement)primary
                     : primaryStatus;
@@ -886,7 +894,11 @@ namespace Deucarian.Theming.Editor.Tests
                     DeucarianEditorWorkbenchToolbar.ActionGroupClass));
                 Assert.AreSame(secondary, actions.ElementAt(0).ElementAt(0));
                 Assert.AreSame(discard, actions.ElementAt(1).ElementAt(0));
-                Assert.AreEqual(Visibility.Hidden, actions.ElementAt(1).style.visibility.value);
+                Assert.AreEqual(Visibility.Visible, actions.ElementAt(1).style.visibility.value);
+                Assert.IsFalse(discard.enabledSelf);
+                Assert.AreEqual(
+                    "There are no unapplied changes to discard.",
+                    discard.tooltip);
                 Assert.AreEqual(132f, actions.ElementAt(0).style.width.value.value);
                 Assert.AreEqual(124f, actions.ElementAt(1).style.width.value.value);
                 Assert.AreEqual(140f, actions.ElementAt(2).style.width.value.value);
@@ -926,6 +938,42 @@ namespace Deucarian.Theming.Editor.Tests
             {
                 UnityEngine.Object.DestroyImmediate(window);
             }
+        }
+
+        [Test]
+        public void DeveloperToolConfirmationExplainsAssetChangesBeforeContinuing()
+        {
+            string message = DeucarianThemeManagerWindow.BuildDeveloperToolConfirmationMessage(
+                "Starter assets",
+                "Creates missing default assets.");
+
+            StringAssert.Contains("Creates missing default assets.", message);
+            StringAssert.Contains("may create or modify project assets", message);
+            StringAssert.Contains("Starter assets", message);
+
+            bool invoked = false;
+            bool canceled = DeucarianThemeManagerWindow.TryExecuteDeveloperToolAction(
+                "Starter assets",
+                "Creates missing default assets.",
+                () => invoked = true,
+                (title, dialogMessage, continueLabel, cancelLabel) =>
+                {
+                    StringAssert.Contains("Developer Tools", title);
+                    Assert.AreEqual(message, dialogMessage);
+                    Assert.AreEqual("Continue", continueLabel);
+                    Assert.AreEqual("Cancel", cancelLabel);
+                    return false;
+                });
+            Assert.IsFalse(canceled);
+            Assert.IsFalse(invoked);
+
+            bool continued = DeucarianThemeManagerWindow.TryExecuteDeveloperToolAction(
+                "Starter assets",
+                "Creates missing default assets.",
+                () => invoked = true,
+                (title, dialogMessage, continueLabel, cancelLabel) => true);
+            Assert.IsTrue(continued);
+            Assert.IsTrue(invoked);
         }
 
         [TestCase(false, true)]

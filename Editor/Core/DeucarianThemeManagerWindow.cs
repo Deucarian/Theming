@@ -257,7 +257,7 @@ namespace Deucarian.Theming.Editor
             DeucarianEditorWorkbenchToolbar.SetReservedAction(
                 discardChangesSlot,
                 discardChangesButton,
-                false);
+                true);
             DeucarianEditorWorkbenchToolbar.SetReservedAction(
                 toolbarPrimarySlot,
                 toolbarPrimaryAction);
@@ -1332,34 +1332,40 @@ namespace Deucarian.Theming.Editor
                 create,
                 DeucarianEditorIconIds.CreateFolder,
                 "Theme family...",
-                CreateThemeFamily);
+                CreateThemeFamily,
+                "Opens a save dialog and creates a theme family with its palette and style references at the chosen project location.");
             AddDeveloperToolAction(
                 create,
                 DeucarianEditorIconIds.CreatePackage,
                 "Starter assets",
-                () => DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets());
+                () => DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(),
+                "Creates any missing default Deucarian theme assets and repairs their built-in references when needed.");
             AddDeveloperToolAction(
                 create,
                 DeucarianEditorIconIds.Palette,
                 "Built-in theme styles",
-                () => DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets());
+                () => DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets(),
+                "Creates or repairs the package's built-in visual-style assets in the default theming folder.");
             AddDeveloperToolAction(
                 create,
                 DeucarianEditorIconIds.Monitor,
                 "UI Toolkit demo assets",
-                () => DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets());
+                () => DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets(),
+                "Creates or updates the UI Toolkit demo assets under the project's Deucarian theming folder.");
 
             VisualElement repair = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumn("Repair");
             AddDeveloperToolAction(
                 repair,
                 DeucarianEditorIconIds.Wrench,
                 "Selected theme family",
-                () => DeucarianThemingMenuActions.RepairActiveThemeFamilySetup());
+                () => DeucarianThemingMenuActions.RepairActiveThemeFamilySetup(),
+                "Repairs missing built-in references on the currently selected theme family and its related assets.");
             AddDeveloperToolAction(
                 repair,
                 DeucarianEditorIconIds.Refresh,
                 "Selected palette",
-                () => DeucarianThemingMenuActions.RepairActivePaletteSetup());
+                () => DeucarianThemingMenuActions.RepairActivePaletteSetup(),
+                "Repairs the active palette's built-in theme and visual-style setup.");
 
             VisualElement legacy = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumn("Legacy");
             legacy.style.marginRight = 0f;
@@ -1367,7 +1373,8 @@ namespace Deucarian.Theming.Editor
                 legacy,
                 DeucarianEditorIconIds.History,
                 "Create minimal palette...",
-                () => DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel());
+                () => DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel(),
+                "Opens a save dialog and creates a minimal legacy palette asset at the chosen project location.");
 
             columns.Add(create);
             columns.Add(repair);
@@ -1380,17 +1387,71 @@ namespace Deucarian.Theming.Editor
             VisualElement column,
             string iconId,
             string text,
-            Action action)
+            Action action,
+            string confirmationDescription)
         {
             column?.Add(DeucarianEditorWorkbenchSurfaces.CreateDrawerAction(
                 iconId,
                 text,
                 () =>
                 {
-                    action?.Invoke();
+                    if (!TryExecuteDeveloperToolAction(
+                            text,
+                            confirmationDescription,
+                            action))
+                    {
+                        return;
+                    }
+
                     RefreshAssets();
                 },
-                text));
+                confirmationDescription));
+        }
+
+        internal static string BuildDeveloperToolConfirmationMessage(
+            string actionName,
+            string description)
+        {
+            string safeDescription = string.IsNullOrWhiteSpace(description)
+                ? "This tool may create or modify project assets."
+                : description.Trim();
+            return safeDescription
+                + "\n\nThis operation may create or modify project assets. Continue with '"
+                + (actionName ?? "this developer tool")
+                + "'?";
+        }
+
+        internal static bool ConfirmDeveloperToolAction(
+            string actionName,
+            string description,
+            Func<string, string, string, string, bool> confirmation = null)
+        {
+            Func<string, string, string, string, bool> confirmationHandler = confirmation
+                ?? ((title, message, ok, cancel) => EditorUtility.DisplayDialog(
+                    title,
+                    message,
+                    ok,
+                    cancel));
+            return confirmationHandler(
+                "Developer Tools — " + (actionName ?? "Action"),
+                BuildDeveloperToolConfirmationMessage(actionName, description),
+                "Continue",
+                "Cancel");
+        }
+
+        internal static bool TryExecuteDeveloperToolAction(
+            string actionName,
+            string description,
+            Action action,
+            Func<string, string, string, string, bool> confirmation = null)
+        {
+            if (!ConfirmDeveloperToolAction(actionName, description, confirmation))
+            {
+                return false;
+            }
+
+            action?.Invoke();
+            return true;
         }
 
         private void ToggleDeveloperTools()
@@ -1963,11 +2024,13 @@ namespace Deucarian.Theming.Editor
                 bool canDiscard = visible && !EditorApplication.isPlayingOrWillChangePlaymode;
                 DeucarianEditorWorkbenchToolbar.SetReservedActionVisible(
                     discardChangesSlot,
-                    visible);
+                    true);
                 discardChangesButton.SetEnabled(canDiscard);
                 discardChangesButton.tooltip = canDiscard
                     ? "Restore the active project theme and clear every unapplied draft."
-                    : "Exit Play Mode before discarding staged changes.";
+                    : visible
+                        ? "Exit Play Mode before discarding staged changes."
+                        : "There are no unapplied changes to discard.";
             }
         }
 
