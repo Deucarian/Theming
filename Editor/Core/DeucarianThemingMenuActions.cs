@@ -1007,6 +1007,7 @@ namespace Deucarian.Theming.Editor
                 source.ShapeProfile,
                 source.StrokeProfile,
                 source.Density,
+                source.TypographyProfile,
                 true);
 
             AssetDatabase.CreateAsset(variant, normalizedPath);
@@ -1028,6 +1029,26 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeShapeProfile corners,
             DeucarianThemeStrokeProfile border,
             DeucarianThemeDensity size)
+        {
+            return CreateCustomStyle(
+                source,
+                assetPath,
+                surface,
+                corners,
+                border,
+                size,
+                source != null ? source.TypographyProfile : null);
+        }
+
+        /// <summary>Creates a complete custom style with an optional TMP typography profile.</summary>
+        public static DeucarianThemeStyle CreateCustomStyle(
+            DeucarianThemeStyle source,
+            string assetPath,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size,
+            DeucarianThemeTypographyProfile typography)
         {
             if (!CanPersistEditorChanges("creating a custom style"))
             {
@@ -1090,7 +1111,7 @@ namespace Deucarian.Theming.Editor
                 customId,
                 fileName,
                 $"Custom presentation style created from {source.DisplayName}.");
-            customStyle.SetComposition(surface, corners, border, size, true);
+            customStyle.SetComposition(surface, corners, border, size, typography, true);
 
             AssetDatabase.CreateAsset(customStyle, normalizedPath);
             EditorUtility.SetDirty(customStyle);

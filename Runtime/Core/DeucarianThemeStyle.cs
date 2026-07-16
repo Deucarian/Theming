@@ -15,6 +15,7 @@ namespace Deucarian.Theming
         [SerializeField] private DeucarianThemeSurfaceProfile surfaceProfile;
         [SerializeField] private DeucarianThemeShapeProfile shapeProfile;
         [SerializeField] private DeucarianThemeStrokeProfile strokeProfile;
+        [SerializeField] private DeucarianThemeTypographyProfile typographyProfile;
         [SerializeField] private DeucarianThemeDensity density = DeucarianThemeDensity.Unspecified;
         [SerializeField] private bool isVariant;
         [SerializeField] private DeucarianThemeStyleSurfaceTreatment surfaceTreatment =
@@ -56,6 +57,9 @@ namespace Deucarian.Theming
         /// <summary>Reusable stroke component, or null for a legacy inline style.</summary>
         public DeucarianThemeStrokeProfile StrokeProfile => strokeProfile;
 
+        /// <summary>Optional TMP typography component. Null resolves through project TMP defaults.</summary>
+        public DeucarianThemeTypographyProfile TypographyProfile => typographyProfile;
+
         /// <summary>Explicit semantic density, or Unspecified for legacy style-ID resolution.</summary>
         public DeucarianThemeDensity Density => density;
 
@@ -82,6 +86,7 @@ namespace Deucarian.Theming
                 bool hasAnyCompositionValue = surfaceProfile != null
                                               || shapeProfile != null
                                               || strokeProfile != null
+                                              || typographyProfile != null
                                               || density != DeucarianThemeDensity.Unspecified;
                 if (!hasAnyCompositionValue)
                 {
@@ -233,6 +238,7 @@ namespace Deucarian.Theming
             surfaceProfile = null;
             shapeProfile = null;
             strokeProfile = null;
+            typographyProfile = null;
             density = DeucarianThemeDensity.Unspecified;
             isVariant = false;
             surfaceTreatment = treatment;
@@ -267,9 +273,28 @@ namespace Deucarian.Theming
             DeucarianThemeDensity resolvedDensity,
             bool variant = false)
         {
+            SetComposition(
+                surface,
+                shape,
+                stroke,
+                resolvedDensity,
+                typographyProfile,
+                variant);
+        }
+
+        /// <summary>Assigns all reusable presentation components, including optional TMP typography.</summary>
+        public void SetComposition(
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile shape,
+            DeucarianThemeStrokeProfile stroke,
+            DeucarianThemeDensity resolvedDensity,
+            DeucarianThemeTypographyProfile typography,
+            bool variant = false)
+        {
             surfaceProfile = surface;
             shapeProfile = shape;
             strokeProfile = stroke;
+            typographyProfile = typography;
             density = NormalizeDensity(resolvedDensity);
             isVariant = variant;
             generatedNoiseTexture = null;
@@ -296,7 +321,10 @@ namespace Deucarian.Theming
         public bool UsesComponentAsset(Object asset)
         {
             return asset != null
-                   && (asset == surfaceProfile || asset == shapeProfile || asset == strokeProfile);
+                   && (asset == surfaceProfile
+                       || asset == shapeProfile
+                       || asset == strokeProfile
+                       || asset == typographyProfile);
         }
 
         /// <summary>Resolves a panel-like surface color from a palette/role color.</summary>

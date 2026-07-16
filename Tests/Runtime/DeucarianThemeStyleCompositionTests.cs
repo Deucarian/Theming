@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -58,6 +59,53 @@ namespace Deucarian.Theming.Tests
             Assert.IsTrue(style.IsVariant, "The legacy alias must remain source compatible.");
             Assert.AreEqual("deucarian.style.custom-test", style.StyleId);
             Assert.AreEqual("Custom Test", style.DisplayName);
+        }
+
+        [Test]
+        public void TypographyIsOptionalAndOldCompositionOverloadPreservesIt()
+        {
+            DeucarianThemeStyle style = Create<DeucarianThemeStyle>();
+            DeucarianThemeTypographyProfile typography = Create<DeucarianThemeTypographyProfile>();
+            DeucarianThemeSurfaceProfile surface = Create<DeucarianThemeSurfaceProfile>();
+            DeucarianThemeShapeProfile shape = Create<DeucarianThemeShapeProfile>();
+            DeucarianThemeStrokeProfile stroke = Create<DeucarianThemeStrokeProfile>();
+
+            style.SetComposition(
+                surface,
+                shape,
+                stroke,
+                DeucarianThemeDensity.Standard,
+                typography);
+            Assert.IsTrue(style.IsComposed);
+            Assert.AreSame(typography, style.TypographyProfile);
+            Assert.IsTrue(style.UsesComponentAsset(typography));
+
+            style.SetComposition(surface, shape, stroke, DeucarianThemeDensity.Compact);
+            Assert.AreSame(
+                typography,
+                style.TypographyProfile,
+                "The retained four-axis overload must not erase an existing optional typography profile.");
+        }
+
+        [Test]
+        public void TypographyProfileSanitizesMetricsAndResolvesTmpDefault()
+        {
+            DeucarianThemeTypographyProfile profile = Create<DeucarianThemeTypographyProfile>();
+            profile.Configure(
+                null,
+                new DeucarianThemeTextStyle(-20f, FontStyles.Bold, 500f, -500f),
+                DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Body),
+                DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Caption));
+
+            Assert.AreEqual(1f, profile.Title.FontSize);
+            Assert.AreEqual(100f, profile.Title.CharacterSpacing);
+            Assert.AreEqual(-100f, profile.Title.LineSpacing);
+            Assert.AreSame(
+                DeucarianThemeTypographyProfile.ProjectDefaultFontAsset,
+                profile.ResolvedFontAsset);
+            Assert.AreEqual(20f, DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Title).FontSize);
+            Assert.AreEqual(14f, DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Body).FontSize);
+            Assert.AreEqual(11f, DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Caption).FontSize);
         }
 
         [Test]

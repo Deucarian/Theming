@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using Deucarian.Theming.Editor;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 
@@ -175,6 +176,93 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Surfaces"));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Shapes"));
             Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Strokes"));
+            Assert.IsTrue(AssetDatabase.IsValidFolder(testRoot + "/Styles/Components/Typography"));
+            Assert.NotNull(AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                testRoot + "/Styles/Components/Typography/SystemDefaultTypography.asset"));
+            DeucarianThemeTypographyProfile inter =
+                AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                    "Packages/com.deucarian.theming/Runtime/Fonts/InterTypography.asset");
+            Assert.NotNull(inter);
+            for (int i = 0; i < styles.Count; i++)
+            {
+                Assert.AreSame(inter, styles[i].TypographyProfile, styles[i].StyleId);
+            }
+        }
+
+        [Test]
+        public void BundledTypographyProfilesUseStaticSourcesAndMappedBoldFaces()
+        {
+            DeucarianThemeTypographyProfile inter =
+                AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                    "Packages/com.deucarian.theming/Runtime/Fonts/InterTypography.asset");
+            DeucarianThemeTypographyProfile montserrat =
+                AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                    "Packages/com.deucarian.theming/Runtime/Fonts/MontserratTypography.asset");
+
+            Assert.NotNull(inter);
+            Assert.NotNull(montserrat);
+            Assert.AreEqual("Inter", inter.DisplayName);
+            Assert.AreEqual("Montserrat", montserrat.DisplayName);
+            Assert.NotNull(inter.FontAsset);
+            Assert.NotNull(montserrat.FontAsset);
+            Assert.AreEqual("Inter-Regular", inter.FontAsset.sourceFontFile.name);
+            Assert.AreEqual("Montserrat-Regular", montserrat.FontAsset.sourceFontFile.name);
+            Assert.NotNull(inter.FontAsset.fontWeightTable[7].regularTypeface);
+            Assert.NotNull(montserrat.FontAsset.fontWeightTable[7].regularTypeface);
+            Assert.AreEqual(
+                "Inter-Bold",
+                inter.FontAsset.fontWeightTable[7].regularTypeface.sourceFontFile.name);
+            Assert.AreEqual(
+                "Montserrat-Bold",
+                montserrat.FontAsset.fontWeightTable[7].regularTypeface.sourceFontFile.name);
+        }
+
+        [Test]
+        public void BuiltinRepairMigratesUntouchedSystemDefaultAndPreservesCustomTypography()
+        {
+            string stylesRoot = testRoot + "/TypographyRepair";
+            IReadOnlyList<DeucarianThemeStyle> styles =
+                DeucarianDefaultThemeAssetFactory.CreateBuiltinThemeStyleAssets(stylesRoot);
+            DeucarianThemeStyle migrated = styles[0];
+            DeucarianThemeStyle customized = styles[1];
+            DeucarianThemeTypographyProfile systemDefault =
+                AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                    stylesRoot + "/Components/Typography/SystemDefaultTypography.asset");
+            DeucarianThemeTypographyProfile custom =
+                ScriptableObject.CreateInstance<DeucarianThemeTypographyProfile>();
+            custom.Configure(
+                null,
+                new DeucarianThemeTextStyle(22f, FontStyles.Bold),
+                new DeucarianThemeTextStyle(15f),
+                new DeucarianThemeTextStyle(12f),
+                "Project Custom");
+            AssetDatabase.CreateAsset(custom, stylesRoot + "/ProjectCustomTypography.asset");
+
+            migrated.SetComposition(
+                migrated.SurfaceProfile,
+                migrated.ShapeProfile,
+                migrated.StrokeProfile,
+                migrated.Density,
+                systemDefault);
+            customized.SetComposition(
+                null,
+                customized.ShapeProfile,
+                customized.StrokeProfile,
+                customized.Density,
+                custom);
+            EditorUtility.SetDirty(migrated);
+            EditorUtility.SetDirty(customized);
+            AssetDatabase.SaveAssets();
+
+            IReadOnlyList<DeucarianThemeStyle> repaired =
+                DeucarianDefaultThemeAssetFactory.CreateBuiltinThemeStyleAssets(stylesRoot);
+            DeucarianThemeTypographyProfile inter =
+                AssetDatabase.LoadAssetAtPath<DeucarianThemeTypographyProfile>(
+                    "Packages/com.deucarian.theming/Runtime/Fonts/InterTypography.asset");
+
+            Assert.AreSame(inter, repaired[0].TypographyProfile);
+            Assert.AreSame(custom, repaired[1].TypographyProfile);
+            Assert.NotNull(repaired[1].SurfaceProfile);
         }
 
         [Test]
@@ -1086,6 +1174,10 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.NotNull(style.SurfaceProfile, styleId);
             Assert.NotNull(style.ShapeProfile, styleId);
             Assert.NotNull(style.StrokeProfile, styleId);
+            Assert.NotNull(style.TypographyProfile, styleId);
+            Assert.AreEqual(20f, style.TypographyProfile.Title.FontSize);
+            Assert.AreEqual(14f, style.TypographyProfile.Body.FontSize);
+            Assert.AreEqual(11f, style.TypographyProfile.Caption.FontSize);
 
             if (styleId == DeucarianThemeStyleIds.FrostedGlass)
             {

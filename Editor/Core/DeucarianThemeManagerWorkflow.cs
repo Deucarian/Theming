@@ -127,12 +127,30 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeShapeProfile corners,
             DeucarianThemeStrokeProfile border,
             DeucarianThemeDensity size)
+            : this(
+                target,
+                surface,
+                corners,
+                border,
+                size,
+                target != null ? target.TypographyProfile : null)
+        {
+        }
+
+        public DeucarianThemeManagerStyleEdit(
+            DeucarianThemeStyle target,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size,
+            DeucarianThemeTypographyProfile typography)
         {
             Target = target;
             Surface = surface;
             Corners = corners;
             Border = border;
             Size = size;
+            Typography = typography;
         }
 
         public DeucarianThemeStyle Target { get; }
@@ -144,6 +162,8 @@ namespace Deucarian.Theming.Editor
         public DeucarianThemeStrokeProfile Border { get; }
 
         public DeucarianThemeDensity Size { get; }
+
+        public DeucarianThemeTypographyProfile Typography { get; }
 
         public bool IsValid => Target != null
                                && Target.IsCustomStyle
@@ -479,6 +499,7 @@ namespace Deucarian.Theming.Editor
                         edit.Corners,
                         edit.Border,
                         edit.Size,
+                        edit.Typography,
                         true);
                     EditorUtility.SetDirty(edit.Target);
                 }
@@ -690,6 +711,7 @@ namespace Deucarian.Theming.Editor
             return style.SurfaceProfile != null
                    || style.ShapeProfile != null
                    || style.StrokeProfile != null
+                   || style.TypographyProfile != null
                    || style.Density != DeucarianThemeDensity.Unspecified;
         }
 
@@ -746,7 +768,8 @@ namespace Deucarian.Theming.Editor
             return edit.Target.SurfaceProfile != edit.Surface
                    || edit.Target.ShapeProfile != edit.Corners
                    || edit.Target.StrokeProfile != edit.Border
-                   || edit.Target.Density != edit.Size;
+                   || edit.Target.Density != edit.Size
+                   || edit.Target.TypographyProfile != edit.Typography;
         }
 
         internal static IReadOnlyList<DeucarianThemeProvider> FindOpenSceneProviders()

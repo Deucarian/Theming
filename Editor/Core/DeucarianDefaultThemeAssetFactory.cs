@@ -64,6 +64,8 @@ namespace Deucarian.Theming.Editor
         public const string BuiltinSurfaceProfilesFolderName = "Surfaces";
         public const string BuiltinShapeProfilesFolderName = "Shapes";
         public const string BuiltinStrokeProfilesFolderName = "Strokes";
+        public const string BuiltinTypographyProfilesFolderName = "Typography";
+        public const string SystemDefaultTypographyFileName = "SystemDefaultTypography.asset";
         public const string MinimalPaletteRootFolder = "Assets/Deucarian/Theming";
         public const string MinimalPaletteFileName = "DeucarianMinimalPalette.asset";
         public const string MinimalThemeFileName = "DeucarianMinimalTheme.asset";
@@ -185,6 +187,13 @@ namespace Deucarian.Theming.Editor
                     CombineAssetPath(normalizedRoot, BuiltinStyleComponentsFolderName),
                     BuiltinStrokeProfilesFolderName),
                 overwriteExisting);
+            DeucarianThemeTypographyProfile systemDefaultTypography = CreateSystemDefaultTypographyProfile(
+                CombineAssetPath(
+                    CombineAssetPath(normalizedRoot, BuiltinStyleComponentsFolderName),
+                    BuiltinTypographyProfilesFolderName),
+                overwriteExisting);
+            DeucarianThemeTypographyProfile typography =
+                DeucarianBundledTypographyAssets.InterProfile ?? systemDefaultTypography;
             IReadOnlyList<DeucarianThemeStylePreset> definitions = DeucarianThemeStylePresets.BuiltinStyles;
             List<DeucarianThemeStyle> styles = new List<DeucarianThemeStyle>();
 
@@ -203,8 +212,15 @@ namespace Deucarian.Theming.Editor
                 DeucarianThemeStrokeProfile stroke = FindStrokeProfile(strokes, definition.StrokeProfileId);
                 if (styleCreated || overwriteExisting || ShouldRepairGeneratedStyle(style, definition))
                 {
+                    DeucarianThemeTypographyProfile styleTypography =
+                        styleCreated
+                        || overwriteExisting
+                        || style.TypographyProfile == null
+                        || ShouldMigrateLegacyDefaultTypography(style.TypographyProfile)
+                            ? typography
+                            : style.TypographyProfile;
                     definition.Configure(style);
-                    style.SetComposition(surface, shape, stroke, definition.Density);
+                    style.SetComposition(surface, shape, stroke, definition.Density, styleTypography);
                     EditorUtility.SetDirty(style);
                 }
 
@@ -242,6 +258,29 @@ namespace Deucarian.Theming.Editor
             }
 
             return profiles;
+        }
+
+        private static DeucarianThemeTypographyProfile CreateSystemDefaultTypographyProfile(
+            string folder,
+            bool overwriteExisting)
+        {
+            EnsureFolder(folder);
+            DeucarianThemeTypographyProfile profile = LoadOrCreateAsset(
+                CombineAssetPath(folder, SystemDefaultTypographyFileName),
+                () => ScriptableObject.CreateInstance<DeucarianThemeTypographyProfile>(),
+                overwriteExisting,
+                out bool created);
+            if (created || overwriteExisting || ShouldRepairTypographyProfile(profile))
+            {
+                profile.Configure(
+                    null,
+                    DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Title),
+                    DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Body),
+                    DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Caption));
+                EditorUtility.SetDirty(profile);
+            }
+
+            return profile;
         }
 
         private static IReadOnlyList<DeucarianThemeShapeProfile> CreateBuiltinShapeProfiles(
@@ -1568,7 +1607,49 @@ namespace Deucarian.Theming.Editor
                 || !string.Equals(style.ShapeProfile.ProfileId, definition.ShapeProfileId, StringComparison.Ordinal)
                 || style.StrokeProfile == null
                 || !string.Equals(style.StrokeProfile.ProfileId, definition.StrokeProfileId, StringComparison.Ordinal)
+                || style.TypographyProfile == null
+                || ShouldMigrateLegacyDefaultTypography(style.TypographyProfile)
                 || style.Density != definition.Density;
+        }
+
+        private static bool ShouldMigrateLegacyDefaultTypography(
+            DeucarianThemeTypographyProfile profile)
+        {
+            if (profile == null || profile.FontAsset != null)
+            {
+                return false;
+            }
+
+            string path = AssetDatabase.GetAssetPath(profile);
+            if (string.IsNullOrWhiteSpace(path)
+                || !path.EndsWith("/" + SystemDefaultTypographyFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return TextStyleMatchesDefault(profile.Title, DeucarianThemeTextRole.Title)
+                   && TextStyleMatchesDefault(profile.Body, DeucarianThemeTextRole.Body)
+                   && TextStyleMatchesDefault(profile.Caption, DeucarianThemeTextRole.Caption);
+        }
+
+        private static bool TextStyleMatchesDefault(
+            DeucarianThemeTextStyle style,
+            DeucarianThemeTextRole role)
+        {
+            DeucarianThemeTextStyle expected = DeucarianThemeTextStyle.DefaultFor(role);
+            return Mathf.Approximately(style.FontSize, expected.FontSize)
+                   && style.FontStyle == expected.FontStyle
+                   && Mathf.Approximately(style.CharacterSpacing, expected.CharacterSpacing)
+                   && Mathf.Approximately(style.LineSpacing, expected.LineSpacing);
+        }
+
+        private static bool ShouldRepairTypographyProfile(DeucarianThemeTypographyProfile profile)
+        {
+            return profile != null
+                   && (string.IsNullOrWhiteSpace(profile.DisplayName)
+                       || profile.Title.FontSize <= 0f
+                       || profile.Body.FontSize <= 0f
+                       || profile.Caption.FontSize <= 0f);
         }
 
         private static bool ShouldRepairSurfaceProfile(
