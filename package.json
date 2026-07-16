@@ -1,7 +1,7 @@
 {
   "name": "com.deucarian.theming",
   "displayName": "Deucarian Theming",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "unity": "2022.3",
   "description": "Designer-friendly ScriptableObject theming for Deucarian Unity projects.",
   "keywords": [
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "com.deucarian.editor": "1.0.2",
-    "com.deucarian.logging": "1.0.1",
+    "com.deucarian.logging": "1.0.2",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"
