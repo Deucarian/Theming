@@ -817,6 +817,7 @@ namespace Deucarian.Theming.Editor.Tests
                 DeucarianEditorWorkbench workbench = window.WorkbenchForTests;
 
                 Assert.IsNotNull(workbench);
+                Assert.IsNotNull(workbench.Header);
                 Assert.IsNotNull(workbench.Toolbar);
                 Assert.IsNotNull(workbench.Content);
                 Assert.IsNotNull(workbench.Drawer);
@@ -842,6 +843,19 @@ namespace Deucarian.Theming.Editor.Tests
                     DeucarianEditorIconTextButton.RootClass));
                 Assert.IsTrue(workbench.Toolbar.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.StableActionLanesClass));
+                Assert.IsTrue(workbench.Header.ClassListContains(
+                    DeucarianEditorPackageHeader.RootClass));
+                Assert.AreEqual(
+                    "Deucarian Theming",
+                    workbench.Header.Q<Label>(
+                        className: DeucarianEditorPackageHeader.TitleClass).text);
+                Assert.AreEqual(
+                    "Compose, preview, and activate the project theme.",
+                    workbench.Header.Q<Label>(
+                        className: DeucarianEditorPackageHeader.SubtitleClass).text);
+                Assert.Less(
+                    workbench.ShellContent.IndexOf(workbench.Header),
+                    workbench.ShellContent.IndexOf(workbench.Toolbar));
                 Assert.IsTrue(workbench.Drawer.ClassListContains(
                     DeucarianEditorWorkbenchSurfaces.OverlayDrawerHostClass));
                 Button themeButton = workbench.Toolbar.Q<Button>(

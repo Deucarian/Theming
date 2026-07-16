@@ -141,9 +141,13 @@ namespace Deucarian.Theming.Editor
                 rootVisualElement,
                 new DeucarianEditorWorkbenchOptions
                 {
+                    IncludeHeader = true,
                     IncludeToolbar = true,
                     IncludeDrawer = true,
                     IncludeFooter = true,
+                    HeaderPackageKey = "theming",
+                    HeaderTitle = "Deucarian Theming",
+                    HeaderSubtitle = "Compose, preview, and activate the project theme.",
                     ToolbarLayout = DeucarianEditorWorkbenchToolbarLayout.StableActionLanes,
                     DrawerMode = DeucarianEditorWorkbenchDrawerMode.Overlay,
                     TopSafeFadeName = WallpaperFadeName
