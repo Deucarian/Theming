@@ -29,13 +29,19 @@ namespace Deucarian.Theming.Editor
         public static void CreateMissingDefaultThemeAssets()
         {
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
-            DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
+            if (assets != null)
+            {
+                DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
+            }
         }
 
         public static void CreateGameThemeAssets()
         {
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets();
-            DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+            if (assets != null)
+            {
+                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+            }
         }
 
         public static void CreatePaletteFromActiveTheme()

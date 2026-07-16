@@ -72,7 +72,7 @@ namespace Deucarian.Theming.Editor
         public static void CreateDefaultThemeAssetsFromMenu()
         {
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(DefaultRootFolder);
-            if (assets.ThemeFamily != null)
+            if (assets != null && assets.ThemeFamily != null)
             {
                 DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
             }
@@ -81,7 +81,7 @@ namespace Deucarian.Theming.Editor
         public static void CreateGameThemeAssetsFromMenu()
         {
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets(GameRootFolder);
-            if (assets.Theme != null)
+            if (assets != null && assets.Theme != null)
             {
                 DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
             }

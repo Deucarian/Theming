@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Deucarian.Theming.Editor
@@ -159,6 +160,8 @@ namespace Deucarian.Theming.Editor
     {
         private const string UndoLabel = "Activate Deucarian Theme";
 
+        internal static int PreviewRepaintVersion { get; private set; }
+
         public static DeucarianThemeManagerActivationStatus Evaluate(
             DeucarianThemeRuntimeSettings settings,
             DeucarianThemeManagerSelection selection,
@@ -180,8 +183,9 @@ namespace Deucarian.Theming.Editor
             bool hasSettings = settings != null;
             bool settingsResourceReady = hasSettings && runtimeSettingsResourceReady;
             DeucarianThemeFamily canonicalFamily = hasSettings ? settings.DefaultThemeFamily : null;
-            bool settingsReady = settingsResourceReady
-                                 && IsFamilyReadyForRuntimeSettings(canonicalFamily);
+            // An existing settings asset is a valid activation target even when its previous
+            // family is missing or incomplete. Activation validates and writes the staged family.
+            bool settingsReady = settingsResourceReady;
             DeucarianThemeMode canonicalMode = hasSettings
                 ? settings.DefaultThemeMode
                 : DeucarianThemeMode.Dark;
@@ -205,9 +209,7 @@ namespace Deucarian.Theming.Editor
             }
             else if (!settingsReady)
             {
-                message = !settingsResourceReady
-                    ? runtimeSettingsResourceMessage
-                    : "Runtime settings need a complete Light and Dark family before activation.";
+                message = runtimeSettingsResourceMessage;
             }
             else if (!selectionValid)
             {
@@ -246,6 +248,73 @@ namespace Deucarian.Theming.Editor
             return Activate(settings, selection, null, providers);
         }
 
+        /// <summary>
+        /// Applies the staged editor presentation without changing provider serialization,
+        /// project runtime settings, or source-controlled theme assets.
+        /// </summary>
+        internal static int Preview(
+            DeucarianThemeManagerSelection selection,
+            IReadOnlyList<DeucarianThemeProvider> providers = null)
+        {
+            IReadOnlyList<DeucarianThemeProvider> resolvedProviders = providers ?? FindOpenSceneProviders();
+            int previewed = 0;
+            for (int i = 0; i < resolvedProviders.Count; i++)
+            {
+                DeucarianThemeProvider provider = resolvedProviders[i];
+                if (!IsOpenSceneProvider(provider))
+                {
+                    continue;
+                }
+
+                if (selection.Family == null)
+                {
+                    provider.ClearEditorPreview();
+                }
+                else
+                {
+                    provider.SetEditorPreview(selection.Family, selection.Mode, selection.Style);
+                }
+
+                previewed++;
+            }
+
+            if (previewed > 0)
+            {
+                RequestPreviewRepaint();
+            }
+
+            return previewed;
+        }
+
+        internal static int ClearPreview(IReadOnlyList<DeucarianThemeProvider> providers = null)
+        {
+            IReadOnlyList<DeucarianThemeProvider> resolvedProviders = providers ?? FindOpenSceneProviders();
+            int cleared = 0;
+            for (int i = 0; i < resolvedProviders.Count; i++)
+            {
+                DeucarianThemeProvider provider = resolvedProviders[i];
+                if (IsOpenSceneProvider(provider) && provider.ClearEditorPreview())
+                {
+                    cleared++;
+                }
+            }
+
+            if (cleared > 0)
+            {
+                RequestPreviewRepaint();
+            }
+
+            return cleared;
+        }
+
+        private static void RequestPreviewRepaint()
+        {
+            PreviewRepaintVersion++;
+            EditorApplication.QueuePlayerLoopUpdate();
+            SceneView.RepaintAll();
+            InternalEditorUtility.RepaintAllViews();
+        }
+
         public static DeucarianThemeManagerActivationResult Activate(
             DeucarianThemeRuntimeSettings settings,
             DeucarianThemeManagerSelection selection,
@@ -261,15 +330,20 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStyleEdit? styleEdit,
             IReadOnlyList<DeucarianThemeProvider> providers)
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return Failure("Exit Play Mode before activating a theme for builds.");
+            }
+
             if (settings == null)
             {
                 return Failure("Runtime settings are missing. Configure them before activating a theme.");
             }
 
-            if (!IsFamilyReadyForRuntimeSettings(settings.DefaultThemeFamily))
+            if (!IsFamilyReadyForRuntimeSettings(selection.Family))
             {
                 return Failure(
-                    "Runtime settings are incomplete. Configure a complete Light and Dark family before activating.");
+                    "The selected theme family must include complete Light and Dark themes before activation.");
             }
 
             if (!TryValidateRuntimeSettingsResource(settings, out string settingsResourceMessage))
@@ -387,7 +461,7 @@ namespace Deucarian.Theming.Editor
                     }
 
                     provider.SetThemeFamily(selection.Family, selection.Mode);
-                    if (provider.StyleOverride != null)
+                    if (provider.ConfiguredStyleOverride != null)
                     {
                         provider.ClearStyleOverride();
                     }
@@ -660,10 +734,10 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerSelection selection)
         {
             return provider != null
-                   && provider.CurrentThemeFamily == selection.Family
-                   && provider.ThemeMode == selection.Mode
-                   && provider.StyleOverride == null
-                   && provider.CurrentStyle == selection.Style;
+                   && provider.ConfiguredThemeFamily == selection.Family
+                   && provider.ConfiguredThemeMode == selection.Mode
+                   && provider.ConfiguredStyleOverride == null
+                   && provider.ConfiguredStyle == selection.Style;
         }
 
         private static bool DoesStyleCompositionDiffer(

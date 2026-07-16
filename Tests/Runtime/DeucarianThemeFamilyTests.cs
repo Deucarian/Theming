@@ -200,6 +200,86 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void EditorPreviewChangesEffectiveThemeWithoutSerializingProviderConfiguration()
+        {
+            DeucarianThemeStyle configuredStyle = CreateRuntimeStyle(DeucarianThemeStyleIds.MaterialDark);
+            DeucarianThemeStyle previewStyle = CreateRuntimeStyle(DeucarianThemeStyleIds.FrostedGlass);
+            DeucarianThemeFamily configuredFamily = CreateFamily(
+                CreateTheme("configured-light", configuredStyle),
+                CreateTheme("configured-dark", configuredStyle));
+            DeucarianTheme previewLight = CreateTheme("preview-light", previewStyle);
+            DeucarianThemeFamily previewFamily = CreateFamily(
+                previewLight,
+                CreateTheme("preview-dark", previewStyle));
+            DeucarianThemeProvider provider = CreateProviderWithProbes(
+                out ThemeTargetProbe themeProbe,
+                out StyleTargetProbe styleProbe);
+            provider.SetThemeFamily(configuredFamily, DeucarianThemeMode.Dark);
+            string serializedBeforePreview = JsonUtility.ToJson(provider);
+
+            provider.SetEditorPreview(previewFamily, DeucarianThemeMode.Light, previewStyle);
+
+            Assert.IsTrue(provider.HasEditorPreview);
+            Assert.AreSame(previewFamily, provider.CurrentThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Light, provider.ThemeMode);
+            Assert.AreSame(previewLight, provider.CurrentTheme);
+            Assert.AreSame(previewStyle, provider.CurrentStyle);
+            Assert.AreSame(previewLight, themeProbe.AppliedTheme);
+            Assert.AreSame(previewStyle, styleProbe.AppliedStyle);
+            Assert.AreSame(configuredFamily, provider.ConfiguredThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Dark, provider.ConfiguredThemeMode);
+            Assert.AreSame(configuredFamily.DarkTheme, provider.ConfiguredTheme);
+            Assert.AreEqual(serializedBeforePreview, JsonUtility.ToJson(provider));
+
+            Assert.IsTrue(provider.ClearEditorPreview());
+            Assert.IsFalse(provider.HasEditorPreview);
+            Assert.AreSame(configuredFamily, provider.CurrentThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Dark, provider.ThemeMode);
+            Assert.AreSame(configuredFamily.DarkTheme, provider.CurrentTheme);
+            Assert.AreSame(configuredFamily.DarkTheme, themeProbe.AppliedTheme);
+            Assert.AreEqual(serializedBeforePreview, JsonUtility.ToJson(provider));
+        }
+
+        [Test]
+        public void PublicRuntimeSettersClearEditorPreviewAndRemainAuthoritative()
+        {
+            DeucarianThemeStyle previewStyle = CreateRuntimeStyle(DeucarianThemeStyleIds.FrostedGlass);
+            DeucarianThemeStyle runtimeStyle = CreateRuntimeStyle(DeucarianThemeStyleIds.MaterialDark);
+            DeucarianThemeFamily previewFamily = CreateFamily(
+                CreateTheme("preview-runtime-light", previewStyle),
+                CreateTheme("preview-runtime-dark", previewStyle));
+            DeucarianThemeFamily runtimeFamily = CreateFamily(
+                CreateTheme("runtime-light", runtimeStyle),
+                CreateTheme("runtime-dark", runtimeStyle));
+            DeucarianThemeProvider provider = CreateProviderWithProbes(out _, out StyleTargetProbe styleProbe);
+            provider.SetThemeFamily(runtimeFamily, DeucarianThemeMode.Dark);
+
+            provider.SetEditorPreview(previewFamily, DeucarianThemeMode.Light, previewStyle);
+            provider.SetThemeMode(DeucarianThemeMode.Dark);
+
+            Assert.IsFalse(provider.HasEditorPreview);
+            Assert.AreSame(runtimeFamily, provider.CurrentThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Dark, provider.ThemeMode);
+
+            provider.SetEditorPreview(previewFamily, DeucarianThemeMode.Light, previewStyle);
+            provider.SetStyle(runtimeStyle);
+
+            Assert.IsFalse(provider.HasEditorPreview);
+            Assert.AreSame(runtimeFamily, provider.CurrentThemeFamily);
+            Assert.AreSame(runtimeStyle, provider.StyleOverride);
+            Assert.AreSame(runtimeStyle, provider.CurrentStyle);
+            Assert.AreSame(runtimeStyle, styleProbe.AppliedStyle);
+
+            provider.SetEditorPreview(previewFamily, DeucarianThemeMode.Light, previewStyle);
+            provider.SetThemeFamily(runtimeFamily, DeucarianThemeMode.Light);
+
+            Assert.IsFalse(provider.HasEditorPreview);
+            Assert.AreSame(runtimeFamily, provider.CurrentThemeFamily);
+            Assert.AreEqual(DeucarianThemeMode.Light, provider.ThemeMode);
+            Assert.AreSame(runtimeFamily.LightTheme, provider.CurrentTheme);
+        }
+
+        [Test]
         public void ProviderWarnsOnceAndFallsBackForIncompleteFamily()
         {
             DeucarianTheme dark = CreateTheme("dark");

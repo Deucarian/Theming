@@ -21,6 +21,12 @@ namespace Deucarian.Theming
         [SerializeField] private bool includeInactiveChildren = true;
         [NonSerialized] private DeucarianThemeStyle lastAppliedStyle;
         [NonSerialized] private bool warnedIncompleteThemeFamily;
+#if UNITY_EDITOR
+        [NonSerialized] private bool hasEditorPreview;
+        [NonSerialized] private DeucarianThemeFamily editorPreviewThemeFamily;
+        [NonSerialized] private DeucarianThemeMode editorPreviewThemeMode;
+        [NonSerialized] private DeucarianThemeStyle editorPreviewStyleOverride;
+#endif
 
         /// <summary>
         /// Last enabled provider. This is a convenience fallback, not a required singleton.
@@ -31,16 +37,75 @@ namespace Deucarian.Theming
         public DeucarianTheme CurrentTheme => ResolveCurrentTheme(true);
 
         /// <summary>Currently assigned paired theme family, or null when using a standalone theme.</summary>
-        public DeucarianThemeFamily CurrentThemeFamily => currentThemeFamily;
+        public DeucarianThemeFamily CurrentThemeFamily
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (hasEditorPreview)
+                {
+                    return editorPreviewThemeFamily;
+                }
+#endif
+                return currentThemeFamily;
+            }
+        }
 
         /// <summary>Mode used to resolve the assigned theme family.</summary>
-        public DeucarianThemeMode ThemeMode => themeMode;
+        public DeucarianThemeMode ThemeMode
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (hasEditorPreview)
+                {
+                    return editorPreviewThemeMode;
+                }
+#endif
+                return themeMode;
+            }
+        }
 
         /// <summary>Explicit style override. When null, the current theme's visual style is used.</summary>
-        public DeucarianThemeStyle StyleOverride => styleOverride;
+        public DeucarianThemeStyle StyleOverride
+        {
+            get
+            {
+#if UNITY_EDITOR
+                if (hasEditorPreview)
+                {
+                    return editorPreviewStyleOverride;
+                }
+#endif
+                return styleOverride;
+            }
+        }
 
         /// <summary>Resolved active visual style for this provider.</summary>
         public DeucarianThemeStyle CurrentStyle
+        {
+            get
+            {
+                DeucarianThemeStyle effectiveOverride = StyleOverride;
+                if (effectiveOverride != null)
+                {
+                    return effectiveOverride;
+                }
+
+                DeucarianTheme theme = CurrentTheme;
+                return theme != null ? theme.VisualStyle : null;
+            }
+        }
+
+        internal DeucarianTheme ConfiguredTheme => ResolveConfiguredTheme(true);
+
+        internal DeucarianThemeFamily ConfiguredThemeFamily => currentThemeFamily;
+
+        internal DeucarianThemeMode ConfiguredThemeMode => themeMode;
+
+        internal DeucarianThemeStyle ConfiguredStyleOverride => styleOverride;
+
+        internal DeucarianThemeStyle ConfiguredStyle
         {
             get
             {
@@ -49,10 +114,14 @@ namespace Deucarian.Theming
                     return styleOverride;
                 }
 
-                DeucarianTheme theme = CurrentTheme;
+                DeucarianTheme theme = ResolveConfiguredTheme(true);
                 return theme != null ? theme.VisualStyle : null;
             }
         }
+
+#if UNITY_EDITOR
+        internal bool HasEditorPreview => hasEditorPreview;
+#endif
 
         /// <summary>Raised after this provider changes theme and reapplies child targets.</summary>
         public event Action<DeucarianTheme> ThemeChanged;
@@ -66,9 +135,16 @@ namespace Deucarian.Theming
         /// <summary>Sets the active theme and reapplies it to child theme targets.</summary>
         public void SetTheme(DeucarianTheme theme)
         {
+#if UNITY_EDITOR
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+            ClearEditorPreviewState();
+#endif
             if (currentThemeFamily == null && currentTheme == theme)
             {
                 RefreshThemeGraph();
+#if UNITY_EDITOR
+                NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+#endif
                 return;
             }
 
@@ -80,6 +156,9 @@ namespace Deucarian.Theming
             }
 
             RefreshThemeGraph();
+#if UNITY_EDITOR
+            NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+#endif
         }
 
         /// <summary>Sets the paired theme family and reapplies its current mode to child targets.</summary>
@@ -91,8 +170,11 @@ namespace Deucarian.Theming
         /// <summary>Atomically sets a paired family and mode, then reapplies the resolved variant once.</summary>
         public void SetThemeFamily(DeucarianThemeFamily family, DeucarianThemeMode mode)
         {
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+#if UNITY_EDITOR
+            ClearEditorPreviewState();
+#endif
             mode = NormalizeThemeMode(mode);
-            bool modeChanged = themeMode != mode;
             bool familyAssignmentChanged = currentThemeFamily != family || currentTheme != null;
             currentThemeFamily = family;
             currentTheme = null;
@@ -108,7 +190,7 @@ namespace Deucarian.Theming
             }
 
             RefreshThemeGraph();
-            if (modeChanged)
+            if (previousEffectiveMode != ThemeMode)
             {
                 ThemeModeChanged?.Invoke(themeMode);
             }
@@ -117,10 +199,18 @@ namespace Deucarian.Theming
         /// <summary>Sets the explicit light or dark mode and reapplies the resolved family variant.</summary>
         public void SetThemeMode(DeucarianThemeMode mode)
         {
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+#if UNITY_EDITOR
+            ClearEditorPreviewState();
+#endif
             mode = NormalizeThemeMode(mode);
             if (themeMode == mode)
             {
                 RefreshThemeGraph();
+                if (previousEffectiveMode != ThemeMode)
+                {
+                    ThemeModeChanged?.Invoke(themeMode);
+                }
                 return;
             }
 
@@ -131,15 +221,34 @@ namespace Deucarian.Theming
             }
 
             RefreshThemeGraph();
-            ThemeModeChanged?.Invoke(themeMode);
+            if (previousEffectiveMode != ThemeMode)
+            {
+                ThemeModeChanged?.Invoke(themeMode);
+            }
         }
 
         /// <summary>Sets the provider style override and reapplies it to child style targets.</summary>
         public void SetStyle(DeucarianThemeStyle style)
         {
+#if UNITY_EDITOR
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+            bool previewCleared = ClearEditorPreviewState();
+#else
+            const bool previewCleared = false;
+#endif
             if (styleOverride == style)
             {
-                RefreshStyle();
+                if (previewCleared)
+                {
+                    RefreshThemeGraph();
+                }
+                else
+                {
+                    RefreshStyle();
+                }
+#if UNITY_EDITOR
+                NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+#endif
                 return;
             }
 
@@ -149,8 +258,85 @@ namespace Deucarian.Theming
                 Active = this;
             }
 
-            ApplyResolvedStyleAndNotify();
+            if (previewCleared)
+            {
+                RefreshThemeGraph();
+            }
+            else
+            {
+                ApplyResolvedStyleAndNotify();
+            }
+#if UNITY_EDITOR
+            NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+#endif
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Applies an editor-only presentation without changing the serialized provider configuration.
+        /// Public runtime setters clear this preview so later application behavior always wins.
+        /// </summary>
+        internal void SetEditorPreview(
+            DeucarianThemeFamily family,
+            DeucarianThemeMode mode,
+            DeucarianThemeStyle style)
+        {
+            if (family == null)
+            {
+                ClearEditorPreview();
+                return;
+            }
+
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+            editorPreviewThemeFamily = family;
+            editorPreviewThemeMode = NormalizeThemeMode(mode);
+            DeucarianTheme resolvedTheme = family.ResolveTheme(editorPreviewThemeMode);
+            editorPreviewStyleOverride = resolvedTheme != null && resolvedTheme.VisualStyle == style
+                ? null
+                : style;
+            hasEditorPreview = true;
+            warnedIncompleteThemeFamily = false;
+
+            RefreshThemeGraph();
+            NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+        }
+
+        internal bool ClearEditorPreview()
+        {
+            DeucarianThemeMode previousEffectiveMode = ThemeMode;
+            if (!ClearEditorPreviewState())
+            {
+                return false;
+            }
+
+            RefreshThemeGraph();
+            NotifyThemeModeChangedIfNeeded(previousEffectiveMode);
+            return true;
+        }
+
+        private bool ClearEditorPreviewState()
+        {
+            if (!hasEditorPreview)
+            {
+                return false;
+            }
+
+            hasEditorPreview = false;
+            editorPreviewThemeFamily = null;
+            editorPreviewThemeMode = DeucarianThemeMode.Dark;
+            editorPreviewStyleOverride = null;
+            warnedIncompleteThemeFamily = false;
+            return true;
+        }
+
+        private void NotifyThemeModeChangedIfNeeded(DeucarianThemeMode previousMode)
+        {
+            if (previousMode != ThemeMode)
+            {
+                ThemeModeChanged?.Invoke(ThemeMode);
+            }
+        }
+#endif
 
         /// <summary>Clears the style override so the current theme's visual style is used.</summary>
         public void ClearStyleOverride()
@@ -192,8 +378,10 @@ namespace Deucarian.Theming
                 return false;
             }
 
+            DeucarianThemeFamily effectiveFamily = CurrentThemeFamily;
+            DeucarianThemeStyle effectiveStyleOverride = StyleOverride;
             DeucarianThemeStyle currentStyle = CurrentStyle;
-            if (asset == currentThemeFamily || asset == styleOverride || asset == currentStyle)
+            if (asset == effectiveFamily || asset == effectiveStyleOverride || asset == currentStyle)
             {
                 return true;
             }
@@ -208,10 +396,10 @@ namespace Deucarian.Theming
                 return currentThemeFamily == null && currentTheme == null;
             }
 
-            if (currentThemeFamily != null)
+            if (effectiveFamily != null)
             {
-                return UsesThemeGraphAsset(currentThemeFamily.LightTheme, asset)
-                    || UsesThemeGraphAsset(currentThemeFamily.DarkTheme, asset);
+                return UsesThemeGraphAsset(effectiveFamily.LightTheme, asset)
+                    || UsesThemeGraphAsset(effectiveFamily.DarkTheme, asset);
             }
 
             return UsesThemeGraphAsset(currentTheme, asset)
@@ -300,6 +488,9 @@ namespace Deucarian.Theming
 
         private void OnValidate()
         {
+#if UNITY_EDITOR
+            ClearEditorPreviewState();
+#endif
             themeMode = NormalizeThemeMode(themeMode);
             warnedIncompleteThemeFamily = false;
             if (!isActiveAndEnabled)
@@ -329,24 +520,48 @@ namespace Deucarian.Theming
 
         private DeucarianTheme ResolveCurrentTheme(bool warnWhenIncomplete)
         {
-            if (currentThemeFamily == null)
+#if UNITY_EDITOR
+            if (hasEditorPreview)
+            {
+                return ResolveThemeSource(
+                    null,
+                    editorPreviewThemeFamily,
+                    editorPreviewThemeMode,
+                    warnWhenIncomplete);
+            }
+#endif
+            return ResolveConfiguredTheme(warnWhenIncomplete);
+        }
+
+        private DeucarianTheme ResolveConfiguredTheme(bool warnWhenIncomplete)
+        {
+            return ResolveThemeSource(currentTheme, currentThemeFamily, themeMode, warnWhenIncomplete);
+        }
+
+        private DeucarianTheme ResolveThemeSource(
+            DeucarianTheme standaloneTheme,
+            DeucarianThemeFamily family,
+            DeucarianThemeMode mode,
+            bool warnWhenIncomplete)
+        {
+            if (family == null)
             {
                 warnedIncompleteThemeFamily = false;
-                return currentTheme;
+                return standaloneTheme;
             }
 
-            if (currentThemeFamily.IsComplete)
+            if (family.IsComplete)
             {
                 warnedIncompleteThemeFamily = false;
-                return currentThemeFamily.GetTheme(themeMode);
+                return family.GetTheme(mode);
             }
 
-            DeucarianTheme resolvedTheme = currentThemeFamily.ResolveTheme(themeMode);
+            DeucarianTheme resolvedTheme = family.ResolveTheme(mode);
             if (warnWhenIncomplete && !warnedIncompleteThemeFamily)
             {
                 warnedIncompleteThemeFamily = true;
-                bool missingLight = currentThemeFamily.LightTheme == null;
-                bool missingDark = currentThemeFamily.DarkTheme == null;
+                bool missingLight = family.LightTheme == null;
+                bool missingDark = family.DarkTheme == null;
                 string missingVariant = missingLight && missingDark
                     ? "light and dark"
                     : missingLight ? "light" : "dark";
@@ -355,7 +570,7 @@ namespace Deucarian.Theming
                     : " No runtime fallback is available.";
                 ThemingLog.General.Warning(
                     "Theme family '"
-                    + currentThemeFamily.name
+                    + family.name
                     + "' is incomplete because its "
                     + missingVariant
                     + " theme is not assigned."

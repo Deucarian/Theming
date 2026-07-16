@@ -1,7 +1,18 @@
 # Changelog
 
-## Unreleased
+## 1.0.2 - 2026-07-16
 
+- Prevented Unity layout restoration from reopening Theme Manager on editor startup while preserving explicitly opened windows across domain reloads.
+- Removed the opaque full-content IMGUI background so the shared Deucarian wallpaper remains visible behind Theme Manager content.
+- Moved Theme Manager status, asset counts, refresh action, and package version into the shared fixed workbench footer instead of rendering a pseudo-footer inside the scroll view.
+
+## 1.0.1 - 2026-07-15
+
+- Added nonserialized Theme Manager live preview across loaded providers, including domain-reload and Play Mode restoration, runtime-setter precedence, scene/prefab save guards, and build-time suspension through the actual end of the player pipeline so staged choices never leak into serialized or player configuration.
+- Made Theme Manager activation validate the selected family instead of the previously configured runtime family, and made editor mutations play-safe while keeping provider refreshes free of scene dirtiness.
+- Made Theme Manager scroll scopes exception-safe and removed its redundant outer heading card to prevent IMGUI layout-state errors after view changes.
+- Adopted the shared responsive Editor workbench for Theme Manager navigation, contextual summaries/actions, and exception-safe 24 px panels and controls without duplicating Editor-package styling constants.
+- Updated the shared Editor dependency to `1.0.2` for the finalized workbench contract.
 - Redesigned Theme Manager around EditorPrefs-backed staged Family, Mode, and Visual Style choices, independent dirty markers, one validated **Activate** transaction, compact cards, searchable asset pickers, contextual setup, and collapsed developer tools.
 - Added a focused four-axis Custom Style composer whose existing-style edits commit atomically with theme activation and whose preview reflects surface, corner, border-width, texture, and size choices.
 - Clarified composed-style authoring with explicit legacy, preset, custom, and incomplete composition states while preserving variant serialization and APIs.

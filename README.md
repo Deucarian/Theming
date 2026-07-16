@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.0.0`.
+Current package version: `1.0.2`.
 
 ## When to use it
 
@@ -63,7 +63,7 @@ Recommended workflow:
 
 1. In Unity, choose `Tools > Deucarian > Theming > Create Theme Family`.
 2. Edit the generated light and dark palette assets.
-3. Open `Tools > Deucarian > Theming > Open Theme Manager`, stage the Theme Family, Mode, and Visual Style you want, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
+3. Open `Tools > Deucarian > Theming > Open Theme Manager`, choose the Theme Family, Mode, and Visual Style you want, review the live preview, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
 
 Done.
 
@@ -85,7 +85,11 @@ The Theming menu is intentionally limited to quick entry points:
 - `Tools/Deucarian/Theming/Open Theme Manager`
 - `Tools/Deucarian/Theming/Create Theme Family`
 
-Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
+Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Family, Mode, and Visual Style choices preview immediately on loaded providers without changing provider serialization, theme assets, runtime settings, scenes, or builds. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
+
+The shared responsive workbench toolbar switches between **Theme**, **Style Composer**, and **Runtime Settings** while keeping each view's current summary and primary action visible at compact and wide window sizes.
+
+The per-user preview is restored after script reloads and after Play Mode startup has applied project settings. A later runtime call to `SetThemeFamily`, `SetThemeMode`, `SetTheme`, or `SetStyle` takes precedence and clears that provider's preview. Player builds temporarily suspend preview state and always use the activated runtime settings; leaving the Theme Manager on an unactivated choice cannot change build output.
 
 ## Samples
 
@@ -149,7 +153,7 @@ Generic starter assets and optional game-specific roles remain available under T
 
 Builds can resolve a project default family through a `DeucarianThemeRuntimeSettings` asset named `DeucarianThemeRuntimeSettings.asset` in any `Resources` folder. Assign its default family and explicit mode; new settings default to dark. The legacy standalone default-theme field remains supported.
 
-The Theme Manager hydrates missing or invalid staged fields from this source-controlled project default while preserving valid machine-local Family, Mode, and Visual Style choices. **Activate** is the single commit point: it validates the complete setup, shares the chosen style across Light and Dark, writes the runtime default, and synchronizes loaded providers. Missing, incomplete, or ambiguous runtime settings expose one contextual **Configure Runtime Settings...** workflow; creation and legacy utilities remain under **Developer Tools** rather than being presented as project health requirements.
+The Theme Manager hydrates missing or invalid staged fields from this source-controlled project default while preserving valid machine-local Family, Mode, and Visual Style choices. **Activate** is the single commit point for the next player build: it validates the selected complete family, shares the chosen style across Light and Dark, writes the runtime default, and synchronizes loaded providers. An existing but previously unconfigured or incomplete runtime-settings asset can therefore be repaired directly by activating a valid selected family. Missing or ambiguous runtime settings expose one contextual **Configure Runtime Settings...** workflow; creation and legacy utilities remain under **Developer Tools** rather than being presented as project health requirements.
 
 Runtime code can call:
 
