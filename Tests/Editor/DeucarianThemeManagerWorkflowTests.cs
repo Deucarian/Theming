@@ -128,6 +128,110 @@ namespace Deucarian.Theming.Editor.Tests
                 changes);
         }
 
+        [Test]
+        public void ComposerActionLabelDistinguishesCustomizeEditAndResume()
+        {
+            DeucarianDefaultThemeAssets assets = CreateFamily("ComposerLabels");
+            DeucarianThemeStyle preset = assets.DefaultStyle;
+            DeucarianThemeStyle custom = DeucarianThemingMenuActions.CreateCustomStyle(
+                preset,
+                testRoot + "/ComposerLabelsCustom.asset",
+                preset.SurfaceProfile,
+                preset.ShapeProfile,
+                preset.StrokeProfile,
+                preset.Density,
+                preset.TypographyProfile);
+            Assert.IsNotNull(custom);
+
+            Assert.AreEqual(
+                "Customize Style",
+                DeucarianThemeManagerWindow.ResolveComposerActionLabel(preset, null, false));
+            Assert.AreEqual(
+                "Edit Style",
+                DeucarianThemeManagerWindow.ResolveComposerActionLabel(custom, preset, false));
+            Assert.AreEqual(
+                "Resume Style Edit",
+                DeucarianThemeManagerWindow.ResolveComposerActionLabel(preset, preset, true));
+            Assert.AreEqual(
+                "Customize Style",
+                DeucarianThemeManagerWindow.ResolveComposerActionLabel(null, preset, true));
+        }
+
+        [Test]
+        public void ComposerDraftComparisonCoversEveryStagedPresentationAxis()
+        {
+            DeucarianDefaultThemeAssets assets = CreateFamily("ComposerDirty");
+            DeucarianThemeStyle style = assets.DefaultStyle;
+            DeucarianThemeShapeProfile alternateShape =
+                CreateAsset<DeucarianThemeShapeProfile>("ComposerAlternateShape.asset");
+
+            Assert.IsFalse(DeucarianThemeManagerWindow.IsComposerDraftDirty(
+                style,
+                style.SurfaceProfile,
+                style.ShapeProfile,
+                style.StrokeProfile,
+                style.Density,
+                style.TypographyProfile));
+            Assert.IsTrue(DeucarianThemeManagerWindow.IsComposerDraftDirty(
+                style,
+                style.SurfaceProfile,
+                alternateShape,
+                style.StrokeProfile,
+                style.Density,
+                style.TypographyProfile));
+            Assert.IsTrue(DeucarianThemeManagerWindow.IsComposerDraftDirty(
+                style,
+                style.SurfaceProfile,
+                style.ShapeProfile,
+                style.StrokeProfile,
+                DeucarianThemeDensity.Unspecified,
+                style.TypographyProfile));
+            Assert.IsFalse(DeucarianThemeManagerWindow.IsComposerDraftDirty(
+                null,
+                style.SurfaceProfile,
+                alternateShape,
+                style.StrokeProfile,
+                style.Density,
+                style.TypographyProfile));
+        }
+
+        [Test]
+        public void ComposerSourceSwitchDefaultsToKeepingExistingDraft()
+        {
+            bool keepEditing = DeucarianThemeManagerWindow.ShouldKeepCurrentComposerDraft(
+                "Frosted Glass",
+                "Material Dark",
+                (title, message, keepLabel, cancelLabel, switchLabel) =>
+                {
+                    Assert.AreEqual("Keep Style Composer Changes?", title);
+                    StringAssert.Contains("Frosted Glass", message);
+                    StringAssert.Contains("Material Dark", message);
+                    Assert.AreEqual("Keep editing", keepLabel);
+                    Assert.AreEqual("Cancel", cancelLabel);
+                    Assert.AreEqual("Discard draft and switch", switchLabel);
+                    return 0;
+                });
+            Assert.IsTrue(keepEditing);
+
+            bool canceled = DeucarianThemeManagerWindow.ShouldKeepCurrentComposerDraft(
+                "Frosted Glass",
+                "Material Dark",
+                (title, message, keepLabel, cancelLabel, switchLabel) => 1);
+            Assert.IsTrue(canceled);
+
+            bool dismissed = DeucarianThemeManagerWindow.ShouldKeepCurrentComposerDraft(
+                "Frosted Glass",
+                "Material Dark",
+                (title, message, keepLabel, cancelLabel, switchLabel) => -1);
+            Assert.IsTrue(dismissed);
+
+            bool switchStyle = DeucarianThemeManagerWindow.ShouldKeepCurrentComposerDraft(
+                "Frosted Glass",
+                "Material Dark",
+                (title, message, keepLabel, cancelLabel, switchLabel) => 2);
+            Assert.IsFalse(switchStyle);
+        }
+
         [TestCase(759f, true)]
         [TestCase(760f, false)]
         [TestCase(920f, false)]
@@ -862,7 +966,7 @@ namespace Deucarian.Theming.Editor.Tests
                 Button discard = workbench.Toolbar.Q<Button>(
                     "deucarian-theme-manager-discard-changes");
                 Assert.IsNotNull(themeButton);
-                Assert.IsNotNull(styleButton);
+                Assert.IsNull(styleButton);
                 Assert.IsNotNull(settingsButton);
                 Assert.IsNotNull(secondary);
                 Assert.That(primary != null || primaryStatus != null, Is.True);
@@ -895,18 +999,19 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.AreEqual(1f, content.style.flexGrow.value);
                 Assert.AreEqual(0f, content.style.minHeight.value.value);
                 Assert.AreEqual(Color.clear, content.style.backgroundColor.value);
-                VisualElement navigation = workbench.Toolbar.ElementAt(0);
-                VisualElement spacer = workbench.Toolbar.ElementAt(1);
-                VisualElement actions = workbench.Toolbar.ElementAt(2);
+                VisualElement navigation = workbench.Toolbar.Q<VisualElement>(
+                    className: DeucarianEditorCommandBar.NavigationGroupClass);
+                VisualElement actions = workbench.Toolbar.Q<VisualElement>(
+                    className: DeucarianEditorCommandBar.ActionGroupClass);
+                Assert.IsNotNull(navigation);
+                Assert.IsNotNull(actions);
                 Assert.IsTrue(navigation.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.NavigationGroupClass));
                 Assert.IsTrue(navigation.ClassListContains(
                     DeucarianEditorCommandBar.NavigationGroupClass));
                 Assert.AreSame(themeButton, navigation.ElementAt(0));
-                Assert.AreSame(styleButton, navigation.ElementAt(1));
-                Assert.AreSame(settingsButton, navigation.ElementAt(2));
-                Assert.IsTrue(spacer.ClassListContains(
-                    DeucarianEditorWorkbenchToolbar.SpacerClass));
+                Assert.AreSame(settingsButton, navigation.ElementAt(1));
+                Assert.AreEqual(2, navigation.childCount);
                 Assert.IsTrue(actions.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.ActionGroupClass));
                 Assert.IsTrue(actions.ClassListContains(
@@ -1021,13 +1126,18 @@ namespace Deucarian.Theming.Editor.Tests
 
                 StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
                 StringAssert.Contains("DeucarianEditorCommandBar", source);
+                StringAssert.Contains("DeucarianEditorCommandBar.CreateLanes", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawCompactIconAction", source);
+                StringAssert.Contains("DeucarianEditorWorkbenchGUI.BeginEmbeddedPage", source);
                 StringAssert.DoesNotContain("DrawWorkbenchAction", source);
                 StringAssert.Contains("// IncludeHeader = true", source);
                 StringAssert.Contains("DrawFlatSplit", source);
                 StringAssert.Contains("DrawThemePreview", source);
                 StringAssert.Contains("DiscardAllChanges", source);
                 StringAssert.Contains("CollectPendingChangeDescriptions", source);
+                StringAssert.Contains("ResolveComposerActionLabel", source);
+                StringAssert.Contains("ShouldKeepCurrentComposerDraft", source);
+                StringAssert.Contains("Back to Theme", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawReadOnlyRow", source);
                 StringAssert.Contains("BuildDeveloperToolsDrawer", source);
@@ -1043,6 +1153,8 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.DoesNotContain("CreateWindowShell", source);
                 StringAssert.DoesNotContain("DrawHeaderCard", source);
                 StringAssert.DoesNotContain("BeginScrollView", source);
+                StringAssert.DoesNotContain("VerticalScope(DeucarianEditorWorkbenchGUI.WindowStyle)", source);
+                StringAssert.DoesNotContain("deucarian-theme-manager-view-style", source);
                 StringAssert.DoesNotContain("BeginFoldoutCardScope", source);
                 StringAssert.DoesNotContain("EditorGUI.DisabledScope(true)", source);
                 StringAssert.DoesNotContain("EditorGUILayout.HelpBox(feedbackMessage", source);
