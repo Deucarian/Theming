@@ -24,15 +24,16 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
-        public void StyleInspectorUsesFourUserFacingCompositionAxes()
+        public void StyleInspectorUsesFourRequiredAxesAndOptionalTypography()
         {
             CollectionAssert.AreEqual(
-                new[] { "surfaceProfile", "shapeProfile", "strokeProfile", "density" },
+                new[] { "surfaceProfile", "shapeProfile", "strokeProfile", "density", "typographyProfile" },
                 DeucarianThemeStyleInspectorPresentation.CompositionPropertyNames);
             Assert.AreEqual("Surface", DeucarianThemeStyleInspectorPresentation.SurfaceLabel);
             Assert.AreEqual("Corners", DeucarianThemeStyleInspectorPresentation.CornersLabel);
             Assert.AreEqual("Border", DeucarianThemeStyleInspectorPresentation.BorderLabel);
             Assert.AreEqual("Size", DeucarianThemeStyleInspectorPresentation.SizeLabel);
+            Assert.AreEqual("Typography", DeucarianThemeStyleInspectorPresentation.TypographyLabel);
 
             CollectionAssert.DoesNotContain(
                 DeucarianThemeStyleInspectorPresentation.CompositionPropertyNames.ToArray(),
@@ -124,6 +125,7 @@ namespace Deucarian.Theming.Editor.Tests
             AssertEditorType<DeucarianThemeSurfaceProfile, DeucarianThemeSurfaceProfileEditor>();
             AssertEditorType<DeucarianThemeShapeProfile, DeucarianThemeShapeProfileEditor>();
             AssertEditorType<DeucarianThemeStrokeProfile, DeucarianThemeStrokeProfileEditor>();
+            AssertEditorType<DeucarianThemeTypographyProfile, DeucarianThemeTypographyProfileEditor>();
         }
 
         private void AssertEditorType<TAsset, TEditor>()

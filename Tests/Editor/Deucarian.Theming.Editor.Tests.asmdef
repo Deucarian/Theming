@@ -5,6 +5,7 @@
     "Deucarian.Editor",
     "Deucarian.Theming",
     "Deucarian.Theming.Editor",
+    "Unity.TextMeshPro",
     "UnityEngine.UIElementsModule"
   ],
   "includePlatforms": [

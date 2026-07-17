@@ -1,0 +1,6 @@
+{
+  "name": "Deucarian.Theming.Samples.UIToolkit",
+  "rootNamespace": "Deucarian.Theming.Samples",
+  "references": ["Deucarian.Theming"],
+  "autoReferenced": false
+}

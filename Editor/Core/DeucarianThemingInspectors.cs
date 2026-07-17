@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -232,8 +233,7 @@ namespace Deucarian.Theming.Editor
             {
                 if (GUILayout.Button("Select Palette"))
                 {
-                    Selection.activeObject = theme.ColorPalette;
-                    EditorGUIUtility.PingObject(theme.ColorPalette);
+                    DeucarianEditorSelection.SelectAndPing(theme.ColorPalette);
                 }
             }
         }
@@ -285,8 +285,7 @@ namespace Deucarian.Theming.Editor
             {
                 if (GUILayout.Button(label))
                 {
-                    Selection.activeObject = theme;
-                    EditorGUIUtility.PingObject(theme);
+                    DeucarianEditorSelection.SelectAndPing(theme);
                 }
             }
         }

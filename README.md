@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.0.2`.
+Current package version: `1.0.3`.
 
 ## When to use it
 
@@ -87,7 +87,7 @@ The Theming menu is intentionally limited to quick entry points:
 
 Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Family, Mode, and Visual Style choices preview immediately on loaded providers without changing provider serialization, theme assets, runtime settings, scenes, or builds. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
 
-The shared responsive workbench toolbar switches between **Theme**, **Style Composer**, and **Runtime Settings** while keeping each view's current summary and primary action visible at compact and wide window sizes.
+The shared responsive workbench toolbar keeps **Theme** and **Runtime Settings** as the two top-level destinations. Style Composer is a contextual Theme workflow opened with **Customize Style**, **Edit Style**, or **Resume Style Edit**, depending on the selected style and any staged composer draft. Returning to Theme never clears that draft; switching the composer to another style asks before discarding it.
 
 The per-user preview is restored after script reloads and after Play Mode startup has applied project settings. A later runtime call to `SetThemeFamily`, `SetThemeMode`, `SetTheme`, or `SetStyle` takes precedence and clears that provider's preview. Player builds temporarily suspend preview state and always use the activated runtime settings; leaving the Theme Manager on an unactivated choice cannot change build output.
 
@@ -184,7 +184,7 @@ The built-in style presets are:
 - `Material Dark`: opaque layered dark surfaces with restrained radius and crisp dividers.
 - `Fluent Acrylic`: acrylic-inspired translucent surfaces with subtle tint and texture.
 
-These names remain curated presets, but each preset is a composition of four reusable axes: Surface, Corners, Border, and Size. The built-ins preserve their existing output exactly. Choose **Customize Style** in Theme Manager to compose a source-controlled **Custom Style**, such as Frosted Glass + Square + Compact. Composer choices remain staged until **Save & Activate**, and the resulting Custom Style stays shared by Light and Dark modes.
+These names remain curated presets, but each preset is a composition of four reusable axes: Surface, Corners, Border, and Size. The built-ins preserve their existing output exactly. Choose **Customize Style** in Theme Manager to derive a source-controlled **Custom Style**, such as Frosted Glass + Square + Compact; existing custom assets use **Edit Style**, and an unapplied draft uses **Resume Style Edit**. Composer choices remain staged until **Save & Activate**, and the resulting Custom Style stays shared by Light and Dark modes.
 
 Existing third-party style assets continue to resolve their legacy inline fields when component references or density are absent. Providers observe edits to referenced component assets and emit the existing `StyleChanged` notification so active consumers refresh immediately.
 

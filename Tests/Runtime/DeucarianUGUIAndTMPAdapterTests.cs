@@ -54,6 +54,51 @@ namespace Deucarian.Theming.Tests
             Assert.AreEqual(Color.green, text.color);
         }
 
+        [Test]
+        public void TMPTypographyAdapterAppliesSelectedRoleMetrics()
+        {
+            DeucarianThemeTypographyProfile typography = ScriptableObject.CreateInstance<DeucarianThemeTypographyProfile>();
+            typography.Configure(
+                null,
+                new DeucarianThemeTextStyle(24f, FontStyles.Bold, 2f, 3f),
+                new DeucarianThemeTextStyle(15f),
+                new DeucarianThemeTextStyle(10f));
+            createdObjects.Add(typography);
+
+            DeucarianThemeStyle style = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            style.SetComposition(null, null, null, DeucarianThemeDensity.Standard, typography);
+            createdObjects.Add(style);
+
+            GameObject gameObject = CreateGameObject("TMP Typography");
+            gameObject.SetActive(false);
+            TMP_Text text = gameObject.AddComponent<TextMeshProUGUI>();
+            DeucarianTMPThemeTypography adapter = gameObject.AddComponent<DeucarianTMPThemeTypography>();
+            adapter.TextRole = DeucarianThemeTextRole.Title;
+
+            adapter.ApplyStyle(style);
+
+            Assert.AreEqual(24f, text.fontSize);
+            Assert.AreEqual(FontStyles.Bold, text.fontStyle);
+            Assert.AreEqual(2f, text.characterSpacing);
+            Assert.AreEqual(3f, text.lineSpacing);
+        }
+
+        [Test]
+        public void TMPTypographyAdapterUsesDefaultRoleWhenProfileIsNull()
+        {
+            DeucarianThemeStyle style = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            createdObjects.Add(style);
+            GameObject gameObject = CreateGameObject("TMP Typography Default");
+            gameObject.SetActive(false);
+            TMP_Text text = gameObject.AddComponent<TextMeshProUGUI>();
+            DeucarianTMPThemeTypography adapter = gameObject.AddComponent<DeucarianTMPThemeTypography>();
+            adapter.TextRole = DeucarianThemeTextRole.Caption;
+
+            adapter.ApplyStyle(style);
+
+            Assert.AreEqual(11f, text.fontSize);
+        }
+
         private DeucarianTheme CreateTheme(Color color, out DeucarianColorRole role)
         {
             role = ScriptableObject.CreateInstance<DeucarianColorRole>();

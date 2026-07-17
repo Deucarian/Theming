@@ -10,6 +10,7 @@ namespace Deucarian.Theming.Editor
         internal const string CornersLabel = "Corners";
         internal const string BorderLabel = "Border";
         internal const string SizeLabel = "Size";
+        internal const string TypographyLabel = "Typography";
         internal const string LegacyClassificationPropertyName = "surfaceTreatment";
 
         private static readonly string[] CompositionProperties =
@@ -17,7 +18,8 @@ namespace Deucarian.Theming.Editor
             "surfaceProfile",
             "shapeProfile",
             "strokeProfile",
-            "density"
+            "density",
+            "typographyProfile"
         };
 
         private static readonly string[] LegacyProperties =
@@ -151,7 +153,7 @@ namespace Deucarian.Theming.Editor
         private void DrawPreset(DeucarianThemeStyle style)
         {
             EditorGUILayout.HelpBox(
-                "Curated preset. Its four presentation parts are kept read-only so the preset remains stable.",
+                "Curated preset. Its reusable presentation parts are kept read-only so the preset remains stable.",
                 MessageType.Info);
             DrawComposition(false);
 
@@ -186,7 +188,7 @@ namespace Deucarian.Theming.Editor
         private void DrawLegacyStyle()
         {
             EditorGUILayout.HelpBox(
-                "Legacy inline style. It remains supported, but new styles should use the four-part composition.",
+                "Legacy inline style. It remains supported, but new styles should use composed presentation profiles.",
                 MessageType.Info);
 
             legacyCompatibilityExpanded = EditorGUILayout.Foldout(
@@ -230,6 +232,7 @@ namespace Deucarian.Theming.Editor
                 DrawProperty("shapeProfile", DeucarianThemeStyleInspectorPresentation.CornersLabel);
                 DrawProperty("strokeProfile", DeucarianThemeStyleInspectorPresentation.BorderLabel);
                 DrawProperty("density", DeucarianThemeStyleInspectorPresentation.SizeLabel);
+                DrawProperty("typographyProfile", DeucarianThemeStyleInspectorPresentation.TypographyLabel);
             }
         }
 
@@ -240,6 +243,24 @@ namespace Deucarian.Theming.Editor
             {
                 EditorGUILayout.PropertyField(property, new GUIContent(label));
             }
+        }
+    }
+
+    [CustomEditor(typeof(DeucarianThemeTypographyProfile))]
+    public sealed class DeucarianThemeTypographyProfileEditor : UnityEditor.Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            EditorGUILayout.LabelField("Typography", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("fontAsset"), new GUIContent("TMP Font Asset"));
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("title"), new GUIContent("Title"), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("body"), new GUIContent("Body"), true);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("caption"), new GUIContent("Caption"), true);
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"), new GUIContent("Display Name"));
+            serializedObject.ApplyModifiedProperties();
         }
     }
 

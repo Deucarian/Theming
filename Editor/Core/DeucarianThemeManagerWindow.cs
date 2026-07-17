@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Deucarian.Editor;
 using Deucarian.Theming;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,8 +14,13 @@ namespace Deucarian.Theming.Editor
     /// </summary>
     public sealed class DeucarianThemeManagerWindow : EditorWindow
     {
-        private const string DeveloperToolsKey = "Deucarian.Theming.ThemeManager.DeveloperTools";
         private const string WallpaperFadeName = "deucarian-theme-manager-top-safe-fade";
+        private const string PreferredSizeKey = "Deucarian.Theming.ThemeManager.PreferredSize.920x560";
+        private const float PreviewStackBreakpoint = 760f;
+        private const float SecondaryActionSlotWidth = 132f;
+        private const float DiscardActionSlotWidth = 148f;
+        private const float PrimaryActionSlotWidth = 140f;
+        private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
         private enum ViewMode
         {
@@ -42,25 +48,39 @@ namespace Deucarian.Theming.Editor
         private DeucarianThemeShapeProfile composerCorners;
         private DeucarianThemeStrokeProfile composerBorder;
         private DeucarianThemeDensity composerSize;
+        private DeucarianThemeTypographyProfile composerTypography;
+        private DeucarianThemeManagerSelection baselineSelection;
+        private DeucarianThemeRuntimeSettings baselineRuntimeSettings;
+        private bool baselineCaptured;
+        private bool runtimeCandidateTouched;
 
         private DeucarianEditorWorkbench workbench;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
         private Button themeViewButton;
-        private Button styleComposerViewButton;
         private Button runtimeSettingsViewButton;
-        private Label toolbarSummary;
         private Button toolbarSecondaryAction;
         private Button toolbarPrimaryAction;
+        private Button discardChangesButton;
+        private VisualElement toolbarSecondarySlot;
+        private VisualElement discardChangesSlot;
+        private VisualElement toolbarPrimarySlot;
+        private VisualElement toolbarPrimaryStatus;
+        private DeucarianEditorWorkbenchDrawer developerToolsDrawer;
+        private Button developerToolsButton;
+        private bool developerToolsOpen;
+        private IReadOnlyList<string> currentPendingChanges = Array.Empty<string>();
 
         internal DeucarianEditorWorkbench WorkbenchForTests => workbench;
         internal DeucarianEditorWorkbenchFooter FooterForTests => workbenchFooter;
+        internal DeucarianEditorWorkbenchDrawer DeveloperToolsDrawerForTests => developerToolsDrawer;
 
         public static void OpenWindow()
         {
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
-            window.minSize = new Vector2(440f, 420f);
+            window.minSize = new Vector2(520f, 420f);
+            ApplyPreferredSizeOnce(window);
             window.RefreshAssets();
             window.Show();
         }
@@ -71,15 +91,12 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
-            window.minSize = new Vector2(440f, 420f);
+            window.minSize = new Vector2(520f, 420f);
+            ApplyPreferredSizeOnce(window);
             window.RefreshAssets();
             if (style != null)
             {
-                SetDraft(
-                    DeucarianThemingEditorSettings.ActiveThemeFamily,
-                    DeucarianThemingEditorSettings.ActiveThemeMode,
-                    style);
-                window.BeginStyleComposer(style);
+                window.EnterStyleComposer(style, true);
             }
 
             window.Show();
@@ -88,10 +105,17 @@ namespace Deucarian.Theming.Editor
 
         private void OnEnable()
         {
+            minSize = new Vector2(520f, 420f);
+            if (!Application.isBatchMode)
+            {
+                ApplyPreferredSizeOnce(this);
+            }
+
             EditorApplication.projectChanged -= HandleProjectChanged;
             EditorApplication.projectChanged += HandleProjectChanged;
             DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault();
             RefreshAssets();
+            CaptureBaseline();
             DeucarianThemePreviewCoordinator.ApplySelectedPreview();
         }
 
@@ -101,6 +125,8 @@ namespace Deucarian.Theming.Editor
             workbench?.Dispose();
             workbench = null;
             workbenchFooter = null;
+            developerToolsDrawer = null;
+            developerToolsButton = null;
         }
 
         internal void CreateGUI()
@@ -110,9 +136,17 @@ namespace Deucarian.Theming.Editor
                 rootVisualElement,
                 new DeucarianEditorWorkbenchOptions
                 {
+                    // Package headers are intentionally disabled for now. Keep the
+                    // shared header implementation available for a future UI pass.
+                    // IncludeHeader = true,
                     IncludeToolbar = true,
-                    IncludeDrawer = false,
+                    IncludeDrawer = true,
                     IncludeFooter = true,
+                    // HeaderPackageKey = "theming",
+                    // HeaderTitle = "Deucarian Theming",
+                    // HeaderSubtitle = "Compose, preview, and activate the project theme.",
+                    ToolbarLayout = DeucarianEditorWorkbenchToolbarLayout.StableActionLanes,
+                    DrawerMode = DeucarianEditorWorkbenchDrawerMode.Overlay,
                     TopSafeFadeName = WallpaperFadeName
                 });
             if (workbench.Content == null || workbench.Toolbar == null)
@@ -127,6 +161,7 @@ namespace Deucarian.Theming.Editor
             content.style.flexGrow = 1f;
             content.style.minHeight = 0f;
             content.style.backgroundColor = Color.clear;
+            BuildDeveloperToolsDrawer();
             BuildWorkbenchFooter();
             UpdateWorkbenchToolbar();
         }
@@ -147,6 +182,19 @@ namespace Deucarian.Theming.Editor
                 RefreshAssets,
                 $"com.deucarian.theming {ResolvePackageVersion()}");
             workbenchFooter.Root.name = "deucarian-theme-manager-footer";
+            DeucarianEditorCommandBar.ConfigureAction(
+                workbenchFooter.Action,
+                DeucarianEditorIconIds.Refresh,
+                "Refresh",
+                "Rescan theme assets and project settings.");
+            developerToolsButton = DeucarianEditorWorkbenchSurfaces.AddFooterAction(
+                workbenchFooter,
+                DeucarianEditorIconIds.Wrench,
+                "Developer Tools",
+                ToggleDeveloperTools,
+                "Open asset creation, repair, and legacy utilities.",
+                128f);
+            developerToolsButton?.AddToClassList(DeucarianEditorWorkbenchToolbar.ToggleClass);
             workbench.Footer.Add(workbenchFooter.Root);
         }
 
@@ -159,37 +207,64 @@ namespace Deucarian.Theming.Editor
             }
 
             toolbar.Clear();
-            themeViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
+            var lanes = DeucarianEditorCommandBar.CreateLanes(toolbar);
+            themeViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Theme",
                 NavigateToTheme);
             themeViewButton.name = "deucarian-theme-manager-view-theme";
-            styleComposerViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
-                "Style Composer",
-                NavigateToStyleComposer);
-            styleComposerViewButton.name = "deucarian-theme-manager-view-style";
-            runtimeSettingsViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
+            runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Runtime Settings",
                 NavigateToRuntimeSettings);
             runtimeSettingsViewButton.name = "deucarian-theme-manager-view-runtime-settings";
-            toolbarSummary = DeucarianEditorWorkbenchToolbar.CreateSummary(string.Empty);
-            toolbarSummary.name = "deucarian-theme-manager-toolbar-summary";
-            toolbarSecondaryAction = DeucarianEditorWorkbenchToolbar.CreateActionButton(
+            toolbarSecondaryAction = DeucarianEditorCommandBar.CreateAction(
+                DeucarianEditorIconIds.Wrench,
                 string.Empty,
-                ExecuteToolbarSecondaryAction);
+                ExecuteToolbarSecondaryAction,
+                false,
+                "Open the contextual style or setup action.");
             toolbarSecondaryAction.name = "deucarian-theme-manager-toolbar-secondary";
-            toolbarPrimaryAction = DeucarianEditorWorkbenchToolbar.CreateActionButton(
+            discardChangesButton = DeucarianEditorCommandBar.CreateAction(
+                DeucarianEditorIconIds.Undo,
+                "Discard changes",
+                DiscardAllChanges,
+                false,
+                "Restore the active project theme and clear every unapplied draft.");
+            discardChangesButton.name = "deucarian-theme-manager-discard-changes";
+            toolbarPrimaryAction = DeucarianEditorCommandBar.CreateAction(
+                DeucarianEditorIconIds.Check,
                 string.Empty,
                 ExecuteToolbarPrimaryAction,
-                true);
+                true,
+                "Apply the current staged theme selection.");
             toolbarPrimaryAction.name = "deucarian-theme-manager-toolbar-primary";
 
-            toolbar.Add(themeViewButton);
-            toolbar.Add(styleComposerViewButton);
-            toolbar.Add(runtimeSettingsViewButton);
-            toolbar.Add(toolbarSummary);
-            toolbar.Add(DeucarianEditorWorkbenchToolbar.CreateSpacer());
-            toolbar.Add(toolbarSecondaryAction);
-            toolbar.Add(toolbarPrimaryAction);
+            toolbarSecondarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
+                SecondaryActionSlotWidth);
+            discardChangesSlot = DeucarianEditorCommandBar.CreateReservedSlot(
+                DiscardActionSlotWidth);
+            toolbarPrimarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
+                PrimaryActionSlotWidth);
+            toolbarPrimaryStatus = DeucarianEditorCommandBar.CreateState(
+                DeucarianEditorIconIds.Check,
+                "Active",
+                "The staged selection is active in project runtime settings.");
+            toolbarPrimaryStatus.name = "deucarian-theme-manager-toolbar-primary-status";
+            DeucarianEditorCommandBar.SetReservedContent(
+                toolbarSecondarySlot,
+                toolbarSecondaryAction);
+            DeucarianEditorCommandBar.SetReservedContent(
+                discardChangesSlot,
+                discardChangesButton,
+                true);
+            DeucarianEditorCommandBar.SetReservedContent(
+                toolbarPrimarySlot,
+                toolbarPrimaryAction);
+
+            lanes.Leading.Add(themeViewButton);
+            lanes.Leading.Add(runtimeSettingsViewButton);
+            lanes.Trailing.Add(toolbarSecondarySlot);
+            lanes.Trailing.Add(discardChangesSlot);
+            lanes.Trailing.Add(toolbarPrimarySlot);
         }
 
         private void UpdateWorkbenchToolbar()
@@ -199,56 +274,106 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(themeViewButton, viewMode == ViewMode.Theme);
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(
-                styleComposerViewButton,
-                viewMode == ViewMode.StyleComposer);
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(
+            DeucarianEditorCommandBar.SetActive(
+                themeViewButton,
+                viewMode == ViewMode.Theme || viewMode == ViewMode.StyleComposer);
+            DeucarianEditorCommandBar.SetActive(
                 runtimeSettingsViewButton,
                 viewMode == ViewMode.RuntimeSettings);
 
             DeucarianThemeManagerSelection selection =
                 DeucarianThemeManagerSelection.FromEditorPrefs();
-            string familyName = selection.Family != null ? selection.Family.DisplayName : "No family";
-            string styleName = selection.Style != null ? selection.Style.DisplayName : "No style";
             bool isPlaying = EditorApplication.isPlayingOrWillChangePlaymode;
+            DeucarianThemeManagerActivationStatus status =
+                DeucarianThemeManagerWorkflow.Evaluate(
+                    projectRuntimeSettings,
+                    selection,
+                    projectRuntimeSettingsResourceReady,
+                    projectRuntimeSettingsResourceMessage);
+            IReadOnlyList<string> pendingChanges = GetPendingChangeDescriptions(status);
+            UpdatePendingChangesPresentation(pendingChanges);
 
             switch (viewMode)
             {
                 case ViewMode.StyleComposer:
-                    toolbarSummary.text = composerEditingStyle != null
-                        ? $"Editing {composerEditingStyle.DisplayName}"
-                        : $"Customizing {(composerSource != null ? composerSource.DisplayName : styleName)}";
-                    toolbarSecondaryAction.text = "More";
+                    DeucarianEditorCommandBar.SetText(
+                        toolbarSecondaryAction,
+                        "More");
                     toolbarSecondaryAction.SetEnabled(composerSource != null);
-                    toolbarPrimaryAction.text = "Save & Activate";
-                    toolbarPrimaryAction.SetEnabled(IsComposerReadyToActivate() && !isPlaying);
+                    toolbarSecondaryAction.tooltip = composerSource != null
+                        ? "Open additional save and asset actions."
+                        : "Choose a visual style before opening composer actions.";
+                    DeucarianEditorCommandBar.SetText(
+                        toolbarPrimaryAction,
+                        "Save & Activate");
+                    bool composerReady = IsComposerReadyToActivate() && !isPlaying;
+                    toolbarPrimaryAction.SetEnabled(composerReady);
+                    toolbarPrimaryAction.tooltip = composerReady
+                        ? "Save the composed style and activate it."
+                        : isPlaying
+                            ? "Exit Play Mode before saving and activating."
+                            : "Complete the composer and project runtime setup first.";
+                    ShowPrimaryActionButton();
                     break;
 
                 case ViewMode.RuntimeSettings:
-                    toolbarSummary.text = runtimeSettingsCandidate != null
-                        ? runtimeSettingsCandidate.name
-                        : "Choose runtime settings";
-                    toolbarSecondaryAction.text = "Create Settings...";
+                    DeucarianEditorCommandBar.SetText(
+                        toolbarSecondaryAction,
+                        "Create Settings...");
                     toolbarSecondaryAction.SetEnabled(!isPlaying);
-                    toolbarPrimaryAction.text = RuntimeSettingsCandidateNeedsFamily()
-                        ? "Use & Configure"
-                        : "Use Selected";
-                    toolbarPrimaryAction.SetEnabled(CanUseRuntimeSettingsCandidate());
+                    toolbarSecondaryAction.tooltip = isPlaying
+                        ? "Exit Play Mode before creating runtime settings."
+                        : "Create a Resources-backed runtime settings asset.";
+                    DeucarianEditorCommandBar.SetText(
+                        toolbarPrimaryAction,
+                        RuntimeSettingsCandidateNeedsFamily()
+                            ? "Use & Configure"
+                            : "Use Selected");
+                    bool candidateReady = CanUseRuntimeSettingsCandidate();
+                    toolbarPrimaryAction.SetEnabled(candidateReady);
+                    toolbarPrimaryAction.tooltip = candidateReady
+                        ? "Use the selected runtime settings for this project."
+                        : string.IsNullOrWhiteSpace(runtimeSettingsCandidateMessage)
+                            ? "Choose valid runtime settings first."
+                            : runtimeSettingsCandidateMessage;
+                    ShowPrimaryActionButton();
                     break;
 
                 default:
-                    DeucarianThemeManagerActivationStatus status =
-                        DeucarianThemeManagerWorkflow.Evaluate(
-                            projectRuntimeSettings,
-                            selection,
-                            projectRuntimeSettingsResourceReady,
-                            projectRuntimeSettingsResourceMessage);
-                    toolbarSummary.text = $"{familyName} · {selection.Mode} · {styleName}";
-                    toolbarSecondaryAction.text = "Customize Style";
+                    bool composerDraftDirty = IsComposerDraftDirty();
+                    string composerActionLabel = ResolveComposerActionLabel(
+                        selection.Style,
+                        composerSource,
+                        composerDraftDirty);
+                    DeucarianEditorCommandBar.SetText(
+                        toolbarSecondaryAction,
+                        composerActionLabel);
                     toolbarSecondaryAction.SetEnabled(selection.Style != null);
-                    toolbarPrimaryAction.text = status.IsActive ? "Active" : "Activate";
-                    toolbarPrimaryAction.SetEnabled(status.CanActivate && !isPlaying);
+                    toolbarSecondaryAction.tooltip = selection.Style != null
+                        ? composerActionLabel == "Resume Style Edit"
+                            ? "Resume the unapplied composer draft for the selected visual style."
+                            : selection.Style.IsCustomStyle
+                                ? "Edit the selected custom style in the composer."
+                                : "Create a custom style from the selected visual style."
+                        : "Choose a visual style before opening the composer.";
+                    if (status.IsActive)
+                    {
+                        ShowPrimaryActiveStatus();
+                    }
+                    else
+                    {
+                        DeucarianEditorCommandBar.SetText(
+                            toolbarPrimaryAction,
+                            "Activate");
+                        bool canActivate = status.CanActivate && !isPlaying;
+                        toolbarPrimaryAction.SetEnabled(canActivate);
+                        toolbarPrimaryAction.tooltip = canActivate
+                            ? "Activate the staged family, mode, and visual style."
+                            : isPlaying
+                                ? "Exit Play Mode before activating a theme."
+                                : status.Message;
+                        ShowPrimaryActionButton();
+                    }
                     break;
             }
 
@@ -262,39 +387,105 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianEditorStatus visualStatus = DeucarianEditorStatus.Info;
-            string statusLabel = "Ready";
-            string summary = searchResult == null
-                ? "Theme assets have not been scanned."
-                : $"{searchResult.ThemeFamilies.Count} families · "
-                  + $"{searchResult.Themes.Count} themes · "
-                  + $"{searchResult.Palettes.Count} palettes · "
-                  + $"{searchResult.Styles.Count} styles";
+            DeucarianEditorStatus visualStatus;
+            string statusLabel;
+            string summary;
+            string iconId;
 
             DeucarianThemeManagerSelection selection =
                 DeucarianThemeManagerSelection.FromEditorPrefs();
+            string familyName = selection.Family != null ? selection.Family.DisplayName : "No family";
+            string styleName = selection.Style != null ? selection.Style.DisplayName : "No style";
             DeucarianThemeManagerActivationStatus status =
                 DeucarianThemeManagerWorkflow.Evaluate(
                     projectRuntimeSettings,
                     selection,
                     projectRuntimeSettingsResourceReady,
                     projectRuntimeSettingsResourceMessage);
-            if (status.IsActive)
+            int pendingCount = currentPendingChanges != null ? currentPendingChanges.Count : 0;
+            if (pendingCount > 0)
+            {
+                visualStatus = DeucarianEditorStatus.Warning;
+                statusLabel = pendingCount + (pendingCount == 1 ? " unapplied change" : " unapplied changes");
+                summary = string.Join(" · ", currentPendingChanges);
+                iconId = DeucarianEditorIconIds.Warning;
+            }
+            else if (!string.IsNullOrWhiteSpace(feedbackMessage))
+            {
+                visualStatus = ToEditorStatus(feedbackType);
+                statusLabel = feedbackType == MessageType.Error
+                    ? "Error"
+                    : feedbackType == MessageType.Warning ? "Attention" : "Updated";
+                summary = feedbackMessage;
+                iconId = feedbackType == MessageType.Info
+                    ? DeucarianEditorIconIds.Info
+                    : DeucarianEditorIconIds.Warning;
+            }
+            else if (status.IsActive)
             {
                 visualStatus = DeucarianEditorStatus.Success;
                 statusLabel = "Active";
+                summary = $"{familyName} · {selection.Mode} · {styleName}";
+                iconId = DeucarianEditorIconIds.Check;
             }
             else if (!status.CanActivate)
             {
                 visualStatus = DeucarianEditorStatus.Warning;
                 statusLabel = "Attention";
+                summary = status.Message;
+                iconId = DeucarianEditorIconIds.Warning;
+            }
+            else
+            {
+                visualStatus = DeucarianEditorStatus.Info;
+                statusLabel = "Ready";
+                summary = $"{familyName} · {selection.Mode} · {styleName}";
+                iconId = DeucarianEditorIconIds.Info;
             }
 
             workbenchFooter.StatusLabel.text = statusLabel;
             workbenchFooter.Summary.text = summary;
+            workbenchFooter.Status.tooltip = pendingCount > 0
+                ? string.Join("\n", currentPendingChanges)
+                : summary;
+            workbenchFooter.Summary.tooltip = workbenchFooter.Status.tooltip;
             workbenchFooter.Version.text = $"com.deucarian.theming {ResolvePackageVersion()}";
+            DeucarianEditorWorkbenchSurfaces.SetFooterIcon(workbenchFooter, iconId);
             DeucarianEditorWorkbenchSurfaces.SetFooterStatus(workbenchFooter, visualStatus);
             DeucarianEditorWorkbenchSurfaces.SetFooterBusy(workbenchFooter, false);
+        }
+
+        private void ShowPrimaryActionButton()
+        {
+            if (toolbarPrimarySlot != null && toolbarPrimaryAction?.parent != toolbarPrimarySlot)
+            {
+                DeucarianEditorCommandBar.SetReservedContent(
+                    toolbarPrimarySlot,
+                    toolbarPrimaryAction);
+            }
+        }
+
+        private void ShowPrimaryActiveStatus()
+        {
+            if (toolbarPrimarySlot != null && toolbarPrimaryStatus?.parent != toolbarPrimarySlot)
+            {
+                DeucarianEditorCommandBar.SetReservedContent(
+                    toolbarPrimarySlot,
+                    toolbarPrimaryStatus);
+            }
+        }
+
+        private static DeucarianEditorStatus ToEditorStatus(MessageType messageType)
+        {
+            switch (messageType)
+            {
+                case MessageType.Error:
+                    return DeucarianEditorStatus.Error;
+                case MessageType.Warning:
+                    return DeucarianEditorStatus.Warning;
+                default:
+                    return DeucarianEditorStatus.Info;
+            }
         }
 
         private void NavigateToTheme()
@@ -307,8 +498,7 @@ namespace Deucarian.Theming.Editor
 
         private void NavigateToStyleComposer()
         {
-            DeucarianThemeStyle style = composerSource
-                                        ?? DeucarianThemingEditorSettings.ActiveStyle;
+            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle;
             if (style == null)
             {
                 viewMode = ViewMode.Theme;
@@ -319,12 +509,111 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            BeginStyleComposer(style);
+            EnterStyleComposer(style, false);
+        }
+
+        private bool EnterStyleComposer(DeucarianThemeStyle style, bool stageSelection)
+        {
+            if (style == null)
+            {
+                return false;
+            }
+
+            bool sameSource = composerSource == style;
+            if (!sameSource && IsComposerDraftDirty())
+            {
+                bool keepEditing = ShouldKeepCurrentComposerDraft(
+                    GetStyleDisplayName(composerSource),
+                    GetStyleDisplayName(style));
+                if (keepEditing)
+                {
+                    viewMode = ViewMode.StyleComposer;
+                    feedbackMessage = "Continuing the existing style composer draft.";
+                    feedbackType = MessageType.Info;
+                    UpdateWorkbenchToolbar();
+                    Repaint();
+                    return false;
+                }
+            }
+
+            if (stageSelection)
+            {
+                SetDraft(
+                    DeucarianThemingEditorSettings.ActiveThemeFamily,
+                    DeucarianThemingEditorSettings.ActiveThemeMode,
+                    style);
+            }
+
+            if (sameSource)
+            {
+                viewMode = ViewMode.StyleComposer;
+                feedbackMessage = null;
+                UpdateWorkbenchToolbar();
+                Repaint();
+            }
+            else
+            {
+                BeginStyleComposer(style);
+            }
+
+            return true;
+        }
+
+        internal static bool ShouldKeepCurrentComposerDraft(
+            string currentStyleName,
+            string requestedStyleName,
+            Func<string, string, string, string, string, int> showDialog = null)
+        {
+            Func<string, string, string, string, string, int> dialog = showDialog
+                ?? EditorUtility.DisplayDialogComplex;
+            string current = string.IsNullOrWhiteSpace(currentStyleName)
+                ? "the current style"
+                : currentStyleName;
+            string requested = string.IsNullOrWhiteSpace(requestedStyleName)
+                ? "the selected style"
+                : requestedStyleName;
+            int choice = dialog(
+                "Keep Style Composer Changes?",
+                $"{current} has unapplied composer changes. Keep editing it, or discard those composer changes and switch to {requested}?",
+                "Keep editing",
+                "Cancel",
+                "Discard draft and switch");
+            return choice != 2;
+        }
+
+        internal static string ResolveComposerActionLabel(
+            DeucarianThemeStyle selectedStyle,
+            DeucarianThemeStyle composerStyle,
+            bool composerDraftDirty)
+        {
+            if (selectedStyle != null
+                && selectedStyle == composerStyle
+                && composerDraftDirty)
+            {
+                return "Resume Style Edit";
+            }
+
+            return selectedStyle != null && selectedStyle.IsCustomStyle
+                ? "Edit Style"
+                : "Customize Style";
+        }
+
+        private static string GetStyleDisplayName(DeucarianThemeStyle style)
+        {
+            if (style == null)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(style.DisplayName)
+                ? style.name
+                : style.DisplayName;
         }
 
         private void NavigateToRuntimeSettings()
         {
             runtimeSettingsCandidate = projectRuntimeSettings;
+            runtimeCandidateTouched = false;
             validatedRuntimeSettingsCandidate = null;
             RefreshRuntimeSettingsCandidateValidation();
             viewMode = ViewMode.RuntimeSettings;
@@ -372,7 +661,7 @@ namespace Deucarian.Theming.Editor
 
         private void DrawWindowGui()
         {
-            using (new EditorGUILayout.VerticalScope(DeucarianEditorWorkbenchGUI.WindowStyle))
+            using (DeucarianEditorWorkbenchGUI.BeginEmbeddedPage(GUILayout.ExpandHeight(true)))
             {
                 using (var scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
                 {
@@ -412,30 +701,36 @@ namespace Deucarian.Theming.Editor
                     projectRuntimeSettingsResourceReady,
                     projectRuntimeSettingsResourceMessage);
 
-            DeucarianEditorWorkbenchGUI.DrawPanel(
-                "Current Theme",
-                () => DrawCurrentThemeCard(selection, status));
+            DrawFlatSplit(
+                () =>
+                {
+                    EditorGUILayout.LabelField("Current Theme", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+                    EditorGUILayout.LabelField(
+                        "Stage the project family, mode, and shared visual style.",
+                        DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+                    GUILayout.Space(6f);
+                    DrawCurrentThemeCard(selection, status);
+                },
+                () =>
+                {
+                    EditorGUILayout.LabelField("Live Preview", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+                    EditorGUILayout.LabelField(
+                        "Palette, surfaces, controls, status, and typography in one specimen.",
+                        DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+                    GUILayout.Space(6f);
+                    DrawThemePreview(
+                        selection.ResolvedTheme,
+                        selection.Style,
+                        selection.Style != null ? selection.Style.SurfaceProfile : null,
+                        selection.Style != null ? selection.Style.ShapeProfile : null,
+                        selection.Style != null ? selection.Style.StrokeProfile : null,
+                        selection.Style != null ? selection.Style.Density : DeucarianThemeDensity.Unspecified,
+                        selection.Style != null ? selection.Style.TypographyProfile : null);
+                });
+
+            GUILayout.Space(8f);
 
             DrawContextualSetup(settings, selection, status);
-
-            if (!string.IsNullOrWhiteSpace(feedbackMessage))
-            {
-                EditorGUILayout.HelpBox(feedbackMessage, feedbackType);
-                GUILayout.Space(4f);
-            }
-
-            using (DeucarianEditorFoldoutScope scope =
-                   DeucarianEditorAccordion.BeginFoldoutCardScope(
-                       DeveloperToolsKey,
-                       "Developer Tools",
-                       "Asset discovery, creation, repair, and legacy utilities.",
-                       false))
-            {
-                if (scope.Open)
-                {
-                    DrawDeveloperTools();
-                }
-            }
         }
 
         private void DrawCurrentThemeCard(
@@ -459,7 +754,7 @@ namespace Deucarian.Theming.Editor
                 });
 
             EditorGUI.BeginChangeCheck();
-            DeucarianThemeMode mode = (DeucarianThemeMode)EditorGUILayout.EnumPopup(
+            DeucarianThemeMode mode = (DeucarianThemeMode)DrawWorkbenchEnumPopup(
                 DirtyLabel("Mode", status.ModeDirty),
                 selection.Mode);
             if (EditorGUI.EndChangeCheck())
@@ -481,14 +776,7 @@ namespace Deucarian.Theming.Editor
                 });
 
             GUILayout.Space(6f);
-            using (DeucarianEditorWorkbenchPanelScope summarySurface =
-                   DeucarianEditorWorkbenchGUI.BeginSurface(
-                       DeucarianEditorWorkbenchGUI.SampleRowStyle,
-                       DeucarianEditorWorkbenchGUI.SampleRowBackgroundColor,
-                       DeucarianEditorWorkbenchGUI.PanelBorderColor))
-            {
-                DrawResolvedSummary(selection);
-            }
+            DrawResolvedSummary(selection);
             DrawStyleSummary(selection.Style);
         }
 
@@ -530,25 +818,20 @@ namespace Deucarian.Theming.Editor
                 }
 
                 DeucarianEditorStatusBadge.Draw(label, visualStatus, GUILayout.Width(112f));
-                EditorGUILayout.LabelField(status.Message, EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField(status.Message, DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
             }
         }
 
         private static void DrawResolvedSummary(DeucarianThemeManagerSelection selection)
         {
-            using (new EditorGUI.DisabledScope(true))
-            {
-                EditorGUILayout.ObjectField(
-                    "Resolved Theme",
-                    selection.ResolvedTheme,
-                    typeof(DeucarianTheme),
-                    false);
-                EditorGUILayout.ObjectField(
-                    "Palette",
-                    selection.ResolvedPalette,
-                    typeof(DeucarianColorPalette),
-                    false);
-            }
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Resolved Theme",
+                selection.ResolvedTheme != null ? selection.ResolvedTheme.DisplayName : "Not resolved",
+                "Derived from the selected family and mode.");
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Palette",
+                selection.ResolvedPalette != null ? selection.ResolvedPalette.DisplayName : "Not resolved",
+                "Derived from the resolved theme.");
         }
 
         private static void DrawStyleSummary(DeucarianThemeStyle style)
@@ -559,24 +842,32 @@ namespace Deucarian.Theming.Editor
             }
 
             GUILayout.Space(2f);
-            EditorGUILayout.LabelField("Appearance", EditorStyles.boldLabel);
-            using (new EditorGUI.DisabledScope(true))
-            {
-                EditorGUILayout.TextField(
-                    "Surface",
-                    style.SurfaceProfile != null ? style.SurfaceProfile.DisplayName : "Legacy inline");
-                EditorGUILayout.TextField(
-                    "Corners",
-                    style.ShapeProfile != null ? style.ShapeProfile.DisplayName : "Legacy inline");
-                EditorGUILayout.TextField(
-                    "Border",
-                    style.StrokeProfile != null ? style.StrokeProfile.DisplayName : "Legacy inline");
-                EditorGUILayout.TextField(
-                    "Size",
-                    style.Density == DeucarianThemeDensity.Unspecified
-                        ? "Legacy automatic"
-                        : style.Density.ToString());
-            }
+            EditorGUILayout.LabelField("Appearance", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            const string tooltip = "This value is composed by the selected visual style. Use Style Composer to change it.";
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Surface",
+                style.SurfaceProfile != null ? style.SurfaceProfile.DisplayName : "Legacy inline",
+                tooltip);
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Corners",
+                style.ShapeProfile != null ? style.ShapeProfile.DisplayName : "Legacy inline",
+                tooltip);
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Border",
+                style.StrokeProfile != null ? style.StrokeProfile.DisplayName : "Legacy inline",
+                tooltip);
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Size",
+                style.Density == DeucarianThemeDensity.Unspecified
+                    ? "Legacy automatic"
+                    : style.Density.ToString(),
+                tooltip);
+            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
+                "Typography",
+                style.TypographyProfile != null
+                    ? style.TypographyProfile.DisplayName
+                    : "Project TMP default",
+                tooltip);
         }
 
         private void DrawContextualSetup(
@@ -586,65 +877,60 @@ namespace Deucarian.Theming.Editor
         {
             if (!status.RuntimeSettingsReady)
             {
-                DeucarianEditorWorkbenchGUI.DrawPanel(
-                    "Project Setup",
-                    () =>
-                    {
-                        EditorGUILayout.HelpBox(
-                            status.HasRuntimeSettings
-                                ? status.Message
-                                : "A source-controlled runtime settings asset connects editor activation to builds.",
-                            MessageType.Warning);
-                        if (DrawWorkbenchAction(
-                                "Configure Runtime Settings...",
-                                !EditorApplication.isPlayingOrWillChangePlaymode,
-                                true))
-                        {
-                            runtimeSettingsCandidate = settings;
-                            validatedRuntimeSettingsCandidate = null;
-                            viewMode = ViewMode.RuntimeSettings;
-                            feedbackMessage = null;
-                            UpdateWorkbenchToolbar();
-                            GUIUtility.ExitGUI();
-                        }
-                    });
+                DrawSectionHeading("Project Setup");
+                EditorGUILayout.HelpBox(
+                    status.HasRuntimeSettings
+                        ? status.Message
+                        : "A source-controlled runtime settings asset connects editor activation to builds.",
+                    MessageType.Warning);
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.Wrench,
+                        "Configure Runtime Settings...",
+                        "Open the runtime settings setup view.",
+                        !EditorApplication.isPlayingOrWillChangePlaymode,
+                        true))
+                {
+                    runtimeSettingsCandidate = settings;
+                    runtimeCandidateTouched = false;
+                    validatedRuntimeSettingsCandidate = null;
+                    viewMode = ViewMode.RuntimeSettings;
+                    feedbackMessage = null;
+                    UpdateWorkbenchToolbar();
+                    GUIUtility.ExitGUI();
+                }
                 return;
             }
 
             if (selection.Family == null)
             {
-                DeucarianEditorWorkbenchGUI.DrawPanel(
-                    "Choose a Theme Family",
-                    () =>
-                    {
-                        EditorGUILayout.HelpBox(
-                            "No family is selected. Choose an existing family above or create one.",
-                            MessageType.Info);
-                        if (DrawWorkbenchAction(
-                                "Create Theme Family...",
-                                !EditorApplication.isPlayingOrWillChangePlaymode))
-                        {
-                            CreateThemeFamily();
-                        }
-                    });
+                DrawSectionHeading("Choose a Theme Family");
+                EditorGUILayout.HelpBox(
+                    "No family is selected. Choose an existing family above or create one.",
+                    MessageType.Info);
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.CreatePackage,
+                        "Create Theme Family...",
+                        "Create a complete theme family asset.",
+                        !EditorApplication.isPlayingOrWillChangePlaymode))
+                {
+                    CreateThemeFamily();
+                }
             }
             else if (!selection.Family.IsComplete)
             {
-                DeucarianEditorWorkbenchGUI.DrawPanel(
-                    "Family Needs Repair",
-                    () =>
-                    {
-                        EditorGUILayout.HelpBox(
-                            "Both a Light and Dark theme are required before activation.",
-                            MessageType.Warning);
-                        if (DrawWorkbenchAction(
-                                "Repair Selected Family",
-                                !EditorApplication.isPlayingOrWillChangePlaymode))
-                        {
-                            DeucarianThemingMenuActions.RepairActiveThemeFamilySetup();
-                            RefreshAssets();
-                        }
-                    });
+                DrawSectionHeading("Family Needs Repair");
+                EditorGUILayout.HelpBox(
+                    "Both a Light and Dark theme are required before activation.",
+                    MessageType.Warning);
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.Wrench,
+                        "Repair Selected Family",
+                        "Repair the selected family without replacing customized profiles.",
+                        !EditorApplication.isPlayingOrWillChangePlaymode))
+                {
+                    DeucarianThemingMenuActions.RepairActiveThemeFamilySetup();
+                    RefreshAssets();
+                }
             }
         }
 
@@ -655,7 +941,7 @@ namespace Deucarian.Theming.Editor
                 () =>
                 {
                     EditorGUI.BeginChangeCheck();
-                    runtimeSettingsCandidate = (DeucarianThemeRuntimeSettings)EditorGUILayout.ObjectField(
+                    runtimeSettingsCandidate = (DeucarianThemeRuntimeSettings)DrawWorkbenchObjectField(
                         "Existing Settings",
                         runtimeSettingsCandidate,
                         typeof(DeucarianThemeRuntimeSettings),
@@ -663,6 +949,7 @@ namespace Deucarian.Theming.Editor
                     if (EditorGUI.EndChangeCheck()
                         || validatedRuntimeSettingsCandidate != runtimeSettingsCandidate)
                     {
+                        runtimeCandidateTouched = true;
                         RefreshRuntimeSettingsCandidateValidation();
                     }
 
@@ -691,10 +978,6 @@ namespace Deucarian.Theming.Editor
                     }
                 });
 
-            if (!string.IsNullOrWhiteSpace(feedbackMessage))
-            {
-                EditorGUILayout.HelpBox(feedbackMessage, feedbackType);
-            }
         }
 
         private bool RuntimeSettingsCandidateNeedsFamily()
@@ -743,6 +1026,7 @@ namespace Deucarian.Theming.Editor
             }
 
             ReturnToTheme("Runtime settings are ready.", MessageType.Info);
+            CaptureBaseline();
         }
 
         private void DrawStyleComposer()
@@ -753,9 +1037,30 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianEditorWorkbenchGUI.DrawPanel(
-                composerEditingStyle != null ? composerEditingStyle.DisplayName : composerSource.DisplayName,
-                DrawComposerFields);
+            DrawStyleComposerContext();
+
+            string composerTitle = composerEditingStyle != null
+                ? composerEditingStyle.DisplayName
+                : composerSource.DisplayName;
+            DrawFlatSplit(
+                () =>
+                {
+                    EditorGUILayout.LabelField(composerTitle, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+                    EditorGUILayout.LabelField(
+                        "Compose reusable presentation profiles. Typography is optional and falls back to project TMP settings.",
+                        DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+                    GUILayout.Space(6f);
+                    DrawComposerFields();
+                },
+                () =>
+                {
+                    EditorGUILayout.LabelField("Live Preview", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+                    EditorGUILayout.LabelField(
+                        "The preview uses the staged palette and the source font when TMP exposes it.",
+                        DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+                    GUILayout.Space(6f);
+                    DrawComposerPreview();
+                });
 
             bool complete = IsComposerComplete();
             DeucarianThemeManagerSelection candidate = new DeucarianThemeManagerSelection(
@@ -781,10 +1086,32 @@ namespace Deucarian.Theming.Editor
                     MessageType.Warning);
             }
 
-            if (!string.IsNullOrWhiteSpace(feedbackMessage))
+        }
+
+        private void DrawStyleComposerContext()
+        {
+            using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.HelpBox(feedbackMessage, feedbackType);
+                EditorGUILayout.LabelField(
+                    "Theme / Style Composer",
+                    DeucarianEditorWorkbenchGUI.BoldLabelStyle,
+                    GUILayout.ExpandWidth(true));
+                var backContent = new GUIContent(
+                    "Back to Theme",
+                    "Return to Theme without clearing the current composer draft.");
+                bool back = GUILayout.Button(
+                    backContent,
+                    DeucarianEditorWorkbenchGUI.LabelStyle,
+                    GUILayout.ExpandWidth(false),
+                    GUILayout.Height(DeucarianEditorLayoutMetrics.TextLineHeight));
+                EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+                if (back)
+                {
+                    NavigateToTheme();
+                }
             }
+
+            GUILayout.Space(DeucarianEditorSpacing.Small);
         }
 
         private bool IsComposerReadyToActivate()
@@ -803,52 +1130,83 @@ namespace Deucarian.Theming.Editor
                 ? composerEditingStyle
                 : composerSource;
 
-            composerSurface = (DeucarianThemeSurfaceProfile)EditorGUILayout.ObjectField(
+            composerSurface = (DeucarianThemeSurfaceProfile)DrawWorkbenchObjectField(
                 DirtyLabel("Surface", composerSurface != comparison.SurfaceProfile),
                 composerSurface,
                 typeof(DeucarianThemeSurfaceProfile),
                 false);
-            composerCorners = (DeucarianThemeShapeProfile)EditorGUILayout.ObjectField(
+            composerCorners = (DeucarianThemeShapeProfile)DrawWorkbenchObjectField(
                 DirtyLabel("Corners", composerCorners != comparison.ShapeProfile),
                 composerCorners,
                 typeof(DeucarianThemeShapeProfile),
                 false);
-            composerBorder = (DeucarianThemeStrokeProfile)EditorGUILayout.ObjectField(
+            composerBorder = (DeucarianThemeStrokeProfile)DrawWorkbenchObjectField(
                 DirtyLabel("Border", composerBorder != comparison.StrokeProfile),
                 composerBorder,
                 typeof(DeucarianThemeStrokeProfile),
                 false);
-            composerSize = (DeucarianThemeDensity)EditorGUILayout.EnumPopup(
+            composerSize = (DeucarianThemeDensity)DrawWorkbenchEnumPopup(
                 DirtyLabel("Size", composerSize != comparison.Density),
                 composerSize);
-
-            GUILayout.Space(8f);
-            DrawComposerPreview();
+            composerTypography = (DeucarianThemeTypographyProfile)DrawWorkbenchObjectField(
+                DirtyLabel("Typography", composerTypography != comparison.TypographyProfile),
+                composerTypography,
+                typeof(DeucarianThemeTypographyProfile),
+                false);
         }
 
         private void DrawComposerPreview()
         {
-            EditorGUILayout.LabelField("Preview", EditorStyles.boldLabel);
-            Rect previewRect = GUILayoutUtility.GetRect(120f, 82f, GUILayout.ExpandWidth(true));
+            DeucarianThemeManagerSelection selection =
+                DeucarianThemeManagerSelection.FromEditorPrefs();
+            DrawThemePreview(
+                selection.ResolvedTheme,
+                null,
+                composerSurface,
+                composerCorners,
+                composerBorder,
+                composerSize,
+                composerTypography);
+        }
+
+        private static void DrawThemePreview(
+            DeucarianTheme theme,
+            DeucarianThemeStyle style,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity density,
+            DeucarianThemeTypographyProfile typography)
+        {
+            Rect previewRect = GUILayoutUtility.GetRect(260f, 232f, GUILayout.ExpandWidth(true));
             if (Event.current == null || Event.current.type != EventType.Repaint)
             {
                 return;
             }
 
-            Color baseColor = new Color(0.10f, 0.16f, 0.20f, 0.92f);
-            Color surfaceColor = composerSurface != null
-                ? composerSurface.ResolveSurfaceColor(baseColor)
-                : baseColor;
-            Color borderColor = composerBorder != null
-                ? composerBorder.ResolveBorderColor(surfaceColor)
-                : new Color(0.65f, 0.78f, 0.86f, 0.5f);
-            float radius = composerCorners != null ? composerCorners.CornerRadius : 8f;
-            float borderWidth = composerBorder != null ? composerBorder.BorderWidth : 1f;
+            Color baseColor = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.SurfaceRaised,
+                new Color(0.10f, 0.16f, 0.20f, 0.96f));
+            Color surfaceColor = surface != null
+                ? surface.ResolveSurfaceColor(baseColor)
+                : style != null ? style.ResolveSurfaceColor(baseColor) : baseColor;
+            Color borderColor = border != null
+                ? border.ResolveBorderColor(surfaceColor)
+                : style != null
+                    ? style.ResolveBorderColor(surfaceColor)
+                    : new Color(0.65f, 0.78f, 0.86f, 0.5f);
+            float radius = corners != null
+                ? corners.CornerRadius
+                : style != null ? style.CornerRadius : 8f;
+            float borderWidth = border != null
+                ? border.BorderWidth
+                : style != null ? style.BorderWidth : 1f;
             Rect panelRect = new Rect(
-                previewRect.x + 10f,
-                previewRect.y + 8f,
-                Mathf.Max(0f, previewRect.width - 20f),
-                64f);
+                previewRect.x + 2f,
+                previewRect.y + 2f,
+                Mathf.Max(0f, previewRect.width - 4f),
+                Mathf.Max(0f, previewRect.height - 4f));
             Rect panelContentRect = DrawPreviewSurface(
                 panelRect,
                 surfaceColor,
@@ -856,34 +1214,178 @@ namespace Deucarian.Theming.Editor
                 radius,
                 borderWidth);
 
-            if (composerSurface != null && composerSurface.UseGeneratedNoiseTexture)
+            if (surface != null && surface.UseGeneratedNoiseTexture)
             {
-                Texture2D texture = composerSurface.GetGeneratedTexture();
+                Texture2D texture = surface.GetGeneratedTexture();
                 if (texture != null)
                 {
                     Color previousColor = GUI.color;
-                    GUI.color = composerSurface.TextureTint;
+                    GUI.color = surface.TextureTint;
                     GUI.DrawTexture(panelContentRect, texture, ScaleMode.StretchToFill, true);
                     GUI.color = previousColor;
                 }
             }
 
-            float buttonHeight = ResolvePreviewControlHeight(composerSize);
-            Rect buttonRect = new Rect(
-                panelRect.x + 10f,
-                panelRect.center.y - buttonHeight * 0.5f,
-                94f,
-                buttonHeight);
+            TMP_FontAsset tmpFont = typography != null
+                ? typography.ResolvedFontAsset
+                : DeucarianThemeTypographyProfile.ProjectDefaultFontAsset;
+            Font sourceFont = ResolvePreviewFont(typography, out string fontLabel, out bool usingFallback);
+            DeucarianThemeTextStyle titleToken = typography != null
+                ? typography.Title
+                : DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Title);
+            DeucarianThemeTextStyle bodyToken = typography != null
+                ? typography.Body
+                : DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Body);
+            DeucarianThemeTextStyle captionToken = typography != null
+                ? typography.Caption
+                : DeucarianThemeTextStyle.DefaultFor(DeucarianThemeTextRole.Caption);
+
+            Color textPrimary = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.TextPrimary,
+                new Color(0.92f, 0.95f, 0.97f, 1f));
+            Color textSecondary = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.TextSecondary,
+                new Color(0.72f, 0.78f, 0.82f, 1f));
+            Color textMuted = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.TextMuted,
+                new Color(0.55f, 0.62f, 0.67f, 1f));
+            Color accent = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.Accent,
+                new Color(0.24f, 0.76f, 0.68f, 1f));
+            Color success = ResolvePreviewColor(
+                theme,
+                DeucarianBuiltinColorRoleIds.Success,
+                new Color(0.34f, 0.76f, 0.52f, 1f));
+
+            Rect content = new Rect(
+                panelContentRect.x + 14f,
+                panelContentRect.y + 12f,
+                Mathf.Max(0f, panelContentRect.width - 28f),
+                Mathf.Max(0f, panelContentRect.height - 24f));
+            GUIStyle titleStyle = CreatePreviewTextStyle(sourceFont, titleToken, textPrimary, FontStyle.Bold);
+            GUIStyle bodyStyle = CreatePreviewTextStyle(sourceFont, bodyToken, textSecondary, FontStyle.Normal);
+            GUIStyle captionStyle = CreatePreviewTextStyle(sourceFont, captionToken, textMuted, FontStyle.Normal);
+
+            GUI.Label(new Rect(content.x, content.y, content.width, 26f), "Theme preview", titleStyle);
+            GUI.Label(
+                new Rect(content.x, content.y + 28f, content.width, 34f),
+                "A single specimen for typography, fields, actions, and status.",
+                bodyStyle);
+            GUI.Label(
+                new Rect(content.x, content.y + 60f, content.width, 18f),
+                "Caption · semantic role tokens",
+                captionStyle);
+
+            Rect inputRect = new Rect(content.x, content.y + 84f, content.width, 30f);
+            Color inputFill = Color.Lerp(surfaceColor, textPrimary, 0.06f);
+            DrawPreviewSurface(inputRect, inputFill, borderColor, Mathf.Max(3f, radius - 6f), borderWidth);
+            GUI.Label(
+                new Rect(inputRect.x + 9f, inputRect.y + 5f, inputRect.width - 18f, inputRect.height - 10f),
+                "Sample input",
+                bodyStyle);
+
+            float controlHeight = ResolvePreviewControlHeight(density);
+            float buttonGap = 8f;
+            float buttonWidth = Mathf.Max(72f, (content.width - buttonGap) * 0.5f);
+            Rect primaryRect = new Rect(content.x, content.y + 124f, buttonWidth, controlHeight);
+            Rect secondaryRect = new Rect(
+                primaryRect.xMax + buttonGap,
+                primaryRect.y,
+                Mathf.Max(0f, content.xMax - primaryRect.xMax - buttonGap),
+                controlHeight);
+            DrawPreviewSurface(primaryRect, accent, accent, Mathf.Max(3f, radius - 6f), 1f);
             DrawPreviewSurface(
-                buttonRect,
-                new Color(surfaceColor.r + 0.05f, surfaceColor.g + 0.05f, surfaceColor.b + 0.05f, 0.96f),
+                secondaryRect,
+                Color.Lerp(surfaceColor, textPrimary, 0.08f),
                 borderColor,
-                Mathf.Max(0f, radius - 4f),
+                Mathf.Max(3f, radius - 6f),
                 borderWidth);
-            GUI.Label(buttonRect, "Button", new GUIStyle(EditorStyles.miniBoldLabel)
+            GUIStyle buttonStyle = CreatePreviewTextStyle(sourceFont, bodyToken, textPrimary, FontStyle.Bold);
+            buttonStyle.alignment = TextAnchor.MiddleCenter;
+            GUI.Label(primaryRect, "Primary", buttonStyle);
+            GUI.Label(secondaryRect, "Secondary", buttonStyle);
+
+            Rect statusRect = new Rect(content.x, content.y + 166f, content.width, 18f);
+            EditorGUI.DrawRect(new Rect(statusRect.x, statusRect.y + 5f, 7f, 7f), success);
+            GUI.Label(
+                new Rect(statusRect.x + 13f, statusRect.y, statusRect.width - 13f, statusRect.height),
+                "Success · ready to activate",
+                captionStyle);
+            string resolvedFontName = tmpFont != null ? tmpFont.name : "TMP project default";
+            string fontNote = usingFallback
+                ? $"{resolvedFontName} · editor fallback ({fontLabel})"
+                : $"{resolvedFontName} · source font preview";
+            GUI.Label(
+                new Rect(content.x, content.yMax - 16f, content.width, 16f),
+                fontNote,
+                captionStyle);
+        }
+
+        internal static Font ResolvePreviewFont(
+            DeucarianThemeTypographyProfile typography,
+            out string fontLabel,
+            out bool usingFallback)
+        {
+            TMP_FontAsset tmpFont = typography != null
+                ? typography.ResolvedFontAsset
+                : DeucarianThemeTypographyProfile.ProjectDefaultFontAsset;
+            Font sourceFont = tmpFont != null ? tmpFont.sourceFontFile : null;
+            fontLabel = sourceFont != null
+                ? sourceFont.name
+                : EditorStyles.label.font != null ? EditorStyles.label.font.name : "Unity editor font";
+            usingFallback = sourceFont == null;
+            return sourceFont != null ? sourceFont : EditorStyles.label.font;
+        }
+
+        private static GUIStyle CreatePreviewTextStyle(
+            Font font,
+            DeucarianThemeTextStyle token,
+            Color color,
+            FontStyle fallbackStyle)
+        {
+            var style = new GUIStyle(EditorStyles.label)
             {
-                alignment = TextAnchor.MiddleCenter
-            });
+                font = font,
+                fontSize = Mathf.Max(1, Mathf.RoundToInt(token.FontSize)),
+                fontStyle = ResolveUnityFontStyle(token.FontStyle, fallbackStyle),
+                wordWrap = true,
+                clipping = TextClipping.Clip
+            };
+            style.normal.textColor = color;
+            return style;
+        }
+
+        private static FontStyle ResolveUnityFontStyle(FontStyles styles, FontStyle fallback)
+        {
+            bool bold = (styles & FontStyles.Bold) != 0;
+            bool italic = (styles & FontStyles.Italic) != 0;
+            if (bold && italic)
+            {
+                return FontStyle.BoldAndItalic;
+            }
+
+            if (bold)
+            {
+                return FontStyle.Bold;
+            }
+
+            if (italic)
+            {
+                return FontStyle.Italic;
+            }
+
+            return styles == FontStyles.Normal ? FontStyle.Normal : fallback;
+        }
+
+        private static Color ResolvePreviewColor(DeucarianTheme theme, string roleId, Color fallback)
+        {
+            return theme != null && theme.TryGetColorById(roleId, out Color color)
+                ? color
+                : fallback;
         }
 
         internal static Rect DrawPreviewSurface(
@@ -927,59 +1429,178 @@ namespace Deucarian.Theming.Editor
             return contentRect;
         }
 
-        private void DrawDeveloperTools()
+        private void BuildDeveloperToolsDrawer()
         {
-            using (new EditorGUILayout.HorizontalScope())
+            if (workbench?.Drawer == null)
             {
-                if (DrawWorkbenchAction("Open Assets Folder"))
-                {
-                    DeucarianThemingMenuActions.OpenThemeAssetsFolder();
-                }
-
-                if (DrawWorkbenchAction("More Tools..."))
-                {
-                    ShowDeveloperToolsMenu();
-                }
+                return;
             }
+
+            workbench.Drawer.Clear();
+            developerToolsOpen = false;
+            developerToolsDrawer = DeucarianEditorWorkbenchSurfaces.CreateDrawer(false);
+            developerToolsDrawer.Root.name = "deucarian-theme-manager-developer-tools";
+
+            VisualElement header = DeucarianEditorWorkbenchSurfaces.CreateDrawerHeader(
+                "Developer Tools");
+            header.Add(DeucarianEditorWorkbenchSurfaces.CreateDrawerAction(
+                DeucarianEditorIconIds.OpenFolder,
+                "Open assets folder",
+                DeucarianThemingMenuActions.OpenThemeAssetsFolder,
+                "Reveal the Deucarian theme assets folder in the Project window."));
+            header.Add(DeucarianEditorWorkbenchSurfaces.CreateDrawerAction(
+                DeucarianEditorIconIds.ChevronDown,
+                "Close",
+                () => SetDeveloperToolsOpen(false),
+                "Close Developer Tools."));
+            developerToolsDrawer.Content.Add(header);
+
+            VisualElement columns = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumns();
+            VisualElement create = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumn("Create");
+            AddDeveloperToolAction(
+                create,
+                DeucarianEditorIconIds.CreateFolder,
+                "Theme family...",
+                CreateThemeFamily,
+                "Opens a save dialog and creates a theme family with its palette and style references at the chosen project location.");
+            AddDeveloperToolAction(
+                create,
+                DeucarianEditorIconIds.CreatePackage,
+                "Starter assets",
+                () => DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(),
+                "Creates any missing default Deucarian theme assets and repairs their built-in references when needed.");
+            AddDeveloperToolAction(
+                create,
+                DeucarianEditorIconIds.Palette,
+                "Built-in theme styles",
+                () => DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets(),
+                "Creates or repairs the package's built-in visual-style assets in the default theming folder.");
+            AddDeveloperToolAction(
+                create,
+                DeucarianEditorIconIds.Monitor,
+                "UI Toolkit demo assets",
+                () => DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets(),
+                "Creates or updates the UI Toolkit demo assets under the project's Deucarian theming folder.");
+
+            VisualElement repair = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumn("Repair");
+            AddDeveloperToolAction(
+                repair,
+                DeucarianEditorIconIds.Wrench,
+                "Selected theme family",
+                () => DeucarianThemingMenuActions.RepairActiveThemeFamilySetup(),
+                "Repairs missing built-in references on the currently selected theme family and its related assets.");
+            AddDeveloperToolAction(
+                repair,
+                DeucarianEditorIconIds.Refresh,
+                "Selected palette",
+                () => DeucarianThemingMenuActions.RepairActivePaletteSetup(),
+                "Repairs the active palette's built-in theme and visual-style setup.");
+
+            VisualElement legacy = DeucarianEditorWorkbenchSurfaces.CreateDrawerColumn("Legacy");
+            legacy.style.marginRight = 0f;
+            AddDeveloperToolAction(
+                legacy,
+                DeucarianEditorIconIds.History,
+                "Create minimal palette...",
+                () => DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel(),
+                "Opens a save dialog and creates a minimal legacy palette asset at the chosen project location.");
+
+            columns.Add(create);
+            columns.Add(repair);
+            columns.Add(legacy);
+            developerToolsDrawer.Content.Add(columns);
+            workbench.Drawer.Add(developerToolsDrawer.Root);
         }
 
-        private void ShowDeveloperToolsMenu()
+        private void AddDeveloperToolAction(
+            VisualElement column,
+            string iconId,
+            string text,
+            Action action,
+            string confirmationDescription)
         {
-            GenericMenu menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Create/Theme Family..."), false, CreateThemeFamily);
-            menu.AddItem(new GUIContent("Create/Starter Assets"), false, () =>
+            column?.Add(DeucarianEditorWorkbenchSurfaces.CreateDrawerAction(
+                iconId,
+                text,
+                () =>
+                {
+                    if (!TryExecuteDeveloperToolAction(
+                            text,
+                            confirmationDescription,
+                            action))
+                    {
+                        return;
+                    }
+
+                    RefreshAssets();
+                },
+                confirmationDescription));
+        }
+
+        internal static string BuildDeveloperToolConfirmationMessage(
+            string actionName,
+            string description)
+        {
+            string safeDescription = string.IsNullOrWhiteSpace(description)
+                ? "This tool may create or modify project assets."
+                : description.Trim();
+            return safeDescription
+                + "\n\nThis operation may create or modify project assets. Continue with '"
+                + (actionName ?? "this developer tool")
+                + "'?";
+        }
+
+        internal static bool ConfirmDeveloperToolAction(
+            string actionName,
+            string description,
+            Func<string, string, string, string, bool> confirmation = null)
+        {
+            Func<string, string, string, string, bool> confirmationHandler = confirmation
+                ?? ((title, message, ok, cancel) => EditorUtility.DisplayDialog(
+                    title,
+                    message,
+                    ok,
+                    cancel));
+            return confirmationHandler(
+                "Developer Tools — " + (actionName ?? "Action"),
+                BuildDeveloperToolConfirmationMessage(actionName, description),
+                "Continue",
+                "Cancel");
+        }
+
+        internal static bool TryExecuteDeveloperToolAction(
+            string actionName,
+            string description,
+            Action action,
+            Func<string, string, string, string, bool> confirmation = null)
+        {
+            if (!ConfirmDeveloperToolAction(actionName, description, confirmation))
             {
-                DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
-                RefreshAssets();
-            });
-            menu.AddItem(new GUIContent("Create/Built-in Theme Styles"), false, () =>
+                return false;
+            }
+
+            action?.Invoke();
+            return true;
+        }
+
+        private void ToggleDeveloperTools()
+        {
+            SetDeveloperToolsOpen(!developerToolsOpen);
+        }
+
+        private void SetDeveloperToolsOpen(bool open)
+        {
+            developerToolsOpen = open;
+            if (developerToolsDrawer != null)
             {
-                DeucarianThemingMenuActions.CreateBuiltinThemeStyleAssets();
-                RefreshAssets();
-            });
-            menu.AddItem(new GUIContent("Create/UI Toolkit Demo Assets"), false, () =>
-            {
-                DeucarianUIToolkitDemoAssetFactory.CreateDemoAssets();
-                RefreshAssets();
-            });
-            menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Repair/Selected Theme Family"), false, () =>
-            {
-                DeucarianThemingMenuActions.RepairActiveThemeFamilySetup();
-                RefreshAssets();
-            });
-            menu.AddItem(new GUIContent("Repair/Selected Palette"), false, () =>
-            {
-                DeucarianThemingMenuActions.RepairActivePaletteSetup();
-                RefreshAssets();
-            });
-            menu.AddSeparator(string.Empty);
-            menu.AddItem(new GUIContent("Legacy/Create Minimal Palette..."), false, () =>
-            {
-                DeucarianThemingMenuActions.CreateMinimalPaletteFromSavePanel();
-                RefreshAssets();
-            });
-            menu.ShowAsContext();
+                DeucarianEditorWorkbenchSurfaces.SetDrawerExpanded(
+                    developerToolsDrawer.Root,
+                    developerToolsOpen);
+            }
+
+            DeucarianEditorCommandBar.SetActive(
+                developerToolsButton,
+                developerToolsOpen);
         }
 
         private void ShowComposerMenu()
@@ -1001,7 +1622,7 @@ namespace Deucarian.Theming.Editor
             {
                 menu.AddSeparator(string.Empty);
                 menu.AddItem(new GUIContent("Select Style Asset"), false, () =>
-                    DeucarianThemingMenuActions.SelectAndPing(composerEditingStyle));
+                    DeucarianEditorSelection.SelectAndPing(composerEditingStyle));
             }
 
             menu.ShowAsContext();
@@ -1020,6 +1641,7 @@ namespace Deucarian.Theming.Editor
             composerCorners = style.ShapeProfile;
             composerBorder = style.StrokeProfile;
             composerSize = style.Density;
+            composerTypography = style.TypographyProfile;
             feedbackMessage = null;
             viewMode = ViewMode.StyleComposer;
             UpdateWorkbenchToolbar();
@@ -1071,7 +1693,8 @@ namespace Deucarian.Theming.Editor
                     composerSurface,
                     composerCorners,
                     composerBorder,
-                    composerSize);
+                    composerSize,
+                    composerTypography);
             }
             else
             {
@@ -1100,7 +1723,8 @@ namespace Deucarian.Theming.Editor
                     composerSurface,
                     composerCorners,
                     composerBorder,
-                    composerSize);
+                    composerSize,
+                    composerTypography);
             }
 
             if (style == null)
@@ -1140,6 +1764,7 @@ namespace Deucarian.Theming.Editor
                 composerEditingStyle = style;
                 viewMode = ViewMode.Theme;
                 RefreshAssets();
+                CaptureBaseline();
             }
         }
 
@@ -1172,6 +1797,7 @@ namespace Deucarian.Theming.Editor
             if (result.Succeeded)
             {
                 RefreshAssets();
+                CaptureBaseline();
             }
         }
 
@@ -1385,21 +2011,221 @@ namespace Deucarian.Theming.Editor
             return dirty ? label + " *" : label;
         }
 
-        private static bool DrawWorkbenchAction(
-            string text,
-            bool enabled = true,
-            bool primary = false,
-            params GUILayoutOption[] options)
+        internal static bool ShouldStackPreview(float width)
         {
-            using (new EditorGUI.DisabledScope(!enabled))
+            return width < PreviewStackBreakpoint;
+        }
+
+        private void DrawFlatSplit(Action drawConfiguration, Action drawPreview)
+        {
+            if (ShouldStackPreview(position.width))
             {
-                return GUILayout.Button(
-                    text,
-                    primary
-                        ? DeucarianEditorWorkbenchGUI.PrimaryButtonStyle
-                        : DeucarianEditorWorkbenchGUI.SecondaryButtonStyle,
-                    options);
+                drawConfiguration?.Invoke();
+                GUILayout.Space(10f);
+                DeucarianEditorWorkbenchGUI.DrawSeparator();
+                GUILayout.Space(8f);
+                drawPreview?.Invoke();
+                return;
             }
+
+            float configurationWidth = Mathf.Clamp(position.width * 0.40f, 300f, 370f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUILayout.VerticalScope(GUILayout.Width(configurationWidth)))
+                {
+                    drawConfiguration?.Invoke();
+                }
+
+                GUILayout.Space(12f);
+                Rect divider = GUILayoutUtility.GetRect(
+                    1f,
+                    232f,
+                    GUILayout.Width(1f),
+                    GUILayout.ExpandHeight(true));
+                if (Event.current != null && Event.current.type == EventType.Repaint)
+                {
+                    EditorGUI.DrawRect(divider, DeucarianEditorTheme.BorderSubtle);
+                }
+
+                GUILayout.Space(12f);
+                using (new EditorGUILayout.VerticalScope(GUILayout.ExpandWidth(true)))
+                {
+                    drawPreview?.Invoke();
+                }
+            }
+        }
+
+        private static void DrawSectionHeading(string heading)
+        {
+            GUILayout.Space(8f);
+            EditorGUILayout.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+        }
+
+        private IReadOnlyList<string> GetPendingChangeDescriptions(
+            DeucarianThemeManagerActivationStatus status)
+        {
+            DeucarianThemeStyle comparison = composerEditingStyle != null
+                ? composerEditingStyle
+                : composerSource;
+            bool hasComposer = comparison != null;
+            return CollectPendingChangeDescriptions(
+                status,
+                hasComposer && composerSurface != comparison.SurfaceProfile,
+                hasComposer && composerCorners != comparison.ShapeProfile,
+                hasComposer && composerBorder != comparison.StrokeProfile,
+                hasComposer && composerSize != comparison.Density,
+                hasComposer && composerTypography != comparison.TypographyProfile,
+                runtimeCandidateTouched && runtimeSettingsCandidate != baselineRuntimeSettings);
+        }
+
+        private bool IsComposerDraftDirty()
+        {
+            DeucarianThemeStyle comparison = composerEditingStyle != null
+                ? composerEditingStyle
+                : composerSource;
+            return IsComposerDraftDirty(
+                comparison,
+                composerSurface,
+                composerCorners,
+                composerBorder,
+                composerSize,
+                composerTypography);
+        }
+
+        internal static bool IsComposerDraftDirty(
+            DeucarianThemeStyle comparison,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size,
+            DeucarianThemeTypographyProfile typography)
+        {
+            return comparison != null
+                   && (surface != comparison.SurfaceProfile
+                       || corners != comparison.ShapeProfile
+                       || border != comparison.StrokeProfile
+                       || size != comparison.Density
+                       || typography != comparison.TypographyProfile);
+        }
+
+        internal static IReadOnlyList<string> CollectPendingChangeDescriptions(
+            DeucarianThemeManagerActivationStatus status,
+            bool surfaceDirty,
+            bool cornersDirty,
+            bool borderDirty,
+            bool sizeDirty,
+            bool typographyDirty,
+            bool runtimeSettingsDirty)
+        {
+            var changes = new List<string>();
+            if (status.FamilyDirty) changes.Add("Theme family");
+            if (status.ModeDirty) changes.Add("Mode");
+            if (status.StyleDirty) changes.Add("Visual style");
+            if (surfaceDirty) changes.Add("Composer surface");
+            if (cornersDirty) changes.Add("Composer corners");
+            if (borderDirty) changes.Add("Composer border");
+            if (sizeDirty) changes.Add("Composer size");
+            if (typographyDirty) changes.Add("Composer typography");
+            if (runtimeSettingsDirty) changes.Add("Runtime settings candidate");
+            return changes;
+        }
+
+        private void UpdatePendingChangesPresentation(IReadOnlyList<string> changes)
+        {
+            int count = changes != null ? changes.Count : 0;
+            bool visible = count > 0;
+            currentPendingChanges = changes ?? Array.Empty<string>();
+            if (discardChangesButton != null)
+            {
+                bool canDiscard = visible && !EditorApplication.isPlayingOrWillChangePlaymode;
+                DeucarianEditorCommandBar.SetReservedVisible(
+                    discardChangesSlot,
+                    true);
+                discardChangesButton.SetEnabled(canDiscard);
+                discardChangesButton.tooltip = canDiscard
+                    ? "Restore the active project theme and clear every unapplied draft."
+                    : visible
+                        ? "Exit Play Mode before discarding staged changes."
+                        : "There are no unapplied changes to discard.";
+            }
+        }
+
+        private void DiscardAllChanges()
+        {
+            RefreshRuntimeSettingsValidation();
+            DeucarianThemeManagerSelection selection = projectRuntimeSettings != null
+                && projectRuntimeSettings.DefaultThemeFamily != null
+                ? ResolveProjectSelection(projectRuntimeSettings)
+                : baselineCaptured ? baselineSelection : DeucarianThemeManagerSelection.FromEditorPrefs();
+            SetDraft(selection.Family, selection.Mode, selection.Style);
+
+            runtimeSettingsCandidate = projectRuntimeSettings != null
+                ? projectRuntimeSettings
+                : baselineRuntimeSettings;
+            runtimeCandidateTouched = false;
+            validatedRuntimeSettingsCandidate = null;
+            RefreshRuntimeSettingsCandidateValidation();
+            ResetComposerFromStyle(selection.Style);
+            feedbackMessage = "Unapplied changes were discarded.";
+            feedbackType = MessageType.Info;
+            UpdateWorkbenchToolbar();
+            Repaint();
+        }
+
+        private void CaptureBaseline()
+        {
+            baselineRuntimeSettings = projectRuntimeSettings;
+            baselineSelection = projectRuntimeSettings != null
+                && projectRuntimeSettings.DefaultThemeFamily != null
+                ? ResolveProjectSelection(projectRuntimeSettings)
+                : DeucarianThemeManagerSelection.FromEditorPrefs();
+            baselineCaptured = true;
+            runtimeSettingsCandidate = baselineRuntimeSettings;
+            runtimeCandidateTouched = false;
+            ResetComposerFromStyle(baselineSelection.Style);
+        }
+
+        private static DeucarianThemeManagerSelection ResolveProjectSelection(
+            DeucarianThemeRuntimeSettings settings)
+        {
+            if (settings == null)
+            {
+                return DeucarianThemeManagerSelection.FromEditorPrefs();
+            }
+
+            DeucarianThemeFamily family = settings.DefaultThemeFamily;
+            DeucarianThemeMode mode = settings.DefaultThemeMode;
+            DeucarianThemeStyle style;
+            if (!DeucarianThemeManagerWorkflow.TryResolveSharedStyle(family, out style))
+            {
+                DeucarianTheme resolvedTheme = family != null ? family.ResolveTheme(mode) : settings.DefaultTheme;
+                style = resolvedTheme != null ? resolvedTheme.VisualStyle : null;
+            }
+
+            return new DeucarianThemeManagerSelection(family, mode, style);
+        }
+
+        private void ResetComposerFromStyle(DeucarianThemeStyle style)
+        {
+            composerSource = style;
+            composerEditingStyle = style != null && style.IsCustomStyle ? style : null;
+            composerSurface = style != null ? style.SurfaceProfile : null;
+            composerCorners = style != null ? style.ShapeProfile : null;
+            composerBorder = style != null ? style.StrokeProfile : null;
+            composerSize = style != null ? style.Density : DeucarianThemeDensity.Unspecified;
+            composerTypography = style != null ? style.TypographyProfile : null;
+        }
+
+        internal static void ApplyPreferredSizeOnce(DeucarianThemeManagerWindow window)
+        {
+            if (window == null || EditorPrefs.GetBool(PreferredSizeKey, false))
+            {
+                return;
+            }
+
+            Rect current = window.position;
+            window.position = new Rect(current.x, current.y, PreferredSize.x, PreferredSize.y);
+            EditorPrefs.SetBool(PreferredSizeKey, true);
         }
 
         private bool IsComposerComplete()
@@ -1470,6 +2296,42 @@ namespace Deucarian.Theming.Editor
             }
         }
 
+        private static UnityEngine.Object DrawWorkbenchObjectField(
+            string label,
+            UnityEngine.Object value,
+            Type objectType,
+            bool allowSceneObjects)
+        {
+            GetWorkbenchFieldRects(out Rect labelRect, out Rect fieldRect);
+            EditorGUI.LabelField(
+                labelRect,
+                new GUIContent(label ?? string.Empty, label ?? string.Empty),
+                DeucarianEditorWorkbenchGUI.LabelStyle);
+            return EditorGUI.ObjectField(fieldRect, value, objectType, allowSceneObjects);
+        }
+
+        private static Enum DrawWorkbenchEnumPopup(string label, Enum value)
+        {
+            GetWorkbenchFieldRects(out Rect labelRect, out Rect fieldRect);
+            EditorGUI.LabelField(
+                labelRect,
+                new GUIContent(label ?? string.Empty, label ?? string.Empty),
+                DeucarianEditorWorkbenchGUI.LabelStyle);
+            return EditorGUI.EnumPopup(fieldRect, value);
+        }
+
+        private static void GetWorkbenchFieldRects(out Rect labelRect, out Rect fieldRect)
+        {
+            Rect row = EditorGUILayout.GetControlRect();
+            float labelWidth = Mathf.Min(EditorGUIUtility.labelWidth, row.width);
+            labelRect = new Rect(row.x, row.y, labelWidth, row.height);
+            fieldRect = new Rect(
+                labelRect.xMax,
+                row.y,
+                Mathf.Max(0f, row.xMax - labelRect.xMax),
+                row.height);
+        }
+
         private static void DrawAssetDropdown<T>(
             string label,
             T selected,
@@ -1484,7 +2346,10 @@ namespace Deucarian.Theming.Editor
                 row.y,
                 Mathf.Max(0f, row.xMax - labelRect.xMax),
                 row.height);
-            EditorGUI.LabelField(labelRect, label);
+            EditorGUI.LabelField(
+                labelRect,
+                new GUIContent(label ?? string.Empty, label ?? string.Empty),
+                DeucarianEditorWorkbenchGUI.LabelStyle);
 
             string valueLabel = selected != null ? selected.name : "None";
             string tooltip = selected != null ? AssetDatabase.GetAssetPath(selected) : string.Empty;

@@ -1,6 +1,7 @@
 {
   "packageId": "com.deucarian.theming",
   "displayName": "Deucarian Theming",
+  "samplePolicy": "playable-scene",
   "ownedCapabilities": [
     "runtime-theming"
   ],
@@ -10,7 +11,10 @@
   "editorAssemblies": [
     "Deucarian.Theming.Editor"
   ],
-  "sampleAssemblies": [],
+  "sampleAssemblies": [
+    "Deucarian.Theming.Samples.BasicTheming",
+    "Deucarian.Theming.Samples.UIToolkit"
+  ],
   "testAssemblies": [
     "Deucarian.Theming.Editor.Tests",
     "Deucarian.Theming.Tests"
