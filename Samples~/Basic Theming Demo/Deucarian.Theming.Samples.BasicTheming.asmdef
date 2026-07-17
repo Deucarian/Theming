@@ -1,0 +1,6 @@
+{
+  "name": "Deucarian.Theming.Samples.BasicTheming",
+  "rootNamespace": "Deucarian.Theming.Samples",
+  "references": ["Deucarian.Theming"],
+  "autoReferenced": false
+}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -76,7 +77,7 @@ namespace Deucarian.Theming.Editor
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets(DefaultRootFolder);
             if (assets != null && assets.ThemeFamily != null)
             {
-                DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
+                DeucarianEditorSelection.SelectAndPing(assets.ThemeFamily);
             }
         }
 
@@ -85,7 +86,7 @@ namespace Deucarian.Theming.Editor
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets(GameRootFolder);
             if (assets != null && assets.Theme != null)
             {
-                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+                DeucarianEditorSelection.SelectAndPing(assets.Theme);
             }
         }
 

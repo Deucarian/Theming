@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 - 2026-07-17
+
+- Reused the shared Editor selection-and-ping helper, completed importable sample scenes, and aligned exact dependencies.
+- Aligned Theme Manager toolbar coverage with the intended staged-change discard state.
+
 ## 1.0.2 - 2026-07-16
 
 - Prevented Unity layout restoration from reopening Theme Manager on editor startup while preserving explicitly opened windows across domain reloads.

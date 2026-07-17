@@ -1,4 +1,5 @@
 using System.IO;
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -24,8 +25,7 @@ namespace Deucarian.Theming.Editor
             AssetDatabase.Refresh();
 
             Object readme = AssetDatabase.LoadMainAssetAtPath(DemoRoot + "/README.md");
-            Selection.activeObject = readme;
-            EditorGUIUtility.PingObject(readme);
+            DeucarianEditorSelection.SelectAndPing(readme);
         }
 
         private static void EnsureFolder(string folder)
