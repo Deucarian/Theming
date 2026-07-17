@@ -914,9 +914,13 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.AreSame(secondary, actions.ElementAt(0).ElementAt(0));
                 Assert.AreSame(discard, actions.ElementAt(1).ElementAt(0));
                 Assert.AreEqual(Visibility.Visible, actions.ElementAt(1).style.visibility.value);
-                Assert.IsFalse(discard.enabledSelf);
                 Assert.AreEqual(
-                    "There are no unapplied changes to discard.",
+                    !EditorApplication.isPlayingOrWillChangePlaymode,
+                    discard.enabledSelf);
+                Assert.AreEqual(
+                    EditorApplication.isPlayingOrWillChangePlaymode
+                        ? "Exit Play Mode before discarding staged changes."
+                        : "Restore the active project theme and clear every unapplied draft.",
                     discard.tooltip);
                 Assert.AreEqual(132f, actions.ElementAt(0).style.width.value.value);
                 Assert.AreEqual(148f, actions.ElementAt(1).style.width.value.value);
