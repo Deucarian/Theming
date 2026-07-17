@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -336,7 +337,7 @@ namespace Deucarian.Theming.Editor
                 return null;
             }
 
-            SelectAndPing(assets.ThemeFamily);
+            DeucarianEditorSelection.SelectAndPing(assets.ThemeFamily);
             return assets;
         }
 
@@ -480,7 +481,7 @@ namespace Deucarian.Theming.Editor
                 return null;
             }
 
-            SelectAndPing(assets.Palette);
+            DeucarianEditorSelection.SelectAndPing(assets.Palette);
             return assets;
         }
 
@@ -555,7 +556,7 @@ namespace Deucarian.Theming.Editor
             }
 
             DeucarianColorPalette palette = CreatePaletteFromTheme(theme, palettePath);
-            SelectAndPing(palette);
+            DeucarianEditorSelection.SelectAndPing(palette);
             return palette;
         }
 
@@ -748,35 +749,35 @@ namespace Deucarian.Theming.Editor
         public static DeucarianTheme SelectActiveTheme()
         {
             DeucarianTheme theme = ResolveOrCreateActiveTheme();
-            SelectAndPing(theme);
+            DeucarianEditorSelection.SelectAndPing(theme);
             return theme;
         }
 
         public static DeucarianThemeFamily SelectActiveThemeFamily()
         {
             DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
-            SelectAndPing(family);
+            DeucarianEditorSelection.SelectAndPing(family);
             return family;
         }
 
         public static DeucarianColorPalette SelectActivePalette()
         {
             DeucarianColorPalette palette = ResolveOrCreateActivePalette();
-            SelectAndPing(palette);
+            DeucarianEditorSelection.SelectAndPing(palette);
             return palette;
         }
 
         public static DeucarianColorRoleLibrary SelectActiveRoleLibrary()
         {
             DeucarianColorRoleLibrary library = ResolveOrCreateActiveRoleLibrary();
-            SelectAndPing(library);
+            DeucarianEditorSelection.SelectAndPing(library);
             return library;
         }
 
         public static DeucarianThemeStyle SelectActiveStyle()
         {
             DeucarianThemeStyle style = ResolveOrCreateActiveStyle();
-            SelectAndPing(style);
+            DeucarianEditorSelection.SelectAndPing(style);
             return style;
         }
 
@@ -1014,7 +1015,7 @@ namespace Deucarian.Theming.Editor
             AssetDatabase.SaveAssets();
             DeucarianThemingEditorSettings.ActiveStyle = variant;
             SetActiveStyleAndApply(variant);
-            SelectAndPing(variant);
+            DeucarianEditorSelection.SelectAndPing(variant);
             return variant;
         }
 
@@ -1217,13 +1218,7 @@ namespace Deucarian.Theming.Editor
 
         public static void SelectAndPing(UnityEngine.Object asset)
         {
-            if (asset == null)
-            {
-                return;
-            }
-
-            Selection.activeObject = asset;
-            EditorGUIUtility.PingObject(asset);
+            DeucarianEditorSelection.SelectAndPing(asset);
         }
 
         public static void OpenThemeAssetsFolder()
@@ -1232,7 +1227,7 @@ namespace Deucarian.Theming.Editor
             UnityEngine.Object folderAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(folder);
             if (folderAsset != null)
             {
-                SelectAndPing(folderAsset);
+                DeucarianEditorSelection.SelectAndPing(folderAsset);
                 return;
             }
 

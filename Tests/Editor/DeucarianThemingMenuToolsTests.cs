@@ -77,6 +77,26 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
+        public void SelectAndPingCompatibilityEntryPoint_SelectsTarget()
+        {
+            DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/SelectedTheme.asset");
+            Object previousSelection = Selection.activeObject;
+
+            try
+            {
+                Selection.activeObject = null;
+
+                DeucarianThemingMenuActions.SelectAndPing(theme);
+
+                Assert.AreSame(theme, Selection.activeObject);
+            }
+            finally
+            {
+                Selection.activeObject = previousSelection;
+            }
+        }
+
+        [Test]
         public void SettingsStoreAndResolveActiveThemeGuid()
         {
             DeucarianTheme theme = CreateAsset<DeucarianTheme>(testRoot + "/Theme.asset");

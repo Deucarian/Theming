@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using UnityEditor;
 
 namespace Deucarian.Theming.Editor
@@ -31,7 +32,7 @@ namespace Deucarian.Theming.Editor
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateMissingDefaultThemeAssets();
             if (assets != null)
             {
-                DeucarianThemingMenuActions.SelectAndPing(assets.ThemeFamily);
+                DeucarianEditorSelection.SelectAndPing(assets.ThemeFamily);
             }
         }
 
@@ -40,7 +41,7 @@ namespace Deucarian.Theming.Editor
             DeucarianDefaultThemeAssets assets = DeucarianThemingMenuActions.CreateGameThemeAssets();
             if (assets != null)
             {
-                DeucarianThemingMenuActions.SelectAndPing(assets.Theme);
+                DeucarianEditorSelection.SelectAndPing(assets.Theme);
             }
         }
 

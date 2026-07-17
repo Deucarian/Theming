@@ -1505,7 +1505,7 @@ namespace Deucarian.Theming.Editor
             {
                 menu.AddSeparator(string.Empty);
                 menu.AddItem(new GUIContent("Select Style Asset"), false, () =>
-                    DeucarianThemingMenuActions.SelectAndPing(composerEditingStyle));
+                    DeucarianEditorSelection.SelectAndPing(composerEditingStyle));
             }
 
             menu.ShowAsContext();
