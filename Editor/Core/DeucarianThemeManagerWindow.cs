@@ -18,7 +18,7 @@ namespace Deucarian.Theming.Editor
         private const string PreferredSizeKey = "Deucarian.Theming.ThemeManager.PreferredSize.920x560";
         private const float PreviewStackBreakpoint = 760f;
         private const float SecondaryActionSlotWidth = 132f;
-        private const float DiscardActionSlotWidth = 124f;
+        private const float DiscardActionSlotWidth = 148f;
         private const float PrimaryActionSlotWidth = 140f;
         private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
@@ -141,13 +141,15 @@ namespace Deucarian.Theming.Editor
                 rootVisualElement,
                 new DeucarianEditorWorkbenchOptions
                 {
-                    IncludeHeader = true,
+                    // Package headers are intentionally disabled for now. Keep the
+                    // shared header implementation available for a future UI pass.
+                    // IncludeHeader = true,
                     IncludeToolbar = true,
                     IncludeDrawer = true,
                     IncludeFooter = true,
-                    HeaderPackageKey = "theming",
-                    HeaderTitle = "Deucarian Theming",
-                    HeaderSubtitle = "Compose, preview, and activate the project theme.",
+                    // HeaderPackageKey = "theming",
+                    // HeaderTitle = "Deucarian Theming",
+                    // HeaderSubtitle = "Compose, preview, and activate the project theme.",
                     ToolbarLayout = DeucarianEditorWorkbenchToolbarLayout.StableActionLanes,
                     DrawerMode = DeucarianEditorWorkbenchDrawerMode.Overlay,
                     TopSafeFadeName = WallpaperFadeName
@@ -185,7 +187,7 @@ namespace Deucarian.Theming.Editor
                 RefreshAssets,
                 $"com.deucarian.theming {ResolvePackageVersion()}");
             workbenchFooter.Root.name = "deucarian-theme-manager-footer";
-            DeucarianEditorWorkbenchToolbar.SetButtonIcon(
+            DeucarianEditorCommandBar.ConfigureAction(
                 workbenchFooter.Action,
                 DeucarianEditorIconIds.Refresh,
                 "Refresh",
@@ -210,33 +212,33 @@ namespace Deucarian.Theming.Editor
             }
 
             toolbar.Clear();
-            themeViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
+            themeViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Theme",
                 NavigateToTheme);
             themeViewButton.name = "deucarian-theme-manager-view-theme";
-            styleComposerViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
+            styleComposerViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Style Composer",
                 NavigateToStyleComposer);
             styleComposerViewButton.name = "deucarian-theme-manager-view-style";
-            runtimeSettingsViewButton = DeucarianEditorWorkbenchToolbar.CreateToggleButton(
+            runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Runtime Settings",
                 NavigateToRuntimeSettings);
             runtimeSettingsViewButton.name = "deucarian-theme-manager-view-runtime-settings";
-            toolbarSecondaryAction = DeucarianEditorWorkbenchToolbar.CreateIconActionButton(
+            toolbarSecondaryAction = DeucarianEditorCommandBar.CreateAction(
                 DeucarianEditorIconIds.Wrench,
                 string.Empty,
                 ExecuteToolbarSecondaryAction,
                 false,
                 "Open the contextual style or setup action.");
             toolbarSecondaryAction.name = "deucarian-theme-manager-toolbar-secondary";
-            discardChangesButton = DeucarianEditorWorkbenchToolbar.CreateIconActionButton(
+            discardChangesButton = DeucarianEditorCommandBar.CreateAction(
                 DeucarianEditorIconIds.Undo,
                 "Discard changes",
                 DiscardAllChanges,
                 false,
                 "Restore the active project theme and clear every unapplied draft.");
             discardChangesButton.name = "deucarian-theme-manager-discard-changes";
-            toolbarPrimaryAction = DeucarianEditorWorkbenchToolbar.CreateIconActionButton(
+            toolbarPrimaryAction = DeucarianEditorCommandBar.CreateAction(
                 DeucarianEditorIconIds.Check,
                 string.Empty,
                 ExecuteToolbarPrimaryAction,
@@ -244,40 +246,40 @@ namespace Deucarian.Theming.Editor
                 "Apply the current staged theme selection.");
             toolbarPrimaryAction.name = "deucarian-theme-manager-toolbar-primary";
 
-            toolbarSecondarySlot = DeucarianEditorWorkbenchToolbar.CreateReservedActionSlot(
+            toolbarSecondarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
                 SecondaryActionSlotWidth);
-            discardChangesSlot = DeucarianEditorWorkbenchToolbar.CreateReservedActionSlot(
+            discardChangesSlot = DeucarianEditorCommandBar.CreateReservedSlot(
                 DiscardActionSlotWidth);
-            toolbarPrimarySlot = DeucarianEditorWorkbenchToolbar.CreateReservedActionSlot(
+            toolbarPrimarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
                 PrimaryActionSlotWidth);
-            toolbarPrimaryStatus = DeucarianEditorWorkbenchToolbar.CreateStatusPill(
+            toolbarPrimaryStatus = DeucarianEditorCommandBar.CreateState(
                 DeucarianEditorIconIds.Check,
                 "Active",
                 "The staged selection is active in project runtime settings.");
             toolbarPrimaryStatus.name = "deucarian-theme-manager-toolbar-primary-status";
-            DeucarianEditorWorkbenchToolbar.SetReservedAction(
+            DeucarianEditorCommandBar.SetReservedContent(
                 toolbarSecondarySlot,
                 toolbarSecondaryAction);
-            DeucarianEditorWorkbenchToolbar.SetReservedAction(
+            DeucarianEditorCommandBar.SetReservedContent(
                 discardChangesSlot,
                 discardChangesButton,
                 true);
-            DeucarianEditorWorkbenchToolbar.SetReservedAction(
+            DeucarianEditorCommandBar.SetReservedContent(
                 toolbarPrimarySlot,
                 toolbarPrimaryAction);
 
-            VisualElement navigation = DeucarianEditorWorkbenchToolbar.CreateGroup();
+            VisualElement navigation = DeucarianEditorCommandBar.CreateNavigationGroup();
             navigation.Add(themeViewButton);
             navigation.Add(styleComposerViewButton);
             navigation.Add(runtimeSettingsViewButton);
 
-            VisualElement actions = DeucarianEditorWorkbenchToolbar.CreateGroup(true);
+            VisualElement actions = DeucarianEditorCommandBar.CreateActionGroup();
             actions.Add(toolbarSecondarySlot);
             actions.Add(discardChangesSlot);
             actions.Add(toolbarPrimarySlot);
 
             toolbar.Add(navigation);
-            toolbar.Add(DeucarianEditorWorkbenchToolbar.CreateSpacer());
+            toolbar.Add(DeucarianEditorCommandBar.CreateSpacer());
             toolbar.Add(actions);
         }
 
@@ -288,11 +290,11 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(themeViewButton, viewMode == ViewMode.Theme);
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(
+            DeucarianEditorCommandBar.SetActive(themeViewButton, viewMode == ViewMode.Theme);
+            DeucarianEditorCommandBar.SetActive(
                 styleComposerViewButton,
                 viewMode == ViewMode.StyleComposer);
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(
+            DeucarianEditorCommandBar.SetActive(
                 runtimeSettingsViewButton,
                 viewMode == ViewMode.RuntimeSettings);
 
@@ -311,14 +313,14 @@ namespace Deucarian.Theming.Editor
             switch (viewMode)
             {
                 case ViewMode.StyleComposer:
-                    DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                    DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "More");
                     toolbarSecondaryAction.SetEnabled(composerSource != null);
                     toolbarSecondaryAction.tooltip = composerSource != null
                         ? "Open additional save and asset actions."
                         : "Choose a visual style before opening composer actions.";
-                    DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                    DeucarianEditorCommandBar.SetText(
                         toolbarPrimaryAction,
                         "Save & Activate");
                     bool composerReady = IsComposerReadyToActivate() && !isPlaying;
@@ -332,14 +334,14 @@ namespace Deucarian.Theming.Editor
                     break;
 
                 case ViewMode.RuntimeSettings:
-                    DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                    DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "Create Settings...");
                     toolbarSecondaryAction.SetEnabled(!isPlaying);
                     toolbarSecondaryAction.tooltip = isPlaying
                         ? "Exit Play Mode before creating runtime settings."
                         : "Create a Resources-backed runtime settings asset.";
-                    DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                    DeucarianEditorCommandBar.SetText(
                         toolbarPrimaryAction,
                         RuntimeSettingsCandidateNeedsFamily()
                             ? "Use & Configure"
@@ -355,7 +357,7 @@ namespace Deucarian.Theming.Editor
                     break;
 
                 default:
-                    DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                    DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "Customize Style");
                     toolbarSecondaryAction.SetEnabled(selection.Style != null);
@@ -368,7 +370,7 @@ namespace Deucarian.Theming.Editor
                     }
                     else
                     {
-                        DeucarianEditorWorkbenchToolbar.SetIconActionButtonText(
+                        DeucarianEditorCommandBar.SetText(
                             toolbarPrimaryAction,
                             "Activate");
                         bool canActivate = status.CanActivate && !isPlaying;
@@ -465,7 +467,7 @@ namespace Deucarian.Theming.Editor
         {
             if (toolbarPrimarySlot != null && toolbarPrimaryAction?.parent != toolbarPrimarySlot)
             {
-                DeucarianEditorWorkbenchToolbar.SetReservedAction(
+                DeucarianEditorCommandBar.SetReservedContent(
                     toolbarPrimarySlot,
                     toolbarPrimaryAction);
             }
@@ -475,7 +477,7 @@ namespace Deucarian.Theming.Editor
         {
             if (toolbarPrimarySlot != null && toolbarPrimaryStatus?.parent != toolbarPrimarySlot)
             {
-                DeucarianEditorWorkbenchToolbar.SetReservedAction(
+                DeucarianEditorCommandBar.SetReservedContent(
                     toolbarPrimarySlot,
                     toolbarPrimaryStatus);
             }
@@ -792,8 +794,10 @@ namespace Deucarian.Theming.Editor
                         ? status.Message
                         : "A source-controlled runtime settings asset connects editor activation to builds.",
                     MessageType.Warning);
-                if (DrawWorkbenchAction(
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.Wrench,
                         "Configure Runtime Settings...",
+                        "Open the runtime settings setup view.",
                         !EditorApplication.isPlayingOrWillChangePlaymode,
                         true))
                 {
@@ -814,8 +818,10 @@ namespace Deucarian.Theming.Editor
                 EditorGUILayout.HelpBox(
                     "No family is selected. Choose an existing family above or create one.",
                     MessageType.Info);
-                if (DrawWorkbenchAction(
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.CreatePackage,
                         "Create Theme Family...",
+                        "Create a complete theme family asset.",
                         !EditorApplication.isPlayingOrWillChangePlaymode))
                 {
                     CreateThemeFamily();
@@ -827,8 +833,10 @@ namespace Deucarian.Theming.Editor
                 EditorGUILayout.HelpBox(
                     "Both a Light and Dark theme are required before activation.",
                     MessageType.Warning);
-                if (DrawWorkbenchAction(
+                if (DeucarianEditorWorkbenchGUI.DrawCompactIconAction(
+                        DeucarianEditorIconIds.Wrench,
                         "Repair Selected Family",
+                        "Repair the selected family without replacing customized profiles.",
                         !EditorApplication.isPlayingOrWillChangePlaymode))
                 {
                     DeucarianThemingMenuActions.RepairActiveThemeFamilySetup();
@@ -1473,7 +1481,7 @@ namespace Deucarian.Theming.Editor
                     developerToolsOpen);
             }
 
-            DeucarianEditorWorkbenchToolbar.SetToggleActive(
+            DeucarianEditorCommandBar.SetActive(
                 developerToolsButton,
                 developerToolsOpen);
         }
@@ -1936,49 +1944,6 @@ namespace Deucarian.Theming.Editor
             EditorGUILayout.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
         }
 
-        private static bool DrawWorkbenchAction(
-            string text,
-            bool enabled = true,
-            bool primary = false,
-            params GUILayoutOption[] options)
-        {
-            return DrawWorkbenchAction(
-                new GUIContent(text ?? string.Empty),
-                enabled,
-                primary,
-                options);
-        }
-
-        private static bool DrawWorkbenchAction(
-            GUIContent content,
-            bool enabled = true,
-            bool primary = false,
-            params GUILayoutOption[] options)
-        {
-            using (new EditorGUI.DisabledScope(!enabled))
-            {
-                Color previousContentColor = GUI.contentColor;
-                if (content != null && content.image != null)
-                {
-                    GUI.contentColor = DeucarianEditorTheme.Text;
-                }
-
-                try
-                {
-                    return GUILayout.Button(
-                        content ?? GUIContent.none,
-                        primary
-                            ? DeucarianEditorWorkbenchGUI.PrimaryButtonStyle
-                            : DeucarianEditorWorkbenchGUI.SecondaryButtonStyle,
-                        options);
-                }
-                finally
-                {
-                    GUI.contentColor = previousContentColor;
-                }
-            }
-        }
-
         private IReadOnlyList<string> GetPendingChangeDescriptions(
             DeucarianThemeManagerActivationStatus status)
         {
@@ -2026,7 +1991,7 @@ namespace Deucarian.Theming.Editor
             if (discardChangesButton != null)
             {
                 bool canDiscard = visible && !EditorApplication.isPlayingOrWillChangePlaymode;
-                DeucarianEditorWorkbenchToolbar.SetReservedActionVisible(
+                DeucarianEditorCommandBar.SetReservedVisible(
                     discardChangesSlot,
                     true);
                 discardChangesButton.SetEnabled(canDiscard);

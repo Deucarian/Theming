@@ -817,7 +817,7 @@ namespace Deucarian.Theming.Editor.Tests
                 DeucarianEditorWorkbench workbench = window.WorkbenchForTests;
 
                 Assert.IsNotNull(workbench);
-                Assert.IsNotNull(workbench.Header);
+                Assert.IsNull(workbench.Header);
                 Assert.IsNotNull(workbench.Toolbar);
                 Assert.IsNotNull(workbench.Content);
                 Assert.IsNotNull(workbench.Drawer);
@@ -843,19 +843,8 @@ namespace Deucarian.Theming.Editor.Tests
                     DeucarianEditorIconTextButton.RootClass));
                 Assert.IsTrue(workbench.Toolbar.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.StableActionLanesClass));
-                Assert.IsTrue(workbench.Header.ClassListContains(
-                    DeucarianEditorPackageHeader.RootClass));
-                Assert.AreEqual(
-                    "Deucarian Theming",
-                    workbench.Header.Q<Label>(
-                        className: DeucarianEditorPackageHeader.TitleClass).text);
-                Assert.AreEqual(
-                    "Compose, preview, and activate the project theme.",
-                    workbench.Header.Q<Label>(
-                        className: DeucarianEditorPackageHeader.SubtitleClass).text);
-                Assert.Less(
-                    workbench.ShellContent.IndexOf(workbench.Header),
-                    workbench.ShellContent.IndexOf(workbench.Toolbar));
+                Assert.IsTrue(workbench.Toolbar.ClassListContains(
+                    DeucarianEditorCommandBar.RootClass));
                 Assert.IsTrue(workbench.Drawer.ClassListContains(
                     DeucarianEditorWorkbenchSurfaces.OverlayDrawerHostClass));
                 Button themeButton = workbench.Toolbar.Q<Button>(
@@ -882,6 +871,18 @@ namespace Deucarian.Theming.Editor.Tests
                     DeucarianEditorIconTextButton.RootClass));
                 Assert.IsTrue(discard.ClassListContains(
                     DeucarianEditorIconTextButton.RootClass));
+                Assert.IsTrue(secondary.ClassListContains(
+                    DeucarianEditorCommandBar.ActionClass));
+                Assert.IsTrue(discard.ClassListContains(
+                    DeucarianEditorCommandBar.ActionClass));
+                Assert.NotNull(discard.Q<VisualElement>(
+                    className: DeucarianEditorIconTextButton.GapClass));
+                Assert.AreEqual(
+                    8f,
+                    discard.Q<VisualElement>(
+                        className: DeucarianEditorIconTextButton.GapClass).style.width.value.value);
+                Assert.IsTrue(themeButton.ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
                 VisualElement visiblePrimary = primary != null
                     ? (VisualElement)primary
                     : primaryStatus;
@@ -899,6 +900,8 @@ namespace Deucarian.Theming.Editor.Tests
                 VisualElement actions = workbench.Toolbar.ElementAt(2);
                 Assert.IsTrue(navigation.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.NavigationGroupClass));
+                Assert.IsTrue(navigation.ClassListContains(
+                    DeucarianEditorCommandBar.NavigationGroupClass));
                 Assert.AreSame(themeButton, navigation.ElementAt(0));
                 Assert.AreSame(styleButton, navigation.ElementAt(1));
                 Assert.AreSame(settingsButton, navigation.ElementAt(2));
@@ -906,6 +909,8 @@ namespace Deucarian.Theming.Editor.Tests
                     DeucarianEditorWorkbenchToolbar.SpacerClass));
                 Assert.IsTrue(actions.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.ActionGroupClass));
+                Assert.IsTrue(actions.ClassListContains(
+                    DeucarianEditorCommandBar.ActionGroupClass));
                 Assert.AreSame(secondary, actions.ElementAt(0).ElementAt(0));
                 Assert.AreSame(discard, actions.ElementAt(1).ElementAt(0));
                 Assert.AreEqual(Visibility.Visible, actions.ElementAt(1).style.visibility.value);
@@ -914,7 +919,7 @@ namespace Deucarian.Theming.Editor.Tests
                     "There are no unapplied changes to discard.",
                     discard.tooltip);
                 Assert.AreEqual(132f, actions.ElementAt(0).style.width.value.value);
-                Assert.AreEqual(124f, actions.ElementAt(1).style.width.value.value);
+                Assert.AreEqual(148f, actions.ElementAt(1).style.width.value.value);
                 Assert.AreEqual(140f, actions.ElementAt(2).style.width.value.value);
                 if (primary != null)
                 {
@@ -1015,6 +1020,10 @@ namespace Deucarian.Theming.Editor.Tests
                 string source = File.ReadAllText(absolutePath);
 
                 StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
+                StringAssert.Contains("DeucarianEditorCommandBar", source);
+                StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawCompactIconAction", source);
+                StringAssert.DoesNotContain("DrawWorkbenchAction", source);
+                StringAssert.Contains("// IncludeHeader = true", source);
                 StringAssert.Contains("DrawFlatSplit", source);
                 StringAssert.Contains("DrawThemePreview", source);
                 StringAssert.Contains("DiscardAllChanges", source);
@@ -1022,7 +1031,7 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawReadOnlyRow", source);
                 StringAssert.Contains("BuildDeveloperToolsDrawer", source);
-                StringAssert.Contains("SetReservedActionVisible", source);
+                StringAssert.Contains("SetReservedVisible", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.BoldLabelStyle", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle", source);
                 StringAssert.Contains("DrawWorkbenchObjectField", source);
