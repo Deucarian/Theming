@@ -57,7 +57,6 @@ namespace Deucarian.Theming.Editor
         private DeucarianEditorWorkbench workbench;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
         private Button themeViewButton;
-        private Button styleComposerViewButton;
         private Button runtimeSettingsViewButton;
         private Button toolbarSecondaryAction;
         private Button toolbarPrimaryAction;
@@ -97,11 +96,7 @@ namespace Deucarian.Theming.Editor
             window.RefreshAssets();
             if (style != null)
             {
-                SetDraft(
-                    DeucarianThemingEditorSettings.ActiveThemeFamily,
-                    DeucarianThemingEditorSettings.ActiveThemeMode,
-                    style);
-                window.BeginStyleComposer(style);
+                window.EnterStyleComposer(style, true);
             }
 
             window.Show();
@@ -212,14 +207,11 @@ namespace Deucarian.Theming.Editor
             }
 
             toolbar.Clear();
+            var lanes = DeucarianEditorCommandBar.CreateLanes(toolbar);
             themeViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Theme",
                 NavigateToTheme);
             themeViewButton.name = "deucarian-theme-manager-view-theme";
-            styleComposerViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Style Composer",
-                NavigateToStyleComposer);
-            styleComposerViewButton.name = "deucarian-theme-manager-view-style";
             runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Runtime Settings",
                 NavigateToRuntimeSettings);
@@ -268,19 +260,11 @@ namespace Deucarian.Theming.Editor
                 toolbarPrimarySlot,
                 toolbarPrimaryAction);
 
-            VisualElement navigation = DeucarianEditorCommandBar.CreateNavigationGroup();
-            navigation.Add(themeViewButton);
-            navigation.Add(styleComposerViewButton);
-            navigation.Add(runtimeSettingsViewButton);
-
-            VisualElement actions = DeucarianEditorCommandBar.CreateActionGroup();
-            actions.Add(toolbarSecondarySlot);
-            actions.Add(discardChangesSlot);
-            actions.Add(toolbarPrimarySlot);
-
-            toolbar.Add(navigation);
-            toolbar.Add(DeucarianEditorCommandBar.CreateSpacer());
-            toolbar.Add(actions);
+            lanes.Leading.Add(themeViewButton);
+            lanes.Leading.Add(runtimeSettingsViewButton);
+            lanes.Trailing.Add(toolbarSecondarySlot);
+            lanes.Trailing.Add(discardChangesSlot);
+            lanes.Trailing.Add(toolbarPrimarySlot);
         }
 
         private void UpdateWorkbenchToolbar()
@@ -290,10 +274,9 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianEditorCommandBar.SetActive(themeViewButton, viewMode == ViewMode.Theme);
             DeucarianEditorCommandBar.SetActive(
-                styleComposerViewButton,
-                viewMode == ViewMode.StyleComposer);
+                themeViewButton,
+                viewMode == ViewMode.Theme || viewMode == ViewMode.StyleComposer);
             DeucarianEditorCommandBar.SetActive(
                 runtimeSettingsViewButton,
                 viewMode == ViewMode.RuntimeSettings);
@@ -357,12 +340,21 @@ namespace Deucarian.Theming.Editor
                     break;
 
                 default:
+                    bool composerDraftDirty = IsComposerDraftDirty();
+                    string composerActionLabel = ResolveComposerActionLabel(
+                        selection.Style,
+                        composerSource,
+                        composerDraftDirty);
                     DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
-                        "Customize Style");
+                        composerActionLabel);
                     toolbarSecondaryAction.SetEnabled(selection.Style != null);
                     toolbarSecondaryAction.tooltip = selection.Style != null
-                        ? "Open the selected visual style in the composer."
+                        ? composerActionLabel == "Resume Style Edit"
+                            ? "Resume the unapplied composer draft for the selected visual style."
+                            : selection.Style.IsCustomStyle
+                                ? "Edit the selected custom style in the composer."
+                                : "Create a custom style from the selected visual style."
                         : "Choose a visual style before opening the composer.";
                     if (status.IsActive)
                     {
@@ -506,8 +498,7 @@ namespace Deucarian.Theming.Editor
 
         private void NavigateToStyleComposer()
         {
-            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle
-                                        ?? composerSource;
+            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle;
             if (style == null)
             {
                 viewMode = ViewMode.Theme;
@@ -518,7 +509,105 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            BeginStyleComposer(style);
+            EnterStyleComposer(style, false);
+        }
+
+        private bool EnterStyleComposer(DeucarianThemeStyle style, bool stageSelection)
+        {
+            if (style == null)
+            {
+                return false;
+            }
+
+            bool sameSource = composerSource == style;
+            if (!sameSource && IsComposerDraftDirty())
+            {
+                bool keepEditing = ShouldKeepCurrentComposerDraft(
+                    GetStyleDisplayName(composerSource),
+                    GetStyleDisplayName(style));
+                if (keepEditing)
+                {
+                    viewMode = ViewMode.StyleComposer;
+                    feedbackMessage = "Continuing the existing style composer draft.";
+                    feedbackType = MessageType.Info;
+                    UpdateWorkbenchToolbar();
+                    Repaint();
+                    return false;
+                }
+            }
+
+            if (stageSelection)
+            {
+                SetDraft(
+                    DeucarianThemingEditorSettings.ActiveThemeFamily,
+                    DeucarianThemingEditorSettings.ActiveThemeMode,
+                    style);
+            }
+
+            if (sameSource)
+            {
+                viewMode = ViewMode.StyleComposer;
+                feedbackMessage = null;
+                UpdateWorkbenchToolbar();
+                Repaint();
+            }
+            else
+            {
+                BeginStyleComposer(style);
+            }
+
+            return true;
+        }
+
+        internal static bool ShouldKeepCurrentComposerDraft(
+            string currentStyleName,
+            string requestedStyleName,
+            Func<string, string, string, string, string, int> showDialog = null)
+        {
+            Func<string, string, string, string, string, int> dialog = showDialog
+                ?? EditorUtility.DisplayDialogComplex;
+            string current = string.IsNullOrWhiteSpace(currentStyleName)
+                ? "the current style"
+                : currentStyleName;
+            string requested = string.IsNullOrWhiteSpace(requestedStyleName)
+                ? "the selected style"
+                : requestedStyleName;
+            int choice = dialog(
+                "Keep Style Composer Changes?",
+                $"{current} has unapplied composer changes. Keep editing it, or discard those composer changes and switch to {requested}?",
+                "Keep editing",
+                "Cancel",
+                "Discard draft and switch");
+            return choice != 2;
+        }
+
+        internal static string ResolveComposerActionLabel(
+            DeucarianThemeStyle selectedStyle,
+            DeucarianThemeStyle composerStyle,
+            bool composerDraftDirty)
+        {
+            if (selectedStyle != null
+                && selectedStyle == composerStyle
+                && composerDraftDirty)
+            {
+                return "Resume Style Edit";
+            }
+
+            return selectedStyle != null && selectedStyle.IsCustomStyle
+                ? "Edit Style"
+                : "Customize Style";
+        }
+
+        private static string GetStyleDisplayName(DeucarianThemeStyle style)
+        {
+            if (style == null)
+            {
+                return string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(style.DisplayName)
+                ? style.name
+                : style.DisplayName;
         }
 
         private void NavigateToRuntimeSettings()
@@ -572,7 +661,7 @@ namespace Deucarian.Theming.Editor
 
         private void DrawWindowGui()
         {
-            using (new EditorGUILayout.VerticalScope(DeucarianEditorWorkbenchGUI.WindowStyle))
+            using (DeucarianEditorWorkbenchGUI.BeginEmbeddedPage(GUILayout.ExpandHeight(true)))
             {
                 using (var scrollView = new EditorGUILayout.ScrollViewScope(scrollPosition))
                 {
@@ -948,6 +1037,8 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
+            DrawStyleComposerContext();
+
             string composerTitle = composerEditingStyle != null
                 ? composerEditingStyle.DisplayName
                 : composerSource.DisplayName;
@@ -995,6 +1086,32 @@ namespace Deucarian.Theming.Editor
                     MessageType.Warning);
             }
 
+        }
+
+        private void DrawStyleComposerContext()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(
+                    "Theme / Style Composer",
+                    DeucarianEditorWorkbenchGUI.BoldLabelStyle,
+                    GUILayout.ExpandWidth(true));
+                var backContent = new GUIContent(
+                    "Back to Theme",
+                    "Return to Theme without clearing the current composer draft.");
+                bool back = GUILayout.Button(
+                    backContent,
+                    DeucarianEditorWorkbenchGUI.LabelStyle,
+                    GUILayout.ExpandWidth(false),
+                    GUILayout.Height(DeucarianEditorLayoutMetrics.TextLineHeight));
+                EditorGUIUtility.AddCursorRect(GUILayoutUtility.GetLastRect(), MouseCursor.Link);
+                if (back)
+                {
+                    NavigateToTheme();
+                }
+            }
+
+            GUILayout.Space(DeucarianEditorSpacing.Small);
         }
 
         private bool IsComposerReadyToActivate()
@@ -1959,6 +2076,36 @@ namespace Deucarian.Theming.Editor
                 hasComposer && composerSize != comparison.Density,
                 hasComposer && composerTypography != comparison.TypographyProfile,
                 runtimeCandidateTouched && runtimeSettingsCandidate != baselineRuntimeSettings);
+        }
+
+        private bool IsComposerDraftDirty()
+        {
+            DeucarianThemeStyle comparison = composerEditingStyle != null
+                ? composerEditingStyle
+                : composerSource;
+            return IsComposerDraftDirty(
+                comparison,
+                composerSurface,
+                composerCorners,
+                composerBorder,
+                composerSize,
+                composerTypography);
+        }
+
+        internal static bool IsComposerDraftDirty(
+            DeucarianThemeStyle comparison,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size,
+            DeucarianThemeTypographyProfile typography)
+        {
+            return comparison != null
+                   && (surface != comparison.SurfaceProfile
+                       || corners != comparison.ShapeProfile
+                       || border != comparison.StrokeProfile
+                       || size != comparison.Density
+                       || typography != comparison.TypographyProfile);
         }
 
         internal static IReadOnlyList<string> CollectPendingChangeDescriptions(
