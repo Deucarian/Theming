@@ -8,7 +8,7 @@ namespace Deucarian.Theming.Editor
     /// </summary>
     public static class DeucarianThemingMenu
     {
-        private const string ToolsMenuRoot = "Tools/Deucarian/Theming/";
+        private const string ToolsMenuRoot = "Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/";
 
         [MenuItem(ToolsMenuRoot + "Open Theme Manager", priority = 100)]
         public static void OpenThemeManager()

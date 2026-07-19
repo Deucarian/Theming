@@ -122,7 +122,7 @@ namespace Deucarian.Theming.Editor
         {
             return @"# UI Toolkit Theming Demo
 
-1. Open `Tools/Deucarian/Theming/Open Theme Manager`.
+1. Open `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager`.
 2. Create a minimal palette from the Theme Manager.
 3. Create a scene object with `UIDocument`.
 4. Assign `ReportViewerDemo.uxml` to the UIDocument.

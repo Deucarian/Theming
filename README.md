@@ -82,8 +82,8 @@ Long theming lists in palette, role-library, theme-pack, and UI Toolkit inspecto
 Deucarian package tools live under `Tools/Deucarian/<PackageName>/...`.
 The Theming menu is intentionally limited to quick entry points:
 
-- `Tools/Deucarian/Theming/Open Theme Manager`
-- `Tools/Deucarian/Theming/Create Theme Family`
+- `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager`
+- `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Create Theme Family`
 
 Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Family, Mode, and Visual Style choices preview immediately on loaded providers without changing provider serialization, theme assets, runtime settings, scenes, or builds. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
 
