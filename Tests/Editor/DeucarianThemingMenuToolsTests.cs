@@ -56,8 +56,8 @@ namespace Deucarian.Theming.Editor.Tests
         {
             string[] expectedMenuItems =
             {
-                "Tools/Deucarian/Experience & Interaction/UI & Presentation/Theming/Open Theme Manager",
-                "Tools/Deucarian/Experience & Interaction/UI & Presentation/Theming/Create Theme Family"
+                "Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager",
+                "Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Create Theme Family"
             };
 
             List<string> actualMenuItems = new List<string>();

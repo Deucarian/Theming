@@ -31,7 +31,7 @@ Example bindings:
 - `.viewer-button` -> `BackgroundColor`
 - `.viewer-error` -> `TextColor`
 
-Open `Tools/Deucarian/Experience & Interaction/UI & Presentation/Theming/Open Theme Manager` to create a theme family, preview Light/Dark, and use **Apply Preview To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
+Open `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager` to create a theme family, preview Light/Dark, and use **Apply Preview To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
 
 ## Designer Workflow
 

@@ -2,7 +2,7 @@
 
 This sample is intentionally lightweight for v0.4.2.
 
-Open `Tools/Deucarian/Experience & Interaction/UI & Presentation/Theming/Open Theme Manager` and use **Create Theme Family**, then preview Light/Dark and choose **Apply Preview To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
+Open `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager` and use **Create Theme Family**, then preview Light/Dark and choose **Apply Preview To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
 
 ## Demo Hierarchy
 
