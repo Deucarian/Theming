@@ -87,7 +87,11 @@ The Theming menu is intentionally limited to quick entry points:
 
 Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Family, Mode, and Visual Style choices preview immediately on loaded providers without changing provider serialization, theme assets, runtime settings, scenes, or builds. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
 
-The shared responsive workbench toolbar keeps **Theme** and **Runtime Settings** as the two top-level destinations. Style Composer is a contextual Theme workflow opened with **Customize Style**, **Edit Style**, or **Resume Style Edit**, depending on the selected style and any staged composer draft. Returning to Theme never clears that draft; switching the composer to another style asks before discarding it.
+The shared responsive workbench toolbar keeps **Theme**, **Style Composer**, and **Runtime Settings** as visible top-level destinations. Choose a Visual Style on Theme, then open Style Composer to derive or edit its complete reusable composition. Returning to Theme stops the temporary scene preview without clearing the composer draft; switching the composer to another style asks before discarding that draft.
+
+Style Composer applies every draft change to loaded editor theme providers as a nonserialized preview, so Scene and Game views update alongside the built-in specimen. The preview never changes the source style, provider configuration, scenes, or builds, and the existing save/build guards restore configured values before Unity serializes or builds content.
+
+The project runtime resolver loads exactly one `DeucarianThemeRuntimeSettings` asset from `Resources`. That asset selects the startup family and initial mode; the family still owns both Light and Dark themes. Theme Manager therefore disables runtime-settings creation when a resource already exists and identifies a valid configured asset as **In Use**.
 
 The per-user preview is restored after script reloads and after Play Mode startup has applied project settings. A later runtime call to `SetThemeFamily`, `SetThemeMode`, `SetTheme`, or `SetStyle` takes precedence and clears that provider's preview. Player builds temporarily suspend preview state and always use the activated runtime settings; leaving the Theme Manager on an unactivated choice cannot change build output.
 
@@ -184,7 +188,7 @@ The built-in style presets are:
 - `Material Dark`: opaque layered dark surfaces with restrained radius and crisp dividers.
 - `Fluent Acrylic`: acrylic-inspired translucent surfaces with subtle tint and texture.
 
-These names remain curated presets, but each preset is a composition of four reusable axes: Surface, Corners, Border, and Size. The built-ins preserve their existing output exactly. Choose **Customize Style** in Theme Manager to derive a source-controlled **Custom Style**, such as Frosted Glass + Square + Compact; existing custom assets use **Edit Style**, and an unapplied draft uses **Resume Style Edit**. Composer choices remain staged until **Save & Activate**, and the resulting Custom Style stays shared by Light and Dark modes.
+These names remain curated presets, but each preset is a composition of four reusable axes: Surface, Corners, Border, and Size. The built-ins preserve their existing output exactly. Open the **Style Composer** tab to derive a source-controlled **Custom Style**, such as Frosted Glass + Square + Compact, or to edit an existing custom style. **Save Style & Activate** creates or updates one Unity `.asset` file representing the complete reusable composition, then shares it across the selected family's Light and Dark themes.
 
 Existing third-party style assets continue to resolve their legacy inline fields when component references or density are absent. Providers observe edits to referenced component assets and emit the existing `StyleChanged` notification so active consumers refresh immediately.
 

@@ -35,6 +35,7 @@ namespace Deucarian.Theming.Editor.Tests
             testRoot = TestRootBase + "/" + Guid.NewGuid().ToString("N");
             DeucarianThemingEditorSettings.ClearActiveAssets();
             DeucarianThemingEditorSettings.ActiveThemeMode = DeucarianThemeMode.Dark;
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             DeucarianThemePreviewCoordinator.ApplySelectedPreview();
         }
 
@@ -43,6 +44,7 @@ namespace Deucarian.Theming.Editor.Tests
         {
             DeucarianThemePreviewCoordinator.ResumeAfterSave();
             DeucarianThemePreviewCoordinator.ResumeAfterBuild();
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             DeucarianThemeManagerWorkflow.ClearPreview();
             DeucarianThemeProvider[] providers = Resources.FindObjectsOfTypeAll<DeucarianThemeProvider>();
             for (int i = 0; i < providers.Length; i++)
@@ -129,32 +131,18 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
-        public void ComposerActionLabelDistinguishesCustomizeEditAndResume()
+        public void ComposerSaveDescriptionExplainsCompleteStyleAssetAndBothModes()
         {
-            DeucarianDefaultThemeAssets assets = CreateFamily("ComposerLabels");
-            DeucarianThemeStyle preset = assets.DefaultStyle;
-            DeucarianThemeStyle custom = DeucarianThemingMenuActions.CreateCustomStyle(
-                preset,
-                testRoot + "/ComposerLabelsCustom.asset",
-                preset.SurfaceProfile,
-                preset.ShapeProfile,
-                preset.StrokeProfile,
-                preset.Density,
-                preset.TypographyProfile);
-            Assert.IsNotNull(custom);
+            string createDescription =
+                DeucarianThemeManagerWindow.BuildComposerSaveDescription(false);
+            string updateDescription =
+                DeucarianThemeManagerWindow.BuildComposerSaveDescription(true);
 
-            Assert.AreEqual(
-                "Customize Style",
-                DeucarianThemeManagerWindow.ResolveComposerActionLabel(preset, null, false));
-            Assert.AreEqual(
-                "Edit Style",
-                DeucarianThemeManagerWindow.ResolveComposerActionLabel(custom, preset, false));
-            Assert.AreEqual(
-                "Resume Style Edit",
-                DeucarianThemeManagerWindow.ResolveComposerActionLabel(preset, preset, true));
-            Assert.AreEqual(
-                "Customize Style",
-                DeucarianThemeManagerWindow.ResolveComposerActionLabel(null, preset, true));
+            StringAssert.Contains("complete reusable Custom Style", createDescription);
+            StringAssert.Contains("one Unity .asset file", createDescription);
+            StringAssert.Contains("creates that file", createDescription);
+            StringAssert.Contains("both Light and Dark themes", createDescription);
+            StringAssert.Contains("updates that file", updateDescription);
         }
 
         [Test]
@@ -289,6 +277,61 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.Greater(
                 DeucarianThemeManagerWorkflow.PreviewRepaintVersion,
                 repaintVersionBeforeClear);
+        }
+
+        [Test]
+        public void ComposerPreviewAppliesUnsavedCompositionWithoutChangingAssetsOrProviderConfiguration()
+        {
+            DeucarianDefaultThemeAssets assets = CreateFamily("ComposerPreview");
+            DeucarianThemeStyle source = assets.DefaultStyle;
+            DeucarianThemeShapeProfile sourceCorners = source.ShapeProfile;
+            DeucarianThemeShapeProfile alternateCorners =
+                CreateAsset<DeucarianThemeShapeProfile>("ComposerPreviewCorners.asset");
+            GameObject providerObject = new GameObject("Workflow Test Composer Preview Provider");
+            DeucarianThemeProvider provider = providerObject.AddComponent<DeucarianThemeProvider>();
+            provider.SetThemeFamily(assets.ThemeFamily, DeucarianThemeMode.Dark);
+            string serializedBeforePreview = JsonUtility.ToJson(provider);
+            bool providerDirtyBeforePreview = EditorUtility.IsDirty(provider);
+            bool sceneDirtyBeforePreview = provider.gameObject.scene.isDirty;
+
+            int previewed = DeucarianThemePreviewCoordinator.ApplyComposerPreview(
+                new DeucarianThemeManagerSelection(
+                    assets.ThemeFamily,
+                    DeucarianThemeMode.Dark,
+                    source),
+                source,
+                source.SurfaceProfile,
+                alternateCorners,
+                source.StrokeProfile,
+                source.Density,
+                source.TypographyProfile);
+
+            Assert.GreaterOrEqual(previewed, 1);
+            Assert.IsTrue(DeucarianThemePreviewCoordinator.HasComposerPreview);
+            DeucarianThemeStyle previewStyle =
+                DeucarianThemePreviewCoordinator.ComposerPreviewStyle;
+            Assert.IsNotNull(previewStyle);
+            Assert.AreNotSame(source, previewStyle);
+            Assert.AreSame(previewStyle, provider.CurrentStyle);
+            Assert.AreSame(alternateCorners, previewStyle.ShapeProfile);
+            Assert.AreSame(sourceCorners, source.ShapeProfile);
+            Assert.AreEqual(HideFlags.HideAndDontSave, previewStyle.hideFlags);
+            Assert.IsEmpty(AssetDatabase.GetAssetPath(previewStyle));
+            Assert.AreEqual(serializedBeforePreview, JsonUtility.ToJson(provider));
+            Assert.AreEqual(providerDirtyBeforePreview, EditorUtility.IsDirty(provider));
+            Assert.AreEqual(sceneDirtyBeforePreview, provider.gameObject.scene.isDirty);
+
+            DeucarianThemePreviewCoordinator.SuspendForSave();
+            Assert.AreSame(source, provider.CurrentStyle);
+            DeucarianThemePreviewCoordinator.ResumeAfterSave();
+            Assert.GreaterOrEqual(DeucarianThemePreviewCoordinator.ApplySelectedPreview(), 1);
+            Assert.AreSame(previewStyle, provider.CurrentStyle);
+
+            Assert.GreaterOrEqual(
+                DeucarianThemePreviewCoordinator.ClearComposerPreview(),
+                1);
+            Assert.IsFalse(DeucarianThemePreviewCoordinator.HasComposerPreview);
+            Assert.AreSame(source, provider.CurrentStyle);
         }
 
         [Test]
@@ -910,6 +953,22 @@ namespace Deucarian.Theming.Editor.Tests
                 "Assets/Resources/OtherSettings.asset"));
         }
 
+        [TestCase(0, false, true)]
+        [TestCase(0, true, false)]
+        [TestCase(1, false, false)]
+        [TestCase(2, false, false)]
+        public void RuntimeSettingsCreationIsAvailableOnlyWhenNoResourceExists(
+            int existingCount,
+            bool isPlaying,
+            bool expected)
+        {
+            Assert.AreEqual(
+                expected,
+                DeucarianThemeManagerWindow.CanCreateRuntimeSettings(
+                    existingCount,
+                    isPlaying));
+        }
+
         [Test]
         public void ThemeManagerUsesSharedResponsiveWorkbenchAndToolbar()
         {
@@ -966,7 +1025,7 @@ namespace Deucarian.Theming.Editor.Tests
                 Button discard = workbench.Toolbar.Q<Button>(
                     "deucarian-theme-manager-discard-changes");
                 Assert.IsNotNull(themeButton);
-                Assert.IsNull(styleButton);
+                Assert.IsNotNull(styleButton);
                 Assert.IsNotNull(settingsButton);
                 Assert.IsNotNull(secondary);
                 Assert.That(primary != null || primaryStatus != null, Is.True);
@@ -987,6 +1046,12 @@ namespace Deucarian.Theming.Editor.Tests
                         className: DeucarianEditorIconTextButton.GapClass).style.width.value.value);
                 Assert.IsTrue(themeButton.ClassListContains(
                     DeucarianEditorIconTextButton.RootClass));
+                Assert.IsTrue(styleButton.ClassListContains(
+                    DeucarianEditorIconTextButton.RootClass));
+                Assert.AreEqual(
+                    "Style Composer",
+                    styleButton.Q<Label>(
+                        className: DeucarianEditorWorkbenchToolbar.IconLabelClass).text);
                 VisualElement visiblePrimary = primary != null
                     ? (VisualElement)primary
                     : primaryStatus;
@@ -1010,14 +1075,16 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.IsTrue(navigation.ClassListContains(
                     DeucarianEditorCommandBar.NavigationGroupClass));
                 Assert.AreSame(themeButton, navigation.ElementAt(0));
-                Assert.AreSame(settingsButton, navigation.ElementAt(1));
-                Assert.AreEqual(2, navigation.childCount);
+                Assert.AreSame(styleButton, navigation.ElementAt(1));
+                Assert.AreSame(settingsButton, navigation.ElementAt(2));
+                Assert.AreEqual(3, navigation.childCount);
                 Assert.IsTrue(actions.ClassListContains(
                     DeucarianEditorWorkbenchToolbar.ActionGroupClass));
                 Assert.IsTrue(actions.ClassListContains(
                     DeucarianEditorCommandBar.ActionGroupClass));
                 Assert.AreSame(secondary, actions.ElementAt(0).ElementAt(0));
                 Assert.AreSame(discard, actions.ElementAt(1).ElementAt(0));
+                Assert.AreEqual(Visibility.Hidden, actions.ElementAt(0).style.visibility.value);
                 Assert.AreEqual(Visibility.Visible, actions.ElementAt(1).style.visibility.value);
                 Assert.AreEqual(
                     !EditorApplication.isPlayingOrWillChangePlaymode,
@@ -1029,7 +1096,7 @@ namespace Deucarian.Theming.Editor.Tests
                     discard.tooltip);
                 Assert.AreEqual(132f, actions.ElementAt(0).style.width.value.value);
                 Assert.AreEqual(148f, actions.ElementAt(1).style.width.value.value);
-                Assert.AreEqual(140f, actions.ElementAt(2).style.width.value.value);
+                Assert.AreEqual(168f, actions.ElementAt(2).style.width.value.value);
                 if (primary != null)
                 {
                     Assert.IsTrue(primary.ClassListContains(
@@ -1139,7 +1206,8 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("DrawThemePreview", source);
                 StringAssert.Contains("DiscardAllChanges", source);
                 StringAssert.Contains("CollectPendingChangeDescriptions", source);
-                StringAssert.Contains("ResolveComposerActionLabel", source);
+                StringAssert.Contains("BuildComposerSaveDescription", source);
+                StringAssert.Contains("ApplyComposerPreview", source);
                 StringAssert.Contains("ShouldKeepCurrentComposerDraft", source);
                 StringAssert.Contains("Back to Theme", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
@@ -1158,7 +1226,7 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.DoesNotContain("DrawHeaderCard", source);
                 StringAssert.DoesNotContain("BeginScrollView", source);
                 StringAssert.DoesNotContain("VerticalScope(DeucarianEditorWorkbenchGUI.WindowStyle)", source);
-                StringAssert.DoesNotContain("deucarian-theme-manager-view-style", source);
+                StringAssert.Contains("deucarian-theme-manager-view-style", source);
                 StringAssert.DoesNotContain("BeginFoldoutCardScope", source);
                 StringAssert.DoesNotContain("EditorGUI.DisabledScope(true)", source);
                 StringAssert.DoesNotContain("EditorGUILayout.HelpBox(feedbackMessage", source);
