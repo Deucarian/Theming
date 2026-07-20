@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 namespace Deucarian.Theming.Editor
 {
@@ -17,6 +18,10 @@ namespace Deucarian.Theming.Editor
         private static bool buildSuspended;
         private static bool saveSuspended;
         private static int callbackRegistrationCount;
+        private static bool composerPreviewActive;
+        private static DeucarianThemeFamily composerPreviewFamily;
+        private static DeucarianThemeMode composerPreviewMode;
+        private static DeucarianThemeStyle composerPreviewStyle;
 
         static DeucarianThemePreviewCoordinator()
         {
@@ -42,6 +47,11 @@ namespace Deucarian.Theming.Editor
 
         internal static bool IsPlayStartupApplyQueued => playStartupApplyQueued;
 
+        internal static bool HasComposerPreview => composerPreviewActive;
+
+        internal static DeucarianThemeStyle ComposerPreviewStyle =>
+            composerPreviewActive ? composerPreviewStyle : null;
+
         internal static void RegisterCallbacks()
         {
             EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
@@ -62,10 +72,64 @@ namespace Deucarian.Theming.Editor
                 return 0;
             }
 
-            DeucarianThemeManagerSelection selection = DeucarianThemeManagerSelection.FromEditorPrefs();
+            DeucarianThemeManagerSelection selection = composerPreviewActive
+                ? new DeucarianThemeManagerSelection(
+                    composerPreviewFamily,
+                    composerPreviewMode,
+                    composerPreviewStyle)
+                : DeucarianThemeManagerSelection.FromEditorPrefs();
             return selection.Family == null
                 ? DeucarianThemeManagerWorkflow.ClearPreview()
                 : DeucarianThemeManagerWorkflow.Preview(selection);
+        }
+
+        /// <summary>
+        /// Applies a complete Style Composer draft through the existing nonserialized editor
+        /// preview path. The hidden style copy is never added to the AssetDatabase and the
+        /// source style remains unchanged.
+        /// </summary>
+        internal static int ApplyComposerPreview(
+            DeucarianThemeManagerSelection selection,
+            DeucarianThemeStyle source,
+            DeucarianThemeSurfaceProfile surface,
+            DeucarianThemeShapeProfile corners,
+            DeucarianThemeStrokeProfile border,
+            DeucarianThemeDensity size,
+            DeucarianThemeTypographyProfile typography)
+        {
+            if (selection.Family == null || source == null)
+            {
+                return ClearComposerPreview();
+            }
+
+            if (composerPreviewStyle == null)
+            {
+                composerPreviewStyle = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
+            }
+
+            EditorUtility.CopySerialized(source, composerPreviewStyle);
+            composerPreviewStyle.name = source.name + " (Composer Preview)";
+            composerPreviewStyle.hideFlags = HideFlags.HideAndDontSave;
+            composerPreviewStyle.SetComposition(
+                surface,
+                corners,
+                border,
+                size,
+                typography,
+                source.IsCustomStyle);
+            composerPreviewFamily = selection.Family;
+            composerPreviewMode = selection.Mode;
+            composerPreviewActive = true;
+            return ApplySelectedPreview();
+        }
+
+        /// <summary>Stops previewing the unsaved composer copy and restores the staged style.</summary>
+        internal static int ClearComposerPreview()
+        {
+            composerPreviewActive = false;
+            composerPreviewFamily = null;
+            composerPreviewMode = DeucarianThemeMode.Dark;
+            return ApplySelectedPreview();
         }
 
         internal static void HandlePlayModeStateChanged(PlayModeStateChange state)

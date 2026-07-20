@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Restored Style Composer as an explicit Theme Manager destination and clarified that saving creates or updates one complete reusable Custom Style asset shared by Light and Dark themes.
+- Added nonserialized editor-wide preview of unsaved Style Composer compositions while preserving source assets, provider configuration, scene saves, and builds.
+- Disabled runtime-settings creation once the project's single Resources-backed settings asset exists and clarified its startup family and mode role.
+
 ## 1.0.3 - 2026-07-17
 
 - Reused the shared Editor selection-and-ping helper, completed importable sample scenes, and aligned exact dependencies.
