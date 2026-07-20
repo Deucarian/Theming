@@ -19,7 +19,7 @@ namespace Deucarian.Theming.Editor
         private const float PreviewStackBreakpoint = 760f;
         private const float SecondaryActionSlotWidth = 132f;
         private const float DiscardActionSlotWidth = 148f;
-        private const float PrimaryActionSlotWidth = 140f;
+        private const float PrimaryActionSlotWidth = 168f;
         private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
         private enum ViewMode
@@ -57,6 +57,7 @@ namespace Deucarian.Theming.Editor
         private DeucarianEditorWorkbench workbench;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
         private Button themeViewButton;
+        private Button styleComposerViewButton;
         private Button runtimeSettingsViewButton;
         private Button toolbarSecondaryAction;
         private Button toolbarPrimaryAction;
@@ -69,6 +70,7 @@ namespace Deucarian.Theming.Editor
         private Button developerToolsButton;
         private bool developerToolsOpen;
         private IReadOnlyList<string> currentPendingChanges = Array.Empty<string>();
+        private int runtimeSettingsResourceCount;
 
         internal DeucarianEditorWorkbench WorkbenchForTests => workbench;
         internal DeucarianEditorWorkbenchFooter FooterForTests => workbenchFooter;
@@ -122,6 +124,7 @@ namespace Deucarian.Theming.Editor
         private void OnDisable()
         {
             EditorApplication.projectChanged -= HandleProjectChanged;
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             workbench?.Dispose();
             workbench = null;
             workbenchFooter = null;
@@ -212,6 +215,13 @@ namespace Deucarian.Theming.Editor
                 "Theme",
                 NavigateToTheme);
             themeViewButton.name = "deucarian-theme-manager-view-theme";
+            styleComposerViewButton = DeucarianEditorCommandBar.CreateToggle(
+                "Style Composer",
+                NavigateToStyleComposer,
+                false,
+                null,
+                "Open the selected Visual Style in Style Composer.");
+            styleComposerViewButton.name = "deucarian-theme-manager-view-style";
             runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
                 "Runtime Settings",
                 NavigateToRuntimeSettings);
@@ -261,6 +271,7 @@ namespace Deucarian.Theming.Editor
                 toolbarPrimaryAction);
 
             lanes.Leading.Add(themeViewButton);
+            lanes.Leading.Add(styleComposerViewButton);
             lanes.Leading.Add(runtimeSettingsViewButton);
             lanes.Trailing.Add(toolbarSecondarySlot);
             lanes.Trailing.Add(discardChangesSlot);
@@ -274,15 +285,25 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
+            DeucarianThemeManagerSelection selection =
+                DeucarianThemeManagerSelection.FromEditorPrefs();
             DeucarianEditorCommandBar.SetActive(
                 themeViewButton,
-                viewMode == ViewMode.Theme || viewMode == ViewMode.StyleComposer);
+                viewMode == ViewMode.Theme);
+            DeucarianEditorCommandBar.SetActive(
+                styleComposerViewButton,
+                viewMode == ViewMode.StyleComposer);
+            styleComposerViewButton?.SetEnabled(selection.Style != null);
+            if (styleComposerViewButton != null)
+            {
+                styleComposerViewButton.tooltip = selection.Style != null
+                    ? "Open the selected Visual Style in Style Composer."
+                    : "Choose a Visual Style on the Theme tab before opening Style Composer.";
+            }
             DeucarianEditorCommandBar.SetActive(
                 runtimeSettingsViewButton,
                 viewMode == ViewMode.RuntimeSettings);
 
-            DeucarianThemeManagerSelection selection =
-                DeucarianThemeManagerSelection.FromEditorPrefs();
             bool isPlaying = EditorApplication.isPlayingOrWillChangePlaymode;
             DeucarianThemeManagerActivationStatus status =
                 DeucarianThemeManagerWorkflow.Evaluate(
@@ -296,6 +317,9 @@ namespace Deucarian.Theming.Editor
             switch (viewMode)
             {
                 case ViewMode.StyleComposer:
+                    DeucarianEditorCommandBar.SetReservedVisible(
+                        toolbarSecondarySlot,
+                        true);
                     DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "More");
@@ -305,11 +329,11 @@ namespace Deucarian.Theming.Editor
                         : "Choose a visual style before opening composer actions.";
                     DeucarianEditorCommandBar.SetText(
                         toolbarPrimaryAction,
-                        "Save & Activate");
+                        "Save Style & Activate");
                     bool composerReady = IsComposerReadyToActivate() && !isPlaying;
                     toolbarPrimaryAction.SetEnabled(composerReady);
                     toolbarPrimaryAction.tooltip = composerReady
-                        ? "Save the composed style and activate it."
+                        ? BuildComposerSaveDescription(composerEditingStyle != null)
                         : isPlaying
                             ? "Exit Play Mode before saving and activating."
                             : "Complete the composer and project runtime setup first.";
@@ -317,21 +341,39 @@ namespace Deucarian.Theming.Editor
                     break;
 
                 case ViewMode.RuntimeSettings:
+                    DeucarianEditorCommandBar.SetReservedVisible(
+                        toolbarSecondarySlot,
+                        true);
                     DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "Create Settings...");
-                    toolbarSecondaryAction.SetEnabled(!isPlaying);
+                    bool canCreateSettings = CanCreateRuntimeSettings(
+                        runtimeSettingsResourceCount,
+                        isPlaying);
+                    toolbarSecondaryAction.SetEnabled(canCreateSettings);
                     toolbarSecondaryAction.tooltip = isPlaying
                         ? "Exit Play Mode before creating runtime settings."
-                        : "Create a Resources-backed runtime settings asset.";
+                        : runtimeSettingsResourceCount == 1
+                            ? "This project already has its one runtime settings resource. Use the existing asset instead."
+                            : runtimeSettingsResourceCount > 1
+                                ? "Multiple runtime settings resources already exist. Remove the duplicates before continuing."
+                            : "Create the single Resources-backed runtime settings asset for this project.";
+                    bool runtimeSettingsInUse = runtimeSettingsCandidateValid
+                                                && runtimeSettingsCandidate == projectRuntimeSettings
+                                                && !RuntimeSettingsCandidateNeedsFamily();
                     DeucarianEditorCommandBar.SetText(
                         toolbarPrimaryAction,
-                        RuntimeSettingsCandidateNeedsFamily()
+                        runtimeSettingsInUse
+                            ? "In Use"
+                            : RuntimeSettingsCandidateNeedsFamily()
                             ? "Use & Configure"
                             : "Use Selected");
-                    bool candidateReady = CanUseRuntimeSettingsCandidate();
+                    bool candidateReady = !runtimeSettingsInUse
+                                          && CanUseRuntimeSettingsCandidate();
                     toolbarPrimaryAction.SetEnabled(candidateReady);
-                    toolbarPrimaryAction.tooltip = candidateReady
+                    toolbarPrimaryAction.tooltip = runtimeSettingsInUse
+                        ? "This is the unique runtime settings asset currently used by the project."
+                        : candidateReady
                         ? "Use the selected runtime settings for this project."
                         : string.IsNullOrWhiteSpace(runtimeSettingsCandidateMessage)
                             ? "Choose valid runtime settings first."
@@ -340,22 +382,9 @@ namespace Deucarian.Theming.Editor
                     break;
 
                 default:
-                    bool composerDraftDirty = IsComposerDraftDirty();
-                    string composerActionLabel = ResolveComposerActionLabel(
-                        selection.Style,
-                        composerSource,
-                        composerDraftDirty);
-                    DeucarianEditorCommandBar.SetText(
-                        toolbarSecondaryAction,
-                        composerActionLabel);
-                    toolbarSecondaryAction.SetEnabled(selection.Style != null);
-                    toolbarSecondaryAction.tooltip = selection.Style != null
-                        ? composerActionLabel == "Resume Style Edit"
-                            ? "Resume the unapplied composer draft for the selected visual style."
-                            : selection.Style.IsCustomStyle
-                                ? "Edit the selected custom style in the composer."
-                                : "Create a custom style from the selected visual style."
-                        : "Choose a visual style before opening the composer.";
+                    DeucarianEditorCommandBar.SetReservedVisible(
+                        toolbarSecondarySlot,
+                        false);
                     if (status.IsActive)
                     {
                         ShowPrimaryActiveStatus();
@@ -490,6 +519,7 @@ namespace Deucarian.Theming.Editor
 
         private void NavigateToTheme()
         {
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             viewMode = ViewMode.Theme;
             feedbackMessage = null;
             UpdateWorkbenchToolbar();
@@ -530,6 +560,7 @@ namespace Deucarian.Theming.Editor
                     viewMode = ViewMode.StyleComposer;
                     feedbackMessage = "Continuing the existing style composer draft.";
                     feedbackType = MessageType.Info;
+                    ApplyComposerPreview();
                     UpdateWorkbenchToolbar();
                     Repaint();
                     return false;
@@ -548,6 +579,7 @@ namespace Deucarian.Theming.Editor
             {
                 viewMode = ViewMode.StyleComposer;
                 feedbackMessage = null;
+                ApplyComposerPreview();
                 UpdateWorkbenchToolbar();
                 Repaint();
             }
@@ -581,23 +613,6 @@ namespace Deucarian.Theming.Editor
             return choice != 2;
         }
 
-        internal static string ResolveComposerActionLabel(
-            DeucarianThemeStyle selectedStyle,
-            DeucarianThemeStyle composerStyle,
-            bool composerDraftDirty)
-        {
-            if (selectedStyle != null
-                && selectedStyle == composerStyle
-                && composerDraftDirty)
-            {
-                return "Resume Style Edit";
-            }
-
-            return selectedStyle != null && selectedStyle.IsCustomStyle
-                ? "Edit Style"
-                : "Customize Style";
-        }
-
         private static string GetStyleDisplayName(DeucarianThemeStyle style)
         {
             if (style == null)
@@ -610,8 +625,20 @@ namespace Deucarian.Theming.Editor
                 : style.DisplayName;
         }
 
+        internal static string BuildComposerSaveDescription(bool updatesExistingStyle)
+        {
+            string operation = updatesExistingStyle
+                ? "updates that file with all choices below"
+                : "creates that file from all choices below";
+            return "A complete reusable Custom Style is stored as one Unity .asset file. "
+                   + "Save Style & Activate "
+                   + operation
+                   + ", then assigns it to both Light and Dark themes in the selected family.";
+        }
+
         private void NavigateToRuntimeSettings()
         {
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             runtimeSettingsCandidate = projectRuntimeSettings;
             runtimeCandidateTouched = false;
             validatedRuntimeSettingsCandidate = null;
@@ -631,9 +658,6 @@ namespace Deucarian.Theming.Editor
                     break;
                 case ViewMode.RuntimeSettings:
                     CreateRuntimeSettingsFromSavePanel();
-                    break;
-                default:
-                    NavigateToStyleComposer();
                     break;
             }
 
@@ -940,6 +964,10 @@ namespace Deucarian.Theming.Editor
                 "Configure Project",
                 () =>
                 {
+                    EditorGUILayout.HelpBox(
+                        "The project loads exactly one runtime settings asset. It selects one starting mode, while its theme family still contains both Light and Dark themes.",
+                        MessageType.Info);
+                    GUILayout.Space(4f);
                     EditorGUI.BeginChangeCheck();
                     runtimeSettingsCandidate = (DeucarianThemeRuntimeSettings)DrawWorkbenchObjectField(
                         "Existing Settings",
@@ -985,6 +1013,13 @@ namespace Deucarian.Theming.Editor
             return runtimeSettingsCandidate != null
                    && !DeucarianThemeManagerWorkflow.IsFamilyReadyForRuntimeSettings(
                        runtimeSettingsCandidate.DefaultThemeFamily);
+        }
+
+        internal static bool CanCreateRuntimeSettings(
+            int existingRuntimeSettingsCount,
+            bool isPlaying)
+        {
+            return existingRuntimeSettingsCount == 0 && !isPlaying;
         }
 
         private bool CanUseRuntimeSettingsCandidate()
@@ -1047,10 +1082,16 @@ namespace Deucarian.Theming.Editor
                 {
                     EditorGUILayout.LabelField(composerTitle, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
                     EditorGUILayout.LabelField(
-                        "Compose reusable presentation profiles. Typography is optional and falls back to project TMP settings.",
+                        "Compose one complete reusable Custom Style. Surface, Corners, Border, and Size are required; Typography is optional.",
                         DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
                     GUILayout.Space(6f);
+                    EditorGUI.BeginChangeCheck();
                     DrawComposerFields();
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        ApplyComposerPreview();
+                        UpdateWorkbenchToolbar();
+                    }
                 },
                 () =>
                 {
@@ -1061,6 +1102,10 @@ namespace Deucarian.Theming.Editor
                     GUILayout.Space(6f);
                     DrawComposerPreview();
                 });
+
+            EditorGUILayout.HelpBox(
+                BuildComposerSaveDescription(composerEditingStyle != null),
+                MessageType.Info);
 
             bool complete = IsComposerComplete();
             DeucarianThemeManagerSelection candidate = new DeucarianThemeManagerSelection(
@@ -1093,7 +1138,7 @@ namespace Deucarian.Theming.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField(
-                    "Theme / Style Composer",
+                    "Style Composer",
                     DeucarianEditorWorkbenchGUI.BoldLabelStyle,
                     GUILayout.ExpandWidth(true));
                 var backContent = new GUIContent(
@@ -1162,6 +1207,18 @@ namespace Deucarian.Theming.Editor
             DrawThemePreview(
                 selection.ResolvedTheme,
                 null,
+                composerSurface,
+                composerCorners,
+                composerBorder,
+                composerSize,
+                composerTypography);
+        }
+
+        private void ApplyComposerPreview()
+        {
+            DeucarianThemePreviewCoordinator.ApplyComposerPreview(
+                DeucarianThemeManagerSelection.FromEditorPrefs(),
+                composerSource,
                 composerSurface,
                 composerCorners,
                 composerBorder,
@@ -1644,6 +1701,7 @@ namespace Deucarian.Theming.Editor
             composerTypography = style.TypographyProfile;
             feedbackMessage = null;
             viewMode = ViewMode.StyleComposer;
+            ApplyComposerPreview();
             UpdateWorkbenchToolbar();
             Repaint();
         }
@@ -1706,10 +1764,10 @@ namespace Deucarian.Theming.Editor
                     ? "Custom Theme Style"
                     : composerSource.DisplayName + " Custom";
                 string assetPath = EditorUtility.SaveFilePanelInProject(
-                    "Create Custom Theme Style",
+                    "Save Complete Custom Style",
                     suggestedName,
                     "asset",
-                    "Choose a source-controlled location for the reusable custom style.",
+                    "This Unity .asset file is the complete reusable style: Surface, Corners, Border, Size, and optional Typography. Choose a source-controlled location.",
                     defaultFolder);
                 if (string.IsNullOrWhiteSpace(assetPath))
                 {
@@ -1747,7 +1805,9 @@ namespace Deucarian.Theming.Editor
                 : DeucarianThemeManagerWorkflow.Activate(
                     projectRuntimeSettings,
                     selection);
-            feedbackMessage = result.Message;
+            feedbackMessage = result.Succeeded
+                ? $"Saved and activated the complete Custom Style '{GetStyleDisplayName(style)}' for both Light and Dark themes. {result.Message}"
+                : result.Message;
             feedbackType = result.Succeeded ? MessageType.Info : MessageType.Error;
             if (!result.Succeeded && !string.IsNullOrWhiteSpace(createdStylePath))
             {
@@ -1763,6 +1823,7 @@ namespace Deucarian.Theming.Editor
                 composerSource = style;
                 composerEditingStyle = style;
                 viewMode = ViewMode.Theme;
+                DeucarianThemePreviewCoordinator.ClearComposerPreview();
                 RefreshAssets();
                 CaptureBaseline();
             }
@@ -1826,6 +1887,16 @@ namespace Deucarian.Theming.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 feedbackMessage = "Exit Play Mode before creating runtime settings.";
+                feedbackType = MessageType.Warning;
+                return;
+            }
+
+            RefreshRuntimeSettingsValidation();
+            if (!CanCreateRuntimeSettings(runtimeSettingsResourceCount, false))
+            {
+                feedbackMessage = runtimeSettingsResourceCount == 1
+                    ? "This project already has its one runtime settings resource. Select and configure that asset instead of creating another."
+                    : "Multiple runtime settings resources already exist. Remove the duplicates before continuing.";
                 feedbackType = MessageType.Warning;
                 return;
             }
@@ -2152,6 +2223,7 @@ namespace Deucarian.Theming.Editor
 
         private void DiscardAllChanges()
         {
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             RefreshRuntimeSettingsValidation();
             DeucarianThemeManagerSelection selection = projectRuntimeSettings != null
                 && projectRuntimeSettings.DefaultThemeFamily != null
@@ -2251,6 +2323,7 @@ namespace Deucarian.Theming.Editor
 
         private void ReturnToTheme(string message, MessageType type)
         {
+            DeucarianThemePreviewCoordinator.ClearComposerPreview();
             feedbackMessage = message;
             feedbackType = type;
             viewMode = ViewMode.Theme;
@@ -2274,6 +2347,7 @@ namespace Deucarian.Theming.Editor
 
         private void RefreshRuntimeSettingsValidation()
         {
+            runtimeSettingsResourceCount = FindRuntimeSettingsResourceAssets().Count;
             projectRuntimeSettings = DeucarianThemingMenuActions.ResolveProjectRuntimeSettings();
             projectRuntimeSettingsResourceReady = TryValidateRuntimeSettingsCandidate(
                 projectRuntimeSettings,
