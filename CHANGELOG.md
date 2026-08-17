@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 1.0.4 - 2026-08-17
 
+- Added a cached, consumer-neutral reference viewer theme family with canonical light
+  and dark semantic palettes and the shared Frosted Glass chrome style.
+- Kept the runtime preset on built-in Deucarian role IDs so products can share viewer
+  presentation without importing product-specific roles or assets.
 - Restored Style Composer as an explicit Theme Manager destination and clarified that saving creates or updates one complete reusable Custom Style asset shared by Light and Dark themes.
 - Added nonserialized editor-wide preview of unsaved Style Composer compositions while preserving source assets, provider configuration, scene saves, and builds.
 - Disabled runtime-settings creation once the project's single Resources-backed settings asset exists and clarified its startup family and mode role.
