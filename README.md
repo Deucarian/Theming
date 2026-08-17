@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.0.3`.
+Current package version: `1.0.4`.
 
 ## When to use it
 
@@ -108,6 +108,7 @@ The per-user preview is restored after script reloads and after Play Mode startu
 - `DeucarianThemeSurfaceProfile`, `DeucarianThemeShapeProfile`, `DeucarianThemeStrokeProfile`, and `DeucarianThemeDensity`: independently reusable presentation axes.
 - `DeucarianThemeProvider`, `IDeucarianThemeTarget`, and `DeucarianThemeTargetBehaviour`: runtime theme application contracts.
 - `DeucarianThemeRuntimeSettings` and `DeucarianThemeRuntimeResolver`: project default theme lookup.
+- `DeucarianViewerReferenceThemePreset`: cached light/dark runtime theme composition for reusable viewer chrome.
 - `DeucarianThemePack` and `DeucarianThemePackAssetFactory`: package-owned role and palette asset import/repair.
 - `DeucarianUIToolkitThemeApplier` and `DeucarianUIToolkitThemeVariables`: UI Toolkit bindings and USS text generation.
 - `DeucarianTMPThemeColor`, `DeucarianGraphicThemeColor`, `DeucarianSelectableThemeColors`, `DeucarianRendererThemeColor`: runtime adapters for common Unity UI/rendering targets.
@@ -166,6 +167,25 @@ Runtime code can call:
 - `DeucarianThemeRuntimeResolver.EnsureProviderHasTheme(...)`
 
 `DeucarianThemeTargetBehaviour` also falls back to this runtime default when no provider theme is available.
+
+## Reference viewer theme
+
+Viewer products can share one canonical runtime family without copying theme assets or
+introducing product-specific role IDs. The preset contains light and dark palettes for
+the built-in surface, interaction, text, status, and UI-state roles, plus the shared
+Frosted Glass visual style. It is created lazily, cached for the runtime session, and
+should be treated as read-only.
+
+```csharp
+DeucarianViewerReferenceThemeProfile viewerTheme =
+    DeucarianViewerReferenceThemePreset.Resolve();
+provider.SetThemeFamily(
+    viewerTheme.ThemeFamily,
+    DeucarianViewerReferenceThemePreset.DefaultMode);
+```
+
+Use project-owned themes when a product intentionally needs a different visual identity.
+Keep product-specific semantic roles in that product or in its own theme pack.
 
 ## Theme packs
 
