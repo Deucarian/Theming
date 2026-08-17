@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.0.4`.
+Current package version: `1.0.5`.
 
 ## When to use it
 
@@ -250,6 +250,13 @@ Most projects can start with the built-in minimal roles and add custom roles onl
 ## UI Toolkit
 
 Add `DeucarianUIToolkitThemeApplier` to the same GameObject as a `UIDocument`, or assign a UIDocument explicitly.
+
+Use `DeucarianUIToolkitThemeTypography.Apply(...)` when a runtime-created visual tree
+should inherit the font selected by the current Deucarian visual style. The adapter
+bridges the typography profile's TextMesh Pro font source to UI Toolkit's
+`unityFont` property and honors a nearby provider's style override when a component
+context is supplied. `ApplyStyle(...)` supports consumers that already resolved a
+style, while `ResolveFont(...)` supports validation and custom composition code.
 
 Each binding resolves elements in this priority:
 

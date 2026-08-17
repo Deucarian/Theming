@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.5 - 2026-08-17
+
+- Added a generic UI Toolkit typography adapter that applies the font from a
+  Deucarian visual style and respects nearby provider style overrides.
+
 ## 1.0.4 - 2026-08-17
 
 - Added a cached, consumer-neutral reference viewer theme family with canonical light
