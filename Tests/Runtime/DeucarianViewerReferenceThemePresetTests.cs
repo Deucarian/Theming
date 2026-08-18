@@ -70,6 +70,27 @@ namespace Deucarian.Theming.Tests
             Assert.That(
                 profile.VisualStyle.StyleId,
                 Is.EqualTo(DeucarianThemeStyleIds.FrostedGlass));
+            Assert.That(profile.VisualStyle.IsComposed, Is.True);
+            Assert.That(
+                profile.VisualStyle.Density,
+                Is.EqualTo(DeucarianThemeDensity.Comfortable));
+            Assert.That(profile.VisualStyle.SurfaceProfile, Is.Not.Null);
+            Assert.That(profile.VisualStyle.ShapeProfile, Is.Not.Null);
+            Assert.That(profile.VisualStyle.StrokeProfile, Is.Not.Null);
+            Assert.That(profile.VisualStyle.TypographyProfile, Is.Not.Null);
+            Assert.That(
+                profile.VisualStyle.TypographyProfile,
+                Is.SameAs(
+                    Resources.Load<DeucarianThemeTypographyProfile>(
+                        DeucarianViewerReferenceThemePreset
+                            .TypographyResourcePath)));
+            Assert.That(
+                profile.VisualStyle.TypographyProfile.ResolvedFontAsset,
+                Is.Not.Null);
+            Assert.That(
+                profile.VisualStyle.TypographyProfile
+                    .ResolvedFontAsset.sourceFontFile,
+                Is.Not.Null);
             Assert.That(profile.LightPalette.ThemeMode, Is.EqualTo(DeucarianThemeMode.Light));
             Assert.That(profile.DarkPalette.ThemeMode, Is.EqualTo(DeucarianThemeMode.Dark));
             Assert.That(profile.RoleLibrary.Roles.Count, Is.EqualTo(ExpectedRoleIds.Length));
@@ -81,6 +102,9 @@ namespace Deucarian.Theming.Tests
             AssertRuntimeAsset(profile.LightPalette);
             AssertRuntimeAsset(profile.DarkPalette);
             AssertRuntimeAsset(profile.VisualStyle);
+            AssertRuntimeAsset(profile.VisualStyle.SurfaceProfile);
+            AssertRuntimeAsset(profile.VisualStyle.ShapeProfile);
+            AssertRuntimeAsset(profile.VisualStyle.StrokeProfile);
             AssertRuntimeAsset(profile.RoleLibrary);
         }
 
