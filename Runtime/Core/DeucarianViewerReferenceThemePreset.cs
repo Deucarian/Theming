@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Deucarian.Theming
@@ -83,6 +84,8 @@ namespace Deucarian.Theming
         public const string DarkThemeId = "deucarian.theme.viewer-reference.dark";
         public const string LightPaletteId = "deucarian.palette.viewer-reference.light";
         public const string DarkPaletteId = "deucarian.palette.viewer-reference.dark";
+        public const string TypographyResourcePath =
+            "Deucarian/Theming/ViewerReferenceTypography";
         public const DeucarianThemeMode DefaultMode = DeucarianThemeMode.Dark;
 
         private static readonly SemanticColorDefinition[] SemanticColors =
@@ -277,6 +280,15 @@ namespace Deucarian.Theming
                 DeucarianThemeStylePresets.CreateRuntimeStyle(
                     DeucarianThemeStyleIds.FrostedGlass);
             visualStyle.name = "Viewer Reference Frosted Glass";
+            visualStyle.SetComposition(
+                CreateSurfaceProfile(
+                    DeucarianThemePresentationProfileIds.Surface.FrostedGlass),
+                CreateShapeProfile(
+                    DeucarianThemePresentationProfileIds.Shape.Rounded),
+                CreateStrokeProfile(
+                    DeucarianThemePresentationProfileIds.Stroke.Frosted),
+                DeucarianThemeDensity.Comfortable,
+                RequireReferenceTypography());
 
             DeucarianTheme lightTheme = CreateRuntimeAsset<DeucarianTheme>(
                 "Viewer Reference Light");
@@ -332,6 +344,115 @@ namespace Deucarian.Theming
             return asset;
         }
 
+        private static DeucarianThemeTypographyProfile
+            RequireReferenceTypography()
+        {
+            DeucarianThemeTypographyProfile typography =
+                Resources.Load<DeucarianThemeTypographyProfile>(
+                    TypographyResourcePath);
+            if (typography == null || typography.ResolvedFontAsset == null)
+            {
+                throw new InvalidOperationException(
+                    "The package-owned viewer reference typography resource " +
+                    "is missing or has no font asset.");
+            }
+
+            return typography;
+        }
+
+        private static DeucarianThemeSurfaceProfile CreateSurfaceProfile(
+            string profileId)
+        {
+            for (int i = 0;
+                 i < DeucarianThemePresentationProfilePresets
+                     .BuiltinSurfaces.Count;
+                 i++)
+            {
+                DeucarianThemeSurfaceProfilePreset preset =
+                    DeucarianThemePresentationProfilePresets
+                        .BuiltinSurfaces[i];
+                if (!string.Equals(
+                        preset.Id,
+                        profileId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                DeucarianThemeSurfaceProfile profile =
+                    CreateRuntimeAsset<DeucarianThemeSurfaceProfile>(
+                        preset.DisplayName);
+                preset.Configure(profile);
+                return profile;
+            }
+
+            throw new InvalidOperationException(
+                "Viewer reference surface profile was not found: " +
+                profileId);
+        }
+
+        private static DeucarianThemeShapeProfile CreateShapeProfile(
+            string profileId)
+        {
+            for (int i = 0;
+                 i < DeucarianThemePresentationProfilePresets
+                     .BuiltinShapes.Count;
+                 i++)
+            {
+                DeucarianThemeShapeProfilePreset preset =
+                    DeucarianThemePresentationProfilePresets
+                        .BuiltinShapes[i];
+                if (!string.Equals(
+                        preset.Id,
+                        profileId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                DeucarianThemeShapeProfile profile =
+                    CreateRuntimeAsset<DeucarianThemeShapeProfile>(
+                        preset.DisplayName);
+                preset.Configure(profile);
+                return profile;
+            }
+
+            throw new InvalidOperationException(
+                "Viewer reference shape profile was not found: " +
+                profileId);
+        }
+
+        private static DeucarianThemeStrokeProfile CreateStrokeProfile(
+            string profileId)
+        {
+            for (int i = 0;
+                 i < DeucarianThemePresentationProfilePresets
+                     .BuiltinStrokes.Count;
+                 i++)
+            {
+                DeucarianThemeStrokeProfilePreset preset =
+                    DeucarianThemePresentationProfilePresets
+                        .BuiltinStrokes[i];
+                if (!string.Equals(
+                        preset.Id,
+                        profileId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                DeucarianThemeStrokeProfile profile =
+                    CreateRuntimeAsset<DeucarianThemeStrokeProfile>(
+                        preset.DisplayName);
+                preset.Configure(profile);
+                return profile;
+            }
+
+            throw new InvalidOperationException(
+                "Viewer reference stroke profile was not found: " +
+                profileId);
+        }
+
         private static bool IsAlive(
             DeucarianViewerReferenceThemeProfile profile)
         {
@@ -340,6 +461,9 @@ namespace Deucarian.Theming
                    profile.LightPalette != null &&
                    profile.DarkPalette != null &&
                    profile.VisualStyle != null &&
+                   profile.VisualStyle.IsComposed &&
+                   profile.VisualStyle.TypographyProfile != null &&
+                   profile.VisualStyle.TypographyProfile.ResolvedFontAsset != null &&
                    profile.LightTheme != null &&
                    profile.DarkTheme != null &&
                    profile.ThemeFamily != null;
