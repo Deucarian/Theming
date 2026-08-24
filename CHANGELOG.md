@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 - 2026-08-24
+
+- Added one reusable reference-viewer theme composition that owns the shared
+  provider, persisted light/dark mode, CSS snapshot projection, and
+  transport-neutral snapshot publication.
+- Added consumer-neutral theme/provider/color resolution so viewer products no
+  longer need copied role aliases, fallback tables, or runtime theme helpers.
+
 ## 1.0.5 - 2026-08-17
 
 - Added a generic UI Toolkit typography adapter that applies the font from a

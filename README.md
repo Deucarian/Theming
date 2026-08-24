@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.0.5`.
+Current package version: `1.1.0`.
 
 ## When to use it
 
@@ -109,6 +109,11 @@ The per-user preview is restored after script reloads and after Play Mode startu
 - `DeucarianThemeProvider`, `IDeucarianThemeTarget`, and `DeucarianThemeTargetBehaviour`: runtime theme application contracts.
 - `DeucarianThemeRuntimeSettings` and `DeucarianThemeRuntimeResolver`: project default theme lookup.
 - `DeucarianViewerReferenceThemePreset`: cached light/dark runtime theme composition for reusable viewer chrome.
+- `DeucarianViewerReferenceThemeComposition`: installs the shared provider,
+  persisted mode controller, and transport-neutral theme snapshot publisher.
+- `DeucarianViewerReferenceThemeResolver` and
+  `DeucarianViewerThemeSnapshot`: consumer-neutral theme lookup and the
+  canonical browser CSS projection.
 - `DeucarianThemePack` and `DeucarianThemePackAssetFactory`: package-owned role and palette asset import/repair.
 - `DeucarianUIToolkitThemeApplier` and `DeucarianUIToolkitThemeVariables`: UI Toolkit bindings and USS text generation.
 - `DeucarianTMPThemeColor`, `DeucarianGraphicThemeColor`, `DeucarianSelectableThemeColors`, `DeucarianRendererThemeColor`: runtime adapters for common Unity UI/rendering targets.
@@ -183,6 +188,20 @@ provider.SetThemeFamily(
     viewerTheme.ThemeFamily,
     DeucarianViewerReferenceThemePreset.DefaultMode);
 ```
+
+To install the complete reusable runtime behavior instead of composing those
+pieces separately:
+
+```csharp
+DeucarianViewerReferenceThemeRuntime runtime =
+    DeucarianViewerReferenceThemeComposition.Install(
+        gameObject,
+        existingThemeProvider,
+        publishSnapshot: SendThemeToConsumerOwnedTransport);
+```
+
+The optional callback owns delivery only. Theming owns snapshot semantics and
+change observation, and never owns browser markup or an application transport.
 
 Use project-owned themes when a product intentionally needs a different visual identity.
 Keep product-specific semantic roles in that product or in its own theme pack.
