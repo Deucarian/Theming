@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 - 2026-08-26
+
+- Incremented the package identity for the shared reference-viewer runtime so
+  Unity refreshes projects that previously cached Theming 1.1.0 without it.
+
 ## 1.1.0 - 2026-08-24
 
 - Added one reusable reference-viewer theme composition that owns the shared
