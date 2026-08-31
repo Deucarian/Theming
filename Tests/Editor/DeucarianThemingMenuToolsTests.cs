@@ -52,14 +52,8 @@ namespace Deucarian.Theming.Editor.Tests
         }
 
         [Test]
-        public void TopMenuContainsOnlyQuickEntryPoints()
+        public void NormalToolsMenuContainsNoThemingEntries()
         {
-            string[] expectedMenuItems =
-            {
-                "Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager",
-                "Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Create Theme Family"
-            };
-
             List<string> actualMenuItems = new List<string>();
             MethodInfo[] methods = typeof(DeucarianThemingMenu).GetMethods(
                 BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
@@ -73,7 +67,7 @@ namespace Deucarian.Theming.Editor.Tests
                 }
             }
 
-            CollectionAssert.AreEquivalent(expectedMenuItems, actualMenuItems);
+            Assert.That(actualMenuItems, Is.Empty);
         }
 
         [Test]

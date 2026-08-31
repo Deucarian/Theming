@@ -1193,7 +1193,7 @@ namespace Deucarian.Theming.Editor.Tests
                 MonoScript script = MonoScript.FromScriptableObject(window);
                 string assetPath = AssetDatabase.GetAssetPath(script);
                 string absolutePath = ResolveAbsoluteAssetPath(assetPath);
-                string source = File.ReadAllText(absolutePath);
+                string source = ReadPartialClassSource(absolutePath);
 
                 StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
                 StringAssert.Contains("DeucarianEditorCommandBar", source);
@@ -1210,6 +1210,8 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("ApplyComposerPreview", source);
                 StringAssert.Contains("ShouldKeepCurrentComposerDraft", source);
                 StringAssert.Contains("Back to Theme", source);
+                StringAssert.Contains("Runtime Setup", source);
+                StringAssert.DoesNotContain("Project Setup", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawReadOnlyRow", source);
                 StringAssert.Contains("BuildDeveloperToolsDrawer", source);
@@ -1318,6 +1320,17 @@ namespace Deucarian.Theming.Editor.Tests
         {
             return DeucarianDefaultThemeAssetFactory.CreateThemeFamily(
                 testRoot + "/" + name + "/" + name + "ThemeFamily.asset");
+        }
+
+        private static string ReadPartialClassSource(string absolutePath)
+        {
+            string directory = Path.GetDirectoryName(absolutePath);
+            string stem = Path.GetFileNameWithoutExtension(absolutePath);
+            string[] paths = Directory.GetFiles(directory, stem + "*.cs");
+            Array.Sort(paths, StringComparer.Ordinal);
+            return string.Join(
+                Environment.NewLine,
+                Array.ConvertAll(paths, File.ReadAllText));
         }
 
         private static string ResolveAbsoluteAssetPath(string assetPath)
