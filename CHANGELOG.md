@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 - 2026-08-31
+
+- Registered the package workflow and a bounded, sanitized local-state card with Deucarian Control Center.
+- Removed normal `Tools/Deucarian` menu exposure while preserving the standalone open API.
+- Updated the shared Editor dependency to 1.2.0.
+- Aligned the Logging dependency to 1.0.4.
+
 ## 1.1.1 - 2026-08-26
 
 - Incremented the package identity for the shared reference-viewer runtime so

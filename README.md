@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.1.1`.
+Current package version: `1.1.2`.
 
 ## When to use it
 
@@ -61,9 +61,9 @@ Requires Unity 2022.3 or newer.
 
 Recommended workflow:
 
-1. In Unity, choose `Tools > Deucarian > Theming > Create Theme Family`.
+1. Open **Deucarian Control Center > Experience > Theme Manager** and choose **Create Theme Family**.
 2. Edit the generated light and dark palette assets.
-3. Open `Tools > Deucarian > Theming > Open Theme Manager`, choose the Theme Family, Mode, and Visual Style you want, review the live preview, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
+3. Open **Deucarian Control Center > Experience > Theme Manager**, choose the Theme Family, Mode, and Visual Style you want, review the live preview, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
 
 Done.
 
@@ -79,11 +79,10 @@ The two palettes are the main editable assets. Concrete theme variants, the fami
 
 Long theming lists in palette, role-library, theme-pack, and UI Toolkit inspectors include case-insensitive search and role-category filtering. Multiple search terms are combined, matching entries remain directly editable and removable, and clearing the filter restores Unity's normal add and reorder controls. Filtering is inspector-only and never changes asset ordering or values by itself.
 
-Deucarian package tools live under `Tools/Deucarian/<PackageName>/...`.
-The Theming menu is intentionally limited to quick entry points:
+The Theming workflow is registered explicitly with Deucarian Control Center:
 
-- `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Open Theme Manager`
-- `Tools/Deucarian/Experience and Interaction/UI and Presentation/Theming/Create Theme Family`
+- **Open Theme Manager**
+- **Create Theme Family**
 
 Use Theme Manager's searchable Family and Visual Style pickers for the everyday workflow. Family, Mode, and Visual Style choices preview immediately on loaded providers without changing provider serialization, theme assets, runtime settings, scenes, or builds. Choices remain staged and receive `*` markers until **Activate** commits the family, mode, shared style, runtime default, and loaded-provider synchronization in one Undo operation. Incomplete project setup appears contextually; asset creation, repair, folders, demos, and legacy utilities stay collapsed under **Developer Tools**.
 
