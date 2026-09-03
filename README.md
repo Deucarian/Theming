@@ -77,6 +77,10 @@ Done.
 4. Request semantic roles such as `deucarian.ui.audio.activate`, `deucarian.input.audio.key`, or `deucarian.feedback.audio.warning`.
 5. Open **Deucarian Control Center > Experience > Audio Palette Lab** to inspect Default, XR, WebGL, Desktop, and Mobile without changing Unity build target.
 
+Interaction sources may pass `DeucarianAudioPlaybackModifiers.FromIntensity(...)`
+to `PlayRole` or `PlayRoleById`. This scales the palette-authored volume and pitch
+for values such as press velocity while preserving the selected platform cue.
+
 Resolution is deterministic: explicit experience palette, Default palette,
 role fallback, then intentional silence/safe no-op. The player delegates actual
 one-shot output to `com.deucarian.media`; Theming does not own music, voice,
