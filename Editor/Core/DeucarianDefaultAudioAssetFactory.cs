@@ -189,25 +189,33 @@ namespace Deucarian.Theming.Editor
 
             if (experience == DeucarianAudioExperience.XR)
             {
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate], Cue(clips["xr-activate"], 0.34f));
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning], Cue(clips["xr-warning"], 0.30f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate],
+                    Cue(clips["default-key-a"], 0.34f, 0.96f, 1.02f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning],
+                    Cue(clips["default-key-a"], 0.36f, 0.90f, 0.96f));
             }
             else if (experience == DeucarianAudioExperience.WebGL)
             {
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate], Cue(clips["webgl-activate"], 0.38f));
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning], Cue(clips["webgl-warning"], 0.36f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate],
+                    Cue(clips["default-key-a"], 0.34f, 0.98f, 1.04f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning],
+                    Cue(clips["default-key-a"], 0.36f, 0.92f, 0.98f));
             }
             else if (experience == DeucarianAudioExperience.Desktop)
             {
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Key], new DeucarianAudioCue(
-                    new[] { clips["desktop-key-a"], clips["desktop-key-b"] }, 0.25f, 0.97f, 1.03f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Key],
+                    Cue(clips["default-key-a"], 0.25f, 0.97f, 1.03f));
             }
             else if (experience == DeucarianAudioExperience.Mobile)
             {
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Hover], DeucarianAudioCue.Silent());
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Press], Cue(clips["mobile-tap"], 0.28f));
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate], Cue(clips["mobile-tap"], 0.30f));
-                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning], Cue(clips["mobile-warning"], 0.34f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Hover],
+                    Cue(clips["default-key-a"], 0.22f, 1.04f, 1.08f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Press],
+                    Cue(clips["default-key-a"], 0.28f, 0.98f, 1.02f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Activate],
+                    Cue(clips["default-key-a"], 0.30f, 0.96f, 1.04f));
+                palette.SetCue(roles[DeucarianBuiltinAudioRoleIds.Warning],
+                    Cue(clips["default-key-a"], 0.34f, 0.90f, 0.96f));
             }
 
             EditorUtility.SetDirty(palette);
@@ -218,27 +226,33 @@ namespace Deucarian.Theming.Editor
             string roleId,
             IReadOnlyDictionary<string, AudioClip> clips)
         {
-            if (roleId == DeucarianBuiltinAudioRoleIds.Key)
-            {
-                return new DeucarianAudioCue(
-                    new[] { clips["default-key-a"], clips["default-key-b"] },
-                    0.25f,
-                    0.97f,
-                    1.03f);
-            }
+            AudioClip clip = clips["default-key-a"];
 
-            if (roleId == DeucarianBuiltinAudioRoleIds.Warning) return Cue(clips["default-warning"], 0.36f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Hover) return Cue(clip, 0.22f, 1.04f, 1.08f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Press) return Cue(clip, 0.28f, 0.98f, 1.02f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Activate) return Cue(clip, 0.34f, 0.96f, 1.04f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Select) return Cue(clip, 0.26f, 1.00f, 1.04f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Submit) return Cue(clip, 0.34f, 0.94f, 1.00f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Cancel) return Cue(clip, 0.30f, 0.90f, 0.96f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Key) return Cue(clip, 0.25f, 0.97f, 1.03f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.SpecialKey) return Cue(clip, 0.30f, 0.90f, 0.97f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Info) return Cue(clip, 0.28f, 1.00f, 1.04f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Success) return Cue(clip, 0.34f, 1.05f, 1.10f);
+            if (roleId == DeucarianBuiltinAudioRoleIds.Warning) return Cue(clip, 0.36f, 0.90f, 0.96f);
             if (roleId == DeucarianBuiltinAudioRoleIds.Error || roleId == DeucarianBuiltinAudioRoleIds.Invalid)
-                return Cue(clips["default-error"], 0.34f);
-            if (roleId == DeucarianBuiltinAudioRoleIds.Cancel) return Cue(clips["default-cancel"], 0.30f);
-            if (roleId == DeucarianBuiltinAudioRoleIds.Activate || roleId == DeucarianBuiltinAudioRoleIds.Submit ||
-                roleId == DeucarianBuiltinAudioRoleIds.Success)
-                return Cue(clips["default-confirm"], 0.34f);
-            return Cue(clips["default-tap"], 0.28f);
+                return Cue(clip, 0.34f, 0.84f, 0.92f);
+            return Cue(clip, 0.28f);
         }
 
         private static DeucarianAudioCue Cue(AudioClip clip, float volume) =>
             new DeucarianAudioCue(clip, volume);
+
+        private static DeucarianAudioCue Cue(
+            AudioClip clip,
+            float volume,
+            float minimumPitch,
+            float maximumPitch) =>
+            new DeucarianAudioCue(new[] { clip }, volume, minimumPitch, maximumPitch);
 
         private static DeucarianAudioPaletteProfile Profile(
             DeucarianAudioExperience experience,
