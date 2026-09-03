@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb6dba7848a84657ae94b515b2cc7da3, type: 3}
+  m_Name: DesktopAudioPalette
+  m_EditorClassIdentifier: Deucarian.Theming::Deucarian.Theming.DeucarianAudioPalette
+  paletteId: deucarian.audio-palette.desktop
+  displayName: Desktop
+  roleLibrary: {fileID: 11400000, guid: a09ad0a8c3dd48c439bf218c74ca52dd, type: 2}
+  entries:
+  - role: {fileID: 11400000, guid: 9fe5b49853b12cb44aa898340388a39c, type: 2}
+    cue:
+      clip: {fileID: 0}
+      variants:
+      - {fileID: 8300000, guid: 2fd334c4573b2bc419a02a4e4a7dd2e0, type: 3}
+      - {fileID: 8300000, guid: a18392e5bec4e6e4dbd479f219ba67b5, type: 3}
+      volume: 0.25
+      minimumPitch: 0.97
+      maximumPitch: 1.03
+      intentionalSilence: 0
+    note: 

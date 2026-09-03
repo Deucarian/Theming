@@ -1,7 +1,7 @@
 {
   "name": "com.deucarian.theming",
   "displayName": "Deucarian Theming",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "unity": "2022.3",
   "description": "Designer-friendly ScriptableObject theming for Deucarian Unity projects.",
   "keywords": [
@@ -9,7 +9,8 @@
     "theme",
     "theming",
     "palette",
-    "color"
+    "color",
+    "audio"
   ],
   "author": {
     "name": "Deucarian"
@@ -21,6 +22,7 @@
   "dependencies": {
     "com.deucarian.editor": "1.2.0",
     "com.deucarian.logging": "1.0.4",
+    "com.deucarian.media": "0.1.0",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"
@@ -35,6 +37,11 @@
       "displayName": "UI Toolkit Theming Demo",
       "description": "UI Toolkit selector, UIDocument, and variable-generation examples.",
       "path": "Samples~/UI Toolkit Theming Demo"
+    },
+    {
+      "displayName": "Audio Palette Demo",
+      "description": "Self-contained semantic audio playback across Default, XR, WebGL, Desktop, and Mobile.",
+      "path": "Samples~/Audio Palette Demo"
     }
   ]
 }

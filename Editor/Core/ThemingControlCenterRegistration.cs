@@ -67,6 +67,10 @@ namespace Deucarian.Theming.Editor
                                 "Open Theme Manager",
                                 DeucarianThemingMenu.OpenThemeManager),
                             new DeucarianControlCenterAction(
+                                PackageId + ".open-audio-palette-lab",
+                                "Open Audio Palette Lab",
+                                DeucarianThemingMenu.OpenAudioPaletteLab),
+                            new DeucarianControlCenterAction(
                                 PackageId + ".create-family",
                                 "Create Theme Family",
                                 DeucarianThemingMenu.CreateThemeFamily)
