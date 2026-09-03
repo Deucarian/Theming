@@ -250,6 +250,29 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
+        public void PlaybackModifiersMapInteractionIntensityWithoutReplacingPaletteValues()
+        {
+            DeucarianAudioPlaybackModifiers soft =
+                DeucarianAudioPlaybackModifiers.FromIntensity(0f);
+            DeucarianAudioPlaybackModifiers firm =
+                DeucarianAudioPlaybackModifiers.FromIntensity(1f);
+
+            Assert.AreEqual(0.35f, soft.ApplyVolume(0.5f), 0.0001f);
+            Assert.AreEqual(0.5f, firm.ApplyVolume(0.5f), 0.0001f);
+            Assert.AreEqual(0.97f, soft.ApplyPitch(1f), 0.0001f);
+            Assert.AreEqual(1.03f, firm.ApplyPitch(1f), 0.0001f);
+        }
+
+        [Test]
+        public void DefaultPlaybackModifiersAreSafeIdentity()
+        {
+            DeucarianAudioPlaybackModifiers modifiers = default;
+
+            Assert.AreEqual(0.4f, modifiers.ApplyVolume(0.4f), 0.0001f);
+            Assert.AreEqual(1.1f, modifiers.ApplyPitch(1.1f), 0.0001f);
+        }
+
+        [Test]
         public void BuiltinClickIsCompatibilityAliasForActivate()
         {
 #pragma warning disable CS0618
