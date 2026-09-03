@@ -13,6 +13,11 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerWindow.OpenWindow();
         }
 
+        public static void OpenAudioPaletteLab()
+        {
+            DeucarianAudioPaletteLabWindow.OpenWindow();
+        }
+
         public static void CreateThemeFamily()
         {
             DeucarianThemingMenuActions.CreateThemeFamilyFromSavePanel();

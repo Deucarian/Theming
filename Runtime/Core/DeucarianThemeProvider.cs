@@ -16,6 +16,7 @@ namespace Deucarian.Theming
         [SerializeField] private DeucarianTheme currentTheme;
         [SerializeField] private DeucarianThemeFamily currentThemeFamily;
         [SerializeField] private DeucarianThemeMode themeMode = DeucarianThemeMode.Dark;
+        [SerializeField] private DeucarianAudioExperience audioExperience = DeucarianAudioExperience.Default;
         [SerializeField] private DeucarianThemeStyle styleOverride;
         [SerializeField] private bool applyToChildrenOnEnable = true;
         [SerializeField] private bool includeInactiveChildren = true;
@@ -81,6 +82,11 @@ namespace Deucarian.Theming
             }
         }
 
+        /// <summary>
+        /// Explicit audio experience. XR therefore remains XR even on an Android build target.
+        /// </summary>
+        public DeucarianAudioExperience AudioExperience => audioExperience;
+
         /// <summary>Resolved active visual style for this provider.</summary>
         public DeucarianThemeStyle CurrentStyle
         {
@@ -131,6 +137,9 @@ namespace Deucarian.Theming
 
         /// <summary>Raised after this provider changes resolved style and reapplies child style targets.</summary>
         public event Action<DeucarianThemeStyle> StyleChanged;
+
+        /// <summary>Raised after the explicit audio experience changes.</summary>
+        public event Action<DeucarianAudioExperience> AudioExperienceChanged;
 
         /// <summary>Sets the active theme and reapplies it to child theme targets.</summary>
         public void SetTheme(DeucarianTheme theme)
@@ -225,6 +234,18 @@ namespace Deucarian.Theming
             {
                 ThemeModeChanged?.Invoke(themeMode);
             }
+        }
+
+        /// <summary>Sets the explicit semantic audio experience.</summary>
+        public void SetAudioExperience(DeucarianAudioExperience experience)
+        {
+            if (audioExperience == experience)
+            {
+                return;
+            }
+
+            audioExperience = experience;
+            AudioExperienceChanged?.Invoke(audioExperience);
         }
 
         /// <summary>Sets the provider style override and reapplies it to child style targets.</summary>
@@ -403,7 +424,8 @@ namespace Deucarian.Theming
             }
 
             return UsesThemeGraphAsset(currentTheme, asset)
-                || (currentTheme == null && asset is DeucarianColorRole);
+                || (currentTheme == null &&
+                    (asset is DeucarianColorRole || asset is DeucarianAudioRole));
         }
 
         /// <summary>Applies the current theme to child components implementing <see cref="IDeucarianThemeTarget"/>.</summary>
@@ -604,12 +626,41 @@ namespace Deucarian.Theming
                 return true;
             }
 
-            if (palette == null)
+            if (palette != null && (asset == palette.RoleLibrary || asset is DeucarianColorRole))
             {
-                return false;
+                return true;
             }
 
-            return asset == palette.RoleLibrary || asset is DeucarianColorRole;
+            DeucarianAudioPaletteSet audioSet = theme.AudioPaletteSet;
+            if (asset == audioSet)
+            {
+                return true;
+            }
+
+            DeucarianAudioPalette defaultAudioPalette = theme.AudioPalette;
+            if (asset == defaultAudioPalette)
+            {
+                return true;
+            }
+
+            if (defaultAudioPalette != null && asset == defaultAudioPalette.RoleLibrary)
+            {
+                return true;
+            }
+
+            if (audioSet != null)
+            {
+                for (int i = 0; i < audioSet.Profiles.Count; i++)
+                {
+                    DeucarianAudioPaletteProfile profile = audioSet.Profiles[i];
+                    if (profile != null && asset == profile.Palette)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return asset is DeucarianAudioRole;
         }
 
         private static DeucarianThemeMode NormalizeThemeMode(DeucarianThemeMode mode)

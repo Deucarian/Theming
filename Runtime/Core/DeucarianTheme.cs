@@ -11,6 +11,8 @@ namespace Deucarian.Theming
         [SerializeField] private string themeId = "deucarian.theme.default";
         [SerializeField] private string displayName = "Default";
         [SerializeField] private DeucarianColorPalette colorPalette;
+        [SerializeField] private DeucarianAudioPalette audioPalette;
+        [SerializeField] private DeucarianAudioPaletteSet audioPaletteSet;
         [SerializeField] private DeucarianThemeStyle visualStyle;
 
         /// <summary>Stable theme identifier.</summary>
@@ -22,22 +24,56 @@ namespace Deucarian.Theming
         /// <summary>Palette used by this theme.</summary>
         public DeucarianColorPalette ColorPalette => colorPalette;
 
+        /// <summary>Compatibility default audio palette.</summary>
+        public DeucarianAudioPalette AudioPalette =>
+            audioPaletteSet != null && audioPaletteSet.DefaultPalette != null
+                ? audioPaletteSet.DefaultPalette
+                : audioPalette;
+
+        /// <summary>Optional experience-specific semantic audio palette set.</summary>
+        public DeucarianAudioPaletteSet AudioPaletteSet => audioPaletteSet;
+
         /// <summary>Optional visual style used for themed chrome and surface treatment.</summary>
         public DeucarianThemeStyle VisualStyle => visualStyle;
 
         /// <summary>Configures theme metadata and palette reference.</summary>
         public void Configure(string id, string name, DeucarianColorPalette palette)
         {
-            Configure(id, name, palette, visualStyle);
+            Configure(id, name, palette, visualStyle, audioPalette, audioPaletteSet);
         }
 
         /// <summary>Configures theme metadata, palette reference, and optional visual style.</summary>
         public void Configure(string id, string name, DeucarianColorPalette palette, DeucarianThemeStyle style)
         {
+            Configure(id, name, palette, style, audioPalette, audioPaletteSet);
+        }
+
+        /// <summary>Compatibility overload for a single default audio palette.</summary>
+        public void Configure(
+            string id,
+            string name,
+            DeucarianColorPalette palette,
+            DeucarianThemeStyle style,
+            DeucarianAudioPalette audio)
+        {
+            Configure(id, name, palette, style, audio, audioPaletteSet);
+        }
+
+        /// <summary>Configures visual and semantic audio theme assets.</summary>
+        public void Configure(
+            string id,
+            string name,
+            DeucarianColorPalette palette,
+            DeucarianThemeStyle style,
+            DeucarianAudioPalette audio,
+            DeucarianAudioPaletteSet audioSet)
+        {
             themeId = DeucarianColorRole.NormalizeId(id);
             displayName = name ?? string.Empty;
             colorPalette = palette;
             visualStyle = style;
+            audioPalette = audio;
+            audioPaletteSet = audioSet;
             NotifyChanged();
         }
 
@@ -62,6 +98,30 @@ namespace Deucarian.Theming
             }
 
             colorPalette = palette;
+            NotifyChanged();
+        }
+
+        /// <summary>Sets a compatibility default audio palette.</summary>
+        public void SetAudioPalette(DeucarianAudioPalette palette)
+        {
+            if (audioPalette == palette)
+            {
+                return;
+            }
+
+            audioPalette = palette;
+            NotifyChanged();
+        }
+
+        /// <summary>Sets the experience-specific audio palette set.</summary>
+        public void SetAudioPaletteSet(DeucarianAudioPaletteSet paletteSet)
+        {
+            if (audioPaletteSet == paletteSet)
+            {
+                return;
+            }
+
+            audioPaletteSet = paletteSet;
             NotifyChanged();
         }
 
@@ -99,6 +159,81 @@ namespace Deucarian.Theming
 
             color = DeucarianColorPalette.MissingColor;
             return false;
+        }
+
+        public bool TryResolveAudio(
+            DeucarianAudioRole role,
+            DeucarianAudioExperience experience,
+            out DeucarianAudioResolution resolution)
+        {
+            if (audioPaletteSet != null)
+            {
+                return audioPaletteSet.TryResolve(role, experience, out resolution);
+            }
+
+            if (role != null && audioPalette != null && audioPalette.TryGetCue(role, out DeucarianAudioCue cue))
+            {
+                resolution = new DeucarianAudioResolution(
+                    cue,
+                    DeucarianAudioResolutionSource.DefaultPalette,
+                    audioPalette);
+                return true;
+            }
+
+            if (role != null)
+            {
+                resolution = new DeucarianAudioResolution(
+                    role.DefaultCue,
+                    DeucarianAudioResolutionSource.RoleDefault,
+                    null);
+                return true;
+            }
+
+            resolution = DeucarianAudioResolution.Missing;
+            return false;
+        }
+
+        public bool TryResolveAudioById(
+            string roleId,
+            DeucarianAudioExperience experience,
+            out DeucarianAudioResolution resolution)
+        {
+            if (audioPaletteSet != null)
+            {
+                return audioPaletteSet.TryResolveById(roleId, experience, out resolution);
+            }
+
+            if (audioPalette != null && audioPalette.TryGetCueById(roleId, out DeucarianAudioCue cue))
+            {
+                resolution = new DeucarianAudioResolution(
+                    cue,
+                    DeucarianAudioResolutionSource.DefaultPalette,
+                    audioPalette);
+                return true;
+            }
+
+            resolution = DeucarianAudioResolution.Missing;
+            return false;
+        }
+
+        public bool TryGetAudioCue(DeucarianAudioRole role, out DeucarianAudioCue cue)
+        {
+            bool resolved = TryResolveAudio(
+                role,
+                DeucarianAudioExperience.Default,
+                out DeucarianAudioResolution resolution);
+            cue = resolution.Cue;
+            return resolved;
+        }
+
+        public bool TryGetAudioCueById(string roleId, out DeucarianAudioCue cue)
+        {
+            bool resolved = TryResolveAudioById(
+                roleId,
+                DeucarianAudioExperience.Default,
+                out DeucarianAudioResolution resolution);
+            cue = resolution.Cue;
+            return resolved;
         }
 
         private void OnValidate()
