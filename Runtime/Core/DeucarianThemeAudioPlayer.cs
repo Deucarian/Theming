@@ -62,10 +62,17 @@ namespace Deucarian.Theming
 
         public bool PlayRole(DeucarianAudioRole role)
         {
+            return PlayRole(role, DeucarianAudioPlaybackModifiers.Identity);
+        }
+
+        public bool PlayRole(
+            DeucarianAudioRole role,
+            DeucarianAudioPlaybackModifiers modifiers)
+        {
             if (paletteSetOverride != null && role != null &&
                 paletteSetOverride.TryResolve(role, ResolveExperience(), out DeucarianAudioResolution direct))
             {
-                return Play(role.Id, direct.Cue);
+                return Play(role.Id, direct.Cue, modifiers);
             }
 
             DeucarianTheme theme = ResolveTheme();
@@ -75,10 +82,17 @@ namespace Deucarian.Theming
                 return false;
             }
 
-            return Play(role.Id, resolution.Cue);
+            return Play(role.Id, resolution.Cue, modifiers);
         }
 
         public bool PlayRoleById(string roleId)
+        {
+            return PlayRoleById(roleId, DeucarianAudioPlaybackModifiers.Identity);
+        }
+
+        public bool PlayRoleById(
+            string roleId,
+            DeucarianAudioPlaybackModifiers modifiers)
         {
             if (paletteSetOverride != null && !string.IsNullOrWhiteSpace(roleId) &&
                 paletteSetOverride.TryResolveById(
@@ -86,7 +100,7 @@ namespace Deucarian.Theming
                     ResolveExperience(),
                     out DeucarianAudioResolution direct))
             {
-                return Play(DeucarianAudioRole.NormalizeId(roleId), direct.Cue);
+                return Play(DeucarianAudioRole.NormalizeId(roleId), direct.Cue, modifiers);
             }
 
             DeucarianTheme theme = ResolveTheme();
@@ -99,18 +113,33 @@ namespace Deucarian.Theming
                 return false;
             }
 
-            return Play(DeucarianAudioRole.NormalizeId(roleId), resolution.Cue);
+            return Play(DeucarianAudioRole.NormalizeId(roleId), resolution.Cue, modifiers);
         }
 
         /// <summary>Compatibility cue playback when a caller already resolved semantics.</summary>
         public bool Play(DeucarianAudioCue cue)
         {
-            return Play(string.Empty, cue);
+            return Play(cue, DeucarianAudioPlaybackModifiers.Identity);
+        }
+
+        public bool Play(
+            DeucarianAudioCue cue,
+            DeucarianAudioPlaybackModifiers modifiers)
+        {
+            return Play(string.Empty, cue, modifiers);
         }
 
         public bool PlayResolved(string roleId, DeucarianAudioCue cue)
         {
-            return Play(DeucarianAudioRole.NormalizeId(roleId), cue);
+            return PlayResolved(roleId, cue, DeucarianAudioPlaybackModifiers.Identity);
+        }
+
+        public bool PlayResolved(
+            string roleId,
+            DeucarianAudioCue cue,
+            DeucarianAudioPlaybackModifiers modifiers)
+        {
+            return Play(DeucarianAudioRole.NormalizeId(roleId), cue, modifiers);
         }
 
         public void StopAll()
@@ -118,7 +147,10 @@ namespace Deucarian.Theming
             ResolveOutput()?.StopAll();
         }
 
-        private bool Play(string roleId, DeucarianAudioCue cue)
+        private bool Play(
+            string roleId,
+            DeucarianAudioCue cue,
+            DeucarianAudioPlaybackModifiers modifiers)
         {
             if (cue == null || cue.IntentionalSilence)
             {
@@ -145,8 +177,8 @@ namespace Deucarian.Theming
                 return false;
             }
 
-            float pitch = cue.ResolvePitch((float)random.NextDouble());
-            bool played = resolvedOutput.TryPlay(clip, cue.Volume, pitch);
+            float pitch = modifiers.ApplyPitch(cue.ResolvePitch((float)random.NextDouble()));
+            bool played = resolvedOutput.TryPlay(clip, modifiers.ApplyVolume(cue.Volume), pitch);
             if (played)
             {
                 warnedMissingOutput = false;
