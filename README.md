@@ -2,7 +2,7 @@
 
 ## What this is
 
-`com.deucarian.theming` is a Unity UPM package for designer-friendly runtime themes, palettes, color roles, theme assets, and runtime UI adapters.
+`com.deucarian.theming` is a Unity UPM package for designer-friendly runtime themes, color and semantic-audio palettes, theme assets, and runtime UI adapters.
 
 Most users only need a **Theme Family** and its two editable palettes.
 
@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.1.2`.
+Current package version: `1.2.0`.
 
 ## When to use it
 
@@ -22,6 +22,7 @@ Current package version: `1.1.2`.
 - You need runtime adapters for UI Toolkit, uGUI, TextMesh Pro, renderers, or selectable controls.
 - You want designers to edit palette assets while code binds to stable semantic roles.
 - You need package-specific theme packs that can create or repair their own role assets.
+- You want buttons, keyboards, and status feedback to request semantic sounds that differ between XR, Unity WebGL, desktop, and mobile.
 
 ## When not to use it
 
@@ -47,6 +48,7 @@ Dependencies:
 
 - `com.deucarian.editor` for editor tooling.
 - `com.deucarian.logging` for runtime and editor diagnostics.
+- `com.deucarian.media` for concrete pooled one-shot playback.
 - `com.unity.modules.uielements` for UI Toolkit adapters and editor UI.
 - `com.unity.textmeshpro` for TextMesh Pro adapters.
 - `com.unity.ugui` for uGUI adapters.
@@ -66,6 +68,19 @@ Recommended workflow:
 3. Open **Deucarian Control Center > Experience > Theme Manager**, choose the Theme Family, Mode, and Visual Style you want, review the live preview, then click **Activate**. Activation updates the project runtime default and synchronizes loaded scene providers together.
 
 Done.
+
+## Audio palette quick start
+
+1. Assign a `DeucarianAudioPaletteSet` to the theme, or load the bundled set with `DeucarianAudioDefaults.LoadPaletteSet()`.
+2. Add `UnityAudioOneShotOutput` and `DeucarianThemeAudioPlayer` to a composition object.
+3. Set `UseProviderExperience` or assign an explicit `ExperienceOverride`. XR hosts must select `XR` explicitly even when the player platform is Android.
+4. Request semantic roles such as `deucarian.ui.audio.activate`, `deucarian.input.audio.key`, or `deucarian.feedback.audio.warning`.
+5. Open **Deucarian Control Center > Experience > Audio Palette Lab** to inspect Default, XR, WebGL, Desktop, and Mobile without changing Unity build target.
+
+Resolution is deterministic: explicit experience palette, Default palette,
+role fallback, then intentional silence/safe no-op. The player delegates actual
+one-shot output to `com.deucarian.media`; Theming does not own music, voice,
+recording, mixers, or a general media engine.
 
 The simple mental model is:
 

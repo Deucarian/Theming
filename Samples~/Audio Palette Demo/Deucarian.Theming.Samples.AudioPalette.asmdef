@@ -1,0 +1,17 @@
+{
+  "name": "Deucarian.Theming.Samples.AudioPalette",
+  "rootNamespace": "Deucarian.Theming.Samples.AudioPalette",
+  "references": [
+    "Deucarian.Media.Unity",
+    "Deucarian.Theming"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

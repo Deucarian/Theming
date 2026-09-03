@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb6dba7848a84657ae94b515b2cc7da3, type: 3}
+  m_Name: WebGLAudioPalette
+  m_EditorClassIdentifier: Deucarian.Theming::Deucarian.Theming.DeucarianAudioPalette
+  paletteId: deucarian.audio-palette.webgl
+  displayName: WebGL
+  roleLibrary: {fileID: 11400000, guid: a09ad0a8c3dd48c439bf218c74ca52dd, type: 2}
+  entries:
+  - role: {fileID: 11400000, guid: 30a98509f1f0350488e95b936529e5b3, type: 2}
+    cue:
+      clip: {fileID: 0}
+      variants:
+      - {fileID: 8300000, guid: edea9cfee4ba5f545ac40edea3a607f7, type: 3}
+      volume: 0.38
+      minimumPitch: 1
+      maximumPitch: 1
+      intentionalSilence: 0
+    note: 
+  - role: {fileID: 11400000, guid: d3a996542469bca41b6b6693d29d84d8, type: 2}
+    cue:
+      clip: {fileID: 0}
+      variants:
+      - {fileID: 8300000, guid: cd85a0b46aa9371408ac9932b90c1648, type: 3}
+      volume: 0.36
+      minimumPitch: 1
+      maximumPitch: 1
+      intentionalSilence: 0
+    note: 

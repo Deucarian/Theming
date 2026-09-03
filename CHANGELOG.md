@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 - Unreleased
+
+- Added semantic audio roles, multi-variant cues, pitch variation, and safe intentional silence.
+- Added explicit Default, XR, WebGL, Desktop, and Mobile palette profiles with deterministic fallback provenance.
+- Added Media-owned pooled one-shot output integration and canonical button activation semantics.
+- Added the shared-editor Audio Palette Lab for per-experience validation and audition.
+- Added original procedural default clips, profile assets, provenance documentation, focused inspectors, test pad, source tracing, and Theme Manager audio summary.
+
 ## 1.1.2 - 2026-08-31
 
 - Registered the package workflow and a bounded, sanitized local-state card with Deucarian Control Center.
