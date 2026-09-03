@@ -20,19 +20,19 @@ MonoBehaviour:
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: edea9cfee4ba5f545ac40edea3a607f7, type: 3}
-      volume: 0.38
-      minimumPitch: 1
-      maximumPitch: 1
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
+      volume: 0.34
+      minimumPitch: 0.98
+      maximumPitch: 1.04
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: d3a996542469bca41b6b6693d29d84d8, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: cd85a0b46aa9371408ac9932b90c1648, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.36
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.92
+      maximumPitch: 0.98
       intentionalSilence: 0
     note: 

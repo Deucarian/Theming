@@ -19,9 +19,9 @@ MonoBehaviour:
   defaultCue:
     clip: {fileID: 0}
     variants:
-    - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
+    - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
     volume: 0.28
-    minimumPitch: 1
-    maximumPitch: 1
+    minimumPitch: 0.98
+    maximumPitch: 1.02
     intentionalSilence: 0
   isCoreRole: 1

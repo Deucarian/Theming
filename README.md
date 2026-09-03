@@ -81,6 +81,11 @@ Interaction sources may pass `DeucarianAudioPlaybackModifiers.FromIntensity(...)
 to `PlayRole` or `PlayRoleById`. This scales the palette-authored volume and pitch
 for values such as press velocity while preserving the selected platform cue.
 
+The bundled palettes intentionally use one canonical Deucarian key-click clip for
+every semantic role and platform. Role-specific volume and pitch ranges provide
+subtle distinction without changing the underlying sound. Projects can replace
+any role or platform cue in the Audio Palette Lab.
+
 Resolution is deterministic: explicit experience palette, Default palette,
 role fallback, then intentional silence/safe no-op. The player delegates actual
 one-shot output to `com.deucarian.media`; Theming does not own music, voice,
