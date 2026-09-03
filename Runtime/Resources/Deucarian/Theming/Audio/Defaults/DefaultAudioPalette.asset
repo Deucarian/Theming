@@ -20,49 +20,49 @@ MonoBehaviour:
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
-      volume: 0.28
-      minimumPitch: 1
-      maximumPitch: 1
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
+      volume: 0.22
+      minimumPitch: 1.04
+      maximumPitch: 1.08
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 013be60e62472d646b032f52aea7a12e, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.28
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.98
+      maximumPitch: 1.02
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 30a98509f1f0350488e95b936529e5b3, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 4ab1512d5dab72b4fa7e754697597cf9, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.34
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.96
+      maximumPitch: 1.04
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 9b2c0835ab8f7144e9f2e6aa37165c69, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
-      volume: 0.28
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
+      volume: 0.26
       minimumPitch: 1
-      maximumPitch: 1
+      maximumPitch: 1.04
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 120778167545dc6419e749ffba37647e, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 4ab1512d5dab72b4fa7e754697597cf9, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.34
-      minimumPitch: 1
+      minimumPitch: 0.94
       maximumPitch: 1
       intentionalSilence: 0
     note: 
@@ -70,10 +70,10 @@ MonoBehaviour:
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: c3aea44e3fc160c4fb07106dbf75ed10, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.3
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.9
+      maximumPitch: 0.96
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 9fe5b49853b12cb44aa898340388a39c, type: 2}
@@ -81,7 +81,6 @@ MonoBehaviour:
       clip: {fileID: 0}
       variants:
       - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
-      - {fileID: 8300000, guid: 79cf0583a6fce78499a313f3cd3bf26e, type: 3}
       volume: 0.25
       minimumPitch: 0.97
       maximumPitch: 1.03
@@ -91,59 +90,59 @@ MonoBehaviour:
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
-      volume: 0.28
-      minimumPitch: 1
-      maximumPitch: 1
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
+      volume: 0.3
+      minimumPitch: 0.9
+      maximumPitch: 0.97
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: db38e2997e8fd7244910a0ae839fb369, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: a7f9b71108497d5429999fbc84eb74b6, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.28
       minimumPitch: 1
-      maximumPitch: 1
+      maximumPitch: 1.04
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: 7acf68384e7dc5341a31aa1ad1a97801, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 4ab1512d5dab72b4fa7e754697597cf9, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.34
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 1.05
+      maximumPitch: 1.1
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: d3a996542469bca41b6b6693d29d84d8, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 96d56b6f828a9d54f8be1a69f497f803, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.36
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.9
+      maximumPitch: 0.96
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: f3d0a68aad503a84688cd49a20c2135f, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 73c5ced1eb189bc448fe542da2f641ec, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.34
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.84
+      maximumPitch: 0.92
       intentionalSilence: 0
     note: 
   - role: {fileID: 11400000, guid: d7756b838279f2f4cbe2e9ca2aa09a07, type: 2}
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 73c5ced1eb189bc448fe542da2f641ec, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.34
-      minimumPitch: 1
-      maximumPitch: 1
+      minimumPitch: 0.84
+      maximumPitch: 0.92
       intentionalSilence: 0
     note: 

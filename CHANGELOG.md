@@ -8,6 +8,7 @@
 - Added the shared-editor Audio Palette Lab for per-experience validation and audition.
 - Added original procedural default clips, profile assets, provenance documentation, focused inspectors, test pad, source tracing, and Theme Manager audio summary.
 - Added optional per-playback intensity modifiers so interaction velocity can scale palette-authored volume and pitch without replacing platform cues.
+- Unified every bundled semantic role and platform default on one canonical key-click clip, with role-specific pitch and volume variation.
 
 ## 1.1.2 - 2026-08-31
 
