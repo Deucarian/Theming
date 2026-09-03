@@ -308,26 +308,56 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
-        public void BundledDefaultsContainDistinctXrAndWebGlWarningCues()
+        public void BundledDefaultsUseCanonicalKeyClickForEveryRoleAndExperience()
         {
             DeucarianAudioPaletteSet set = DeucarianAudioDefaults.LoadPaletteSet();
             Assert.NotNull(set);
-            Assert.NotNull(set.GetPalette(DeucarianAudioExperience.XR));
-            Assert.NotNull(set.GetPalette(DeucarianAudioExperience.WebGL));
-            Assert.NotNull(set.GetPalette(DeucarianAudioExperience.Desktop));
-            Assert.NotNull(set.GetPalette(DeucarianAudioExperience.Mobile));
-
-            Assert.IsTrue(set.TryResolveById(
+            string[] ids =
+            {
+                DeucarianBuiltinAudioRoleIds.Hover,
+                DeucarianBuiltinAudioRoleIds.Press,
+                DeucarianBuiltinAudioRoleIds.Activate,
+                DeucarianBuiltinAudioRoleIds.Select,
+                DeucarianBuiltinAudioRoleIds.Submit,
+                DeucarianBuiltinAudioRoleIds.Cancel,
+                DeucarianBuiltinAudioRoleIds.Key,
+                DeucarianBuiltinAudioRoleIds.SpecialKey,
+                DeucarianBuiltinAudioRoleIds.Info,
+                DeucarianBuiltinAudioRoleIds.Success,
                 DeucarianBuiltinAudioRoleIds.Warning,
+                DeucarianBuiltinAudioRoleIds.Error,
+                DeucarianBuiltinAudioRoleIds.Invalid
+            };
+            DeucarianAudioExperience[] experiences =
+            {
+                DeucarianAudioExperience.Default,
                 DeucarianAudioExperience.XR,
-                out DeucarianAudioResolution xr));
-            Assert.IsTrue(set.TryResolveById(
-                DeucarianBuiltinAudioRoleIds.Warning,
                 DeucarianAudioExperience.WebGL,
-                out DeucarianAudioResolution webGl));
-            Assert.IsTrue(xr.IsAudible);
-            Assert.IsTrue(webGl.IsAudible);
-            Assert.AreNotSame(xr.Cue.Clip, webGl.Cue.Clip);
+                DeucarianAudioExperience.Desktop,
+                DeucarianAudioExperience.Mobile
+            };
+
+            AudioClip canonicalClip = null;
+            for (int experienceIndex = 0; experienceIndex < experiences.Length; experienceIndex++)
+            {
+                DeucarianAudioExperience experience = experiences[experienceIndex];
+                if (experience != DeucarianAudioExperience.Default)
+                {
+                    Assert.NotNull(set.GetPalette(experience), experience.ToString());
+                }
+
+                for (int roleIndex = 0; roleIndex < ids.Length; roleIndex++)
+                {
+                    Assert.IsTrue(set.TryResolveById(ids[roleIndex], experience, out DeucarianAudioResolution resolution),
+                        experience + ": " + ids[roleIndex]);
+                    Assert.IsTrue(resolution.IsAudible, experience + ": " + ids[roleIndex]);
+                    Assert.NotNull(resolution.Cue.Clip, experience + ": " + ids[roleIndex]);
+
+                    canonicalClip = canonicalClip ?? resolution.Cue.Clip;
+                    Assert.AreSame(canonicalClip, resolution.Cue.Clip,
+                        experience + ": " + ids[roleIndex]);
+                }
+            }
         }
 
         private static DeucarianAudioPaletteProfile CreateProfile(

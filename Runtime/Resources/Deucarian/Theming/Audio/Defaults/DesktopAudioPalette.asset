@@ -20,8 +20,7 @@ MonoBehaviour:
     cue:
       clip: {fileID: 0}
       variants:
-      - {fileID: 8300000, guid: 2fd334c4573b2bc419a02a4e4a7dd2e0, type: 3}
-      - {fileID: 8300000, guid: a18392e5bec4e6e4dbd479f219ba67b5, type: 3}
+      - {fileID: 8300000, guid: 3805245b207f4c649b409492b4d3b467, type: 3}
       volume: 0.25
       minimumPitch: 0.97
       maximumPitch: 1.03
