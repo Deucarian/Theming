@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e880fd2dbe499c418be7352b5cd9770, type: 3}
+  m_Name: DefaultAudioPaletteSet
+  m_EditorClassIdentifier: Deucarian.Theming::Deucarian.Theming.DeucarianAudioPaletteSet
+  defaultPalette: {fileID: 11400000, guid: 8002fc35a56e58346b221f1908b9f19d, type: 2}
+  profiles:
+  - experience: 1
+    palette: {fileID: 11400000, guid: 6c17c5d3253752746aa82109780d221d, type: 2}
+  - experience: 2
+    palette: {fileID: 11400000, guid: d25d0ea4f050cc544b10fe672be67773, type: 2}
+  - experience: 3
+    palette: {fileID: 11400000, guid: 72c3072bb407e4641b90d64ec04858c6, type: 2}
+  - experience: 4
+    palette: {fileID: 11400000, guid: a535b5af3a543414aa8eaaa9731c2fd9, type: 2}

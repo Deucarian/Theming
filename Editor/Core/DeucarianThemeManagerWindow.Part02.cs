@@ -406,6 +406,37 @@ namespace Deucarian.Theming.Editor
             GUILayout.Space(6f);
             DrawResolvedSummary(selection);
             DrawStyleSummary(selection.Style);
+            DrawAudioSummary(selection.ResolvedTheme);
+        }
+
+        private static void DrawAudioSummary(DeucarianTheme theme)
+        {
+            DeucarianAudioPaletteSet set = theme != null ? theme.AudioPaletteSet : null;
+            DeucarianAudioExperience previewExperience =
+                DeucarianAudioPaletteLabWindow.PreviewExperience;
+            DeucarianAudioPalette resolved = set != null
+                ? set.GetPalette(previewExperience) ?? set.DefaultPalette
+                : null;
+            int warningCount = set != null ? set.GetValidationWarnings().Count : 1;
+
+            GUILayout.Space(8f);
+            EditorGUILayout.LabelField("Audio Palette", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            EditorGUILayout.LabelField(
+                set != null
+                    ? $"{set.name} · {previewExperience} · "
+                      + (resolved != null ? resolved.DisplayName : "Missing palette")
+                    : "No Audio Palette Set is linked to the resolved theme.",
+                DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+            EditorGUILayout.LabelField(
+                warningCount == 0 ? "Audio validation: ready" : $"Audio validation: {warningCount} issue(s)",
+                DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+            using (new EditorGUI.DisabledScope(set == null))
+            {
+                if (GUILayout.Button("Open Audio Palette Lab"))
+                {
+                    DeucarianAudioPaletteLabWindow.Open(set);
+                }
+            }
         }
     }
 }

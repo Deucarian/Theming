@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42463a6455a246e2b38cde5cb5fbdb96, type: 3}
+  m_Name: DefaultAudioRoleLibrary
+  m_EditorClassIdentifier: Deucarian.Theming::Deucarian.Theming.DeucarianAudioRoleLibrary
+  roles:
+  - {fileID: 11400000, guid: f3d0a68aad503a84688cd49a20c2135f, type: 2}
+  - {fileID: 11400000, guid: db38e2997e8fd7244910a0ae839fb369, type: 2}
+  - {fileID: 11400000, guid: d7756b838279f2f4cbe2e9ca2aa09a07, type: 2}
+  - {fileID: 11400000, guid: 7acf68384e7dc5341a31aa1ad1a97801, type: 2}
+  - {fileID: 11400000, guid: d3a996542469bca41b6b6693d29d84d8, type: 2}
+  - {fileID: 11400000, guid: 9fe5b49853b12cb44aa898340388a39c, type: 2}
+  - {fileID: 11400000, guid: 7329b0c02cfb3c3488e95adb44991a06, type: 2}
+  - {fileID: 11400000, guid: 30a98509f1f0350488e95b936529e5b3, type: 2}
+  - {fileID: 11400000, guid: d57be070e99a3cc468056ad843255973, type: 2}
+  - {fileID: 11400000, guid: a523def3e00e03c4283c877cd8df2cfd, type: 2}
+  - {fileID: 11400000, guid: 013be60e62472d646b032f52aea7a12e, type: 2}
+  - {fileID: 11400000, guid: 9b2c0835ab8f7144e9f2e6aa37165c69, type: 2}
+  - {fileID: 11400000, guid: 120778167545dc6419e749ffba37647e, type: 2}

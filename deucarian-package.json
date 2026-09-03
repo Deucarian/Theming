@@ -3,7 +3,8 @@
   "displayName": "Deucarian Theming",
   "samplePolicy": "playable-scene",
   "ownedCapabilities": [
-    "runtime-theming"
+    "runtime-theming",
+    "audio-theming"
   ],
   "runtimeAssemblies": [
     "Deucarian.Theming"
@@ -13,6 +14,7 @@
   ],
   "sampleAssemblies": [
     "Deucarian.Theming.Samples.BasicTheming",
+    "Deucarian.Theming.Samples.AudioPalette",
     "Deucarian.Theming.Samples.UIToolkit"
   ],
   "testAssemblies": [
@@ -22,6 +24,7 @@
   "requiredDependencies": [
     "com.deucarian.editor",
     "com.deucarian.logging",
+    "com.deucarian.media",
     "com.unity.modules.uielements",
     "com.unity.textmeshpro",
     "com.unity.ugui"

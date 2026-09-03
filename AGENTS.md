@@ -9,25 +9,27 @@ Follow the canonical Deucarian governance docs in [Package Registry](https://git
 
 This package owns:
 
-- Runtime themes, palettes, color roles, theme assets, and runtime UI adapters.
+- Runtime themes, color and semantic audio palettes, stable roles, theme assets, and runtime UI adapters.
 
 Registered capabilities:
 - `runtime-theming`
+- `audio-theming`
 
 This package must not own:
 
-- Deucarian editor chrome theming, package installation, or diagnostics ownership.
+- Deucarian editor chrome theming, package installation, diagnostics ownership, or generic media playback.
 
 ## Dependencies
 
 Allowed dependency shape:
 
-- May depend on Editor for editor manager UI, Logging for diagnostics, and UI modules it directly adapts.
+- May depend on Editor for editor manager UI, Logging for diagnostics, Media for concrete one-shot output, and UI modules it directly adapts.
 
 Required dependencies and why:
 
 - `com.deucarian.editor`: shared editor shell/resources.
 - `com.deucarian.logging`: package logging facade and diagnostics output.
+- `com.deucarian.media`: package-owned Unity one-shot output used after semantic cue resolution.
 - `com.unity.modules.uielements`: Unity UIElements module used by theming adapters/editor UI.
 - `com.unity.textmeshpro`: TextMeshPro package used by theming adapters.
 - `com.unity.ugui`: UGUI package used by UI adapters.
