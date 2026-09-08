@@ -7,6 +7,39 @@ namespace Deucarian.Theming.Editor
 {
     public sealed partial class DeucarianAudioPaletteLabWindow
     {
+        private void DrawEmptyPaletteActions()
+        {
+            EditorGUILayout.LabelField("Choose your project's palette, browse assets, or audition the package defaults.", EditorStyles.wordWrappedLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (DeucarianEditorButtons.Secondary("Project palettes…"))
+                {
+                    var menu = new GenericMenu();
+                    string[] guids = AssetDatabase.FindAssets("t:DeucarianAudioPaletteSet", new[] { "Assets" });
+                    foreach (string guid in guids)
+                    {
+                        string path = AssetDatabase.GUIDToAssetPath(guid);
+                        menu.AddItem(new GUIContent(path), false, () => HandlePaletteSetChanged(AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(path)));
+                    }
+                    if (guids.Length == 0) menu.AddDisabledItem(new GUIContent("No project palette; try Package defaults"));
+                    menu.ShowAsContext();
+                }
+                if (DeucarianEditorButtons.Secondary("Package defaults")) HandlePaletteSetChanged(DeucarianAudioDefaults.LoadPaletteSet());
+            }
+        }
+
+        private void DrawPlaybackActions()
+        {
+            bool resolved = TryResolve(out DeucarianAudioResolution resolution);
+            bool canPlay = resolved && resolution.IsAudible && preview != null && preview.IsAvailable;
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (DeucarianEditorButtons.Primary("Play processed", canPlay)) Play(resolution.Cue);
+                if (DeucarianEditorButtons.Secondary("Original", canPlay)) Play(resolution.Cue, false);
+                if (DeucarianEditorButtons.Secondary("Stop", preview != null && preview.IsAvailable)) StopPreview();
+            }
+        }
+
         private static readonly string[] TestPadRoleIds =
         {
             DeucarianBuiltinAudioRoleIds.Hover,
@@ -30,7 +63,7 @@ namespace Deucarian.Theming.Editor
         private void DrawContextFields()
         {
             theme = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
-                "Theme",
+                "Theme (optional)",
                 theme,
                 onValueChanged: HandleThemeChanged);
 
@@ -128,33 +161,9 @@ namespace Deucarian.Theming.Editor
             return paletteSet.GetPalette(experience) ?? paletteSet.DefaultPalette;
         }
 
-        private DeucarianAudioRole FindRole(string id)
-        {
-            IReadOnlyList<DeucarianAudioRole> roles = CollectRoles();
-            for (int i = 0; i < roles.Count; i++)
-            {
-                if (roles[i] != null && roles[i].Id == id)
-                {
-                    return roles[i];
-                }
-            }
+        private DeucarianAudioRole FindRole(string id) => DeucarianAudioRoleBrowserModel.Find(paletteSet, experience, id);
 
-            return null;
-        }
-
-        private string DescribeRoleRow(DeucarianAudioRole role)
-        {
-            if (paletteSet == null || role == null ||
-                !paletteSet.TryResolve(role, experience, out DeucarianAudioResolution resolution))
-            {
-                return role != null ? $"{role.DisplayName}  ·  missing" : "Missing role";
-            }
-
-            string state = resolution.Cue.IntentionalSilence
-                ? "muted"
-                : resolution.IsAudible ? $"{resolution.Cue.UsableVariantCount} clip(s)" : "missing";
-            return $"{role.DisplayName}  ·  {resolution.Source}  ·  {state}";
-        }
+        private string DescribeRoleRow(DeucarianAudioRole role) => DeucarianAudioRoleBrowserModel.Describe(paletteSet, experience, role);
 
         private void HandleThemeChanged(DeucarianTheme value)
         {

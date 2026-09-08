@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.0 - Unreleased
+
+- Split asset discovery, authoring, selection, activation and scene application. Add original/processed audio audition, project-local editor state and compact lab workflows.
+
 ## 1.2.0 - Unreleased
 
 - Exposed the existing editor audio preview service contract for reuse by package labs.

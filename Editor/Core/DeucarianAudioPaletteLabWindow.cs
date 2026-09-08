@@ -14,13 +14,18 @@ namespace Deucarian.Theming.Editor
         private static readonly string[] ExperienceLabels =
             { "Default", "XR", "WebGL", "Desktop", "Mobile" };
 
-        private DeucarianAudioPaletteSet paletteSet;
-        private DeucarianTheme theme;
-        private DeucarianAudioExperience experience;
-        private int categoryFilter;
-        private string search = string.Empty;
+        [SerializeField] private DeucarianAudioPaletteSet paletteSet;
+        [SerializeField] private DeucarianTheme theme;
+        [SerializeField] private DeucarianAudioExperience experience;
+        [SerializeField] private int categoryFilter;
+        [SerializeField] private string search = string.Empty;
+        [SerializeField] private bool advanced;
+        [SerializeField] private bool useIntensity;
+        [SerializeField, Range(0, 1)] private float intensity = 0.5f;
+        private Vector2 pageScroll;
+        private AudioClip lastClip;
         private Vector2 roleScroll;
-        private DeucarianAudioRole selectedRole;
+        [SerializeField] private DeucarianAudioRole selectedRole;
         private IDeucarianAudioPreviewService preview;
         private int previewSequence;
         private int previousVariant = -1;
@@ -70,7 +75,6 @@ namespace Deucarian.Theming.Editor
                 "Audio Palette Lab",
                 "Resolve and audition semantic audio for an explicit product experience.");
 
-            DrawContextFields();
             paletteSet = DeucarianEditorFields.DrawAssetFieldWithSelectButton(
                 "Palette Set",
                 paletteSet,
@@ -83,9 +87,9 @@ namespace Deucarian.Theming.Editor
             {
                 HandleExperienceChanged(selectedExperience);
             }
-            DeucarianEditorFields.DrawReadonlyTextField(
-                "Unity build target",
-                EditorUserBuildSettings.activeBuildTarget.ToString());
+            EditorGUILayout.LabelField("Editor audition · " + experience + " · " +
+                (paletteSet != null ? paletteSet.name : "Choose a palette"), EditorStyles.wordWrappedMiniLabel);
+            if (paletteSet == null) DrawEmptyPaletteActions();
             if (experience == DeucarianAudioExperience.XR &&
                 EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
             {
@@ -94,6 +98,7 @@ namespace Deucarian.Theming.Editor
                     MessageType.Info);
             }
 
+            pageScroll = EditorGUILayout.BeginScrollView(pageScroll);
             DeucarianEditorResponsiveLayoutState layout =
                 DeucarianEditorResponsiveLayout.Calculate(position.width, position.height);
             if (layout.Wide)
@@ -110,7 +115,10 @@ namespace Deucarian.Theming.Editor
             }
 
             DrawTestPad();
-            DrawValidationSummary();
+            advanced = EditorGUILayout.Foldout(advanced, "Assets and coverage", true);
+            if (advanced) { DrawContextFields(); DrawValidationSummary(); }
+            EditorGUILayout.EndScrollView();
+            DrawPlaybackActions();
 
             DeucarianEditorStatusPanel.DrawStatusBar(
                 paletteSet != null ? paletteSet.name : "No palette set",
@@ -128,7 +136,7 @@ namespace Deucarian.Theming.Editor
                 new[] { "All", "UI", "Input", "Feedback" });
 
             IReadOnlyList<DeucarianAudioRole> roles = CollectRoles();
-            roleScroll = EditorGUILayout.BeginScrollView(roleScroll, GUILayout.MinHeight(150f));
+            roleScroll = EditorGUILayout.BeginScrollView(roleScroll, GUILayout.Height(position.width >= 1180f ? 290f : 160f));
             int shown = 0;
             for (int i = 0; i < roles.Count; i++)
             {
@@ -177,6 +185,8 @@ namespace Deucarian.Theming.Editor
 
             DeucarianEditorFields.DrawReadonlyTextField("Role", selectedRole.Id);
             DeucarianEditorFields.DrawReadonlyTextField("Source", DescribeSource(resolution));
+            AudioClip displayedClip = lastClip != null ? lastClip : resolution.Cue.Clip;
+            DeucarianEditorFields.DrawReadonlyTextField("Clip", displayedClip != null ? displayedClip.name : "No clip");
             DeucarianEditorFields.DrawReadonlyTextField(
                 "Volume / pitch",
                 $"{resolution.Cue.Volume:0.00}  ·  {resolution.Cue.MinimumPitch:0.00}–{resolution.Cue.MaximumPitch:0.00}");
@@ -188,21 +198,9 @@ namespace Deucarian.Theming.Editor
                     : DeucarianEditorStatus.Warning;
             DeucarianEditorStatusPanel.DrawStatusCard(DescribeResolution(resolution), status);
 
-            EditorGUILayout.BeginHorizontal();
-            bool canPlay = preview != null && preview.IsAvailable && resolution.IsAudible;
-            if (DeucarianEditorMiniToolbar.Button("Play next variant", canPlay))
-            {
-                Play(resolution.Cue);
-            }
-
-            if (DeucarianEditorMiniToolbar.Button("Stop", preview != null && preview.IsAvailable))
-            {
-                StopPreview();
-                feedback = "Preview stopped.";
-            }
-
-            DeucarianEditorMiniToolbar.SelectButton(resolution.SourcePalette);
-            EditorGUILayout.EndHorizontal();
+            if (displayedClip != null && DeucarianEditorButtons.Secondary("Locate clip")) DeucarianEditorSelection.SelectAndPing(displayedClip);
+            useIntensity = EditorGUILayout.Toggle("Simulate press intensity", useIntensity);
+            if (useIntensity) intensity = EditorGUILayout.Slider("Intensity", intensity, 0, 1);
 
             if (preview == null || !preview.IsAvailable)
             {
@@ -216,61 +214,9 @@ namespace Deucarian.Theming.Editor
             DeucarianEditorPreviewLabChrome.End();
         }
 
-        private IReadOnlyList<DeucarianAudioRole> CollectRoles()
-        {
-            List<DeucarianAudioRole> roles = new List<DeucarianAudioRole>();
-            HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
-            AddPaletteRoles(paletteSet != null ? paletteSet.DefaultPalette : null, roles, ids);
-            if (paletteSet != null)
-            {
-                AddPaletteRoles(paletteSet.GetPalette(experience), roles, ids);
-            }
+        private IReadOnlyList<DeucarianAudioRole> CollectRoles() => DeucarianAudioRoleBrowserModel.Collect(paletteSet, experience);
 
-            roles.Sort((left, right) => string.Compare(
-                left.DisplayName,
-                right.DisplayName,
-                StringComparison.OrdinalIgnoreCase));
-            return roles;
-        }
-
-        private static void AddPaletteRoles(
-            DeucarianAudioPalette palette,
-            ICollection<DeucarianAudioRole> roles,
-            ISet<string> ids)
-        {
-            if (palette == null || palette.RoleLibrary == null)
-            {
-                return;
-            }
-
-            IReadOnlyList<DeucarianAudioRole> source = palette.RoleLibrary.Roles;
-            for (int i = 0; i < source.Count; i++)
-            {
-                DeucarianAudioRole role = source[i];
-                if (role != null && ids.Add(role.Id))
-                {
-                    roles.Add(role);
-                }
-            }
-        }
-
-        private bool MatchesSearch(DeucarianAudioRole role)
-        {
-            if (role == null)
-            {
-                return false;
-            }
-
-            string value = search == null ? string.Empty : search.Trim();
-            bool categoryMatches = categoryFilter == 0
-                || categoryFilter == 1 && role.Category == DeucarianAudioRoleCategories.UI
-                || categoryFilter == 2 && role.Category == DeucarianAudioRoleCategories.Input
-                || categoryFilter == 3 && role.Category == DeucarianAudioRoleCategories.Feedback;
-            return categoryMatches && (value.Length == 0
-                || role.DisplayName.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0
-                || role.Category.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0
-                || role.Id.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0);
-        }
+        private bool MatchesSearch(DeucarianAudioRole role) => DeucarianAudioRoleBrowserModel.MatchesSearch(role, search, categoryFilter);
 
         private bool TryResolve(out DeucarianAudioResolution resolution)
         {
@@ -279,7 +225,7 @@ namespace Deucarian.Theming.Editor
                 paletteSet.TryResolve(selectedRole, experience, out resolution);
         }
 
-        private void Play(DeucarianAudioCue cue)
+        private void Play(DeucarianAudioCue cue, bool processed = true)
         {
             previewSequence++;
             if (!cue.TrySelectVariant(
@@ -292,14 +238,22 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            if (preview.Play(clip))
+            var modifiers = useIntensity ? DeucarianAudioPlaybackModifiers.FromIntensity(intensity) : DeucarianAudioPlaybackModifiers.Identity;
+            float volume = modifiers.ApplyVolume(cue.Volume);
+            float pitch = modifiers.ApplyPitch(cue.ResolvePitch((previewSequence * 0.618034f) % 1));
+            var processedPreview = preview as IDeucarianProcessedAudioPreviewService;
+            bool played = processed && processedPreview != null ? processedPreview.PlayProcessed(clip, volume, pitch) : preview.Play(clip);
+            if (played)
             {
+                lastClip = clip;
                 previousVariant = variant;
-                feedback = $"Playing {clip.name} for {experience}.";
+                feedback = processed && processedPreview != null
+                    ? $"{clip.name} · volume {volume:0.00} · pitch {pitch:0.00} · {experience}"
+                    : $"Original clip: {clip.name} · {experience}";
             }
             else
             {
-                feedback = "Unity could not start the editor preview.";
+                feedback = processedPreview?.LastError ?? "Unity could not start the editor preview. Check that editor audio is enabled.";
             }
         }
 
@@ -312,6 +266,7 @@ namespace Deucarian.Theming.Editor
 
             StopPreview();
             selectedRole = role;
+            lastClip = null;
             previousVariant = -1;
             feedback = role != null ? $"Selected {role.DisplayName}." : "No role selected.";
         }
@@ -320,6 +275,7 @@ namespace Deucarian.Theming.Editor
         {
             StopPreview();
             paletteSet = set;
+            lastClip = null;
             selectedRole = null;
             feedback = set != null ? $"Loaded {set.name}." : "Select an Audio Palette Set.";
         }
@@ -328,7 +284,8 @@ namespace Deucarian.Theming.Editor
         {
             StopPreview();
             experience = value;
-            EditorPrefs.SetInt(ExperiencePreferenceKey, (int)value);
+            lastClip = null;
+            DeucarianEditorProjectPreferences.SetInt(ExperiencePreferenceKey, (int)value);
             previousVariant = -1;
             feedback = $"Preview experience changed to {experience}.";
         }
@@ -379,7 +336,7 @@ namespace Deucarian.Theming.Editor
         {
             get
             {
-                int stored = EditorPrefs.GetInt(
+                int stored = DeucarianEditorProjectPreferences.GetInt(
                     ExperiencePreferenceKey,
                     (int)DeucarianAudioExperience.Default);
                 return Enum.IsDefined(typeof(DeucarianAudioExperience), stored)

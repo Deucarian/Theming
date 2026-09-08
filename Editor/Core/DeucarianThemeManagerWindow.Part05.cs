@@ -13,52 +13,6 @@ namespace Deucarian.Theming.Editor
     {
 
 
-        internal static string BuildDeveloperToolConfirmationMessage(
-            string actionName,
-            string description)
-        {
-            string safeDescription = string.IsNullOrWhiteSpace(description)
-                ? "This tool may create or modify project assets."
-                : description.Trim();
-            return safeDescription
-                + "\n\nThis operation may create or modify project assets. Continue with '"
-                + (actionName ?? "this developer tool")
-                + "'?";
-        }
-
-        internal static bool ConfirmDeveloperToolAction(
-            string actionName,
-            string description,
-            Func<string, string, string, string, bool> confirmation = null)
-        {
-            Func<string, string, string, string, bool> confirmationHandler = confirmation
-                ?? ((title, message, ok, cancel) => EditorUtility.DisplayDialog(
-                    title,
-                    message,
-                    ok,
-                    cancel));
-            return confirmationHandler(
-                "Developer Tools — " + (actionName ?? "Action"),
-                BuildDeveloperToolConfirmationMessage(actionName, description),
-                "Continue",
-                "Cancel");
-        }
-
-        internal static bool TryExecuteDeveloperToolAction(
-            string actionName,
-            string description,
-            Action action,
-            Func<string, string, string, string, bool> confirmation = null)
-        {
-            if (!ConfirmDeveloperToolAction(actionName, description, confirmation))
-            {
-                return false;
-            }
-
-            action?.Invoke();
-            return true;
-        }
-
         private void ToggleDeveloperTools()
         {
             SetDeveloperToolsOpen(!developerToolsOpen);
@@ -94,11 +48,11 @@ namespace Deucarian.Theming.Editor
                 menu.AddDisabledItem(new GUIContent("Save As New Custom Style..."));
             }
 
-            if (composerEditingStyle != null)
+            if (composer.EditingStyle != null)
             {
                 menu.AddSeparator(string.Empty);
                 menu.AddItem(new GUIContent("Select Style Asset"), false, () =>
-                    DeucarianEditorSelection.SelectAndPing(composerEditingStyle));
+                    DeucarianEditorSelection.SelectAndPing(composer.EditingStyle));
             }
 
             menu.ShowAsContext();
@@ -111,13 +65,13 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            composerSource = style;
-            composerEditingStyle = style.IsCustomStyle ? style : null;
-            composerSurface = style.SurfaceProfile;
-            composerCorners = style.ShapeProfile;
-            composerBorder = style.StrokeProfile;
-            composerSize = style.Density;
-            composerTypography = style.TypographyProfile;
+            composer.Source = style;
+            composer.EditingStyle = style.IsCustomStyle ? style : null;
+            composer.Surface = style.SurfaceProfile;
+            composer.Corners = style.ShapeProfile;
+            composer.Border = style.StrokeProfile;
+            composer.Size = style.Density;
+            composer.Typography = style.TypographyProfile;
             feedbackMessage = null;
             viewMode = ViewMode.StyleComposer;
             ApplyComposerPreview();
@@ -127,125 +81,43 @@ namespace Deucarian.Theming.Editor
 
         private void SaveAndActivateComposer(bool saveAsNew)
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            if (EditorApplication.isPlayingOrWillChangePlaymode || !composer.IsComplete)
             {
-                feedbackMessage = "Exit Play Mode before saving or activating a custom style.";
+                feedbackMessage = "Exit Play Mode and choose Surface, Corners, Border and Size before saving.";
                 feedbackType = MessageType.Warning;
                 return;
             }
-
-            if (!IsComposerComplete())
-            {
-                feedbackMessage = "Choose all four presentation components before saving.";
-                feedbackType = MessageType.Warning;
-                return;
-            }
-
             RefreshRuntimeSettingsValidation();
-            DeucarianThemeManagerSelection previousDraft =
-                DeucarianThemeManagerSelection.FromEditorPrefs();
             if (!projectRuntimeSettingsResourceReady)
             {
                 feedbackMessage = projectRuntimeSettingsResourceMessage;
                 feedbackType = MessageType.Error;
                 return;
             }
-
-            if (projectRuntimeSettings == null
-                || !DeucarianThemeManagerWorkflow.IsFamilyReadyForRuntimeSettings(previousDraft.Family))
+            string assetPath = null;
+            if (composer.EditingStyle == null || saveAsNew)
             {
-                feedbackMessage = "Complete the staged theme family before saving a custom style.";
-                feedbackType = MessageType.Error;
-                return;
-            }
-
-            DeucarianThemeStyle style = null;
-            DeucarianThemeManagerStyleEdit? stagedStyleEdit = null;
-            string createdStylePath = null;
-            if (composerEditingStyle != null && !saveAsNew)
-            {
-                style = composerEditingStyle;
-                stagedStyleEdit = new DeucarianThemeManagerStyleEdit(
-                    style,
-                    composerSurface,
-                    composerCorners,
-                    composerBorder,
-                    composerSize,
-                    composerTypography);
-            }
-            else
-            {
-                string sourcePath = AssetDatabase.GetAssetPath(composerSource);
-                string defaultFolder = string.IsNullOrWhiteSpace(sourcePath)
+                string sourcePath = AssetDatabase.GetAssetPath(composer.Source);
+                string folder = string.IsNullOrWhiteSpace(sourcePath)
                     ? DeucarianThemingEditorSettings.DefaultAssetFolder
                     : sourcePath.Substring(0, sourcePath.LastIndexOf('/'));
-                string suggestedName = string.IsNullOrWhiteSpace(composerSource.DisplayName)
-                    ? "Custom Theme Style"
-                    : composerSource.DisplayName + " Custom";
-                string assetPath = EditorUtility.SaveFilePanelInProject(
-                    "Save Complete Custom Style",
-                    suggestedName,
-                    "asset",
-                    "This Unity .asset file is the complete reusable style: Surface, Corners, Border, Size, and optional Typography. Choose a source-controlled location.",
-                    defaultFolder);
-                if (string.IsNullOrWhiteSpace(assetPath))
-                {
-                    return;
-                }
-
-                createdStylePath = assetPath;
-                style = DeucarianThemingMenuActions.CreateCustomStyle(
-                    composerSource,
-                    assetPath,
-                    composerSurface,
-                    composerCorners,
-                    composerBorder,
-                    composerSize,
-                    composerTypography);
+                assetPath = EditorUtility.SaveFilePanelInProject("Save Complete Custom Style",
+                    composer.Source != null ? GetStyleDisplayName(composer.Source) + " Custom" : "Custom Theme Style",
+                    "asset", "Save the reusable style in your project.", folder);
+                if (string.IsNullOrWhiteSpace(assetPath)) return;
             }
-
-            if (style == null)
-            {
-                feedbackMessage = "The custom style could not be saved.";
-                feedbackType = MessageType.Error;
-                return;
-            }
-
-            DeucarianThemeManagerSelection selection = new DeucarianThemeManagerSelection(
-                DeucarianThemingEditorSettings.ActiveThemeFamily,
-                DeucarianThemingEditorSettings.ActiveThemeMode,
-                style);
-            SetDraft(selection.Family, selection.Mode, style);
-            DeucarianThemeManagerActivationResult result = stagedStyleEdit.HasValue
-                ? DeucarianThemeManagerWorkflow.Activate(
-                    projectRuntimeSettings,
-                    selection,
-                    stagedStyleEdit.Value)
-                : DeucarianThemeManagerWorkflow.Activate(
-                    projectRuntimeSettings,
-                    selection);
-            feedbackMessage = result.Succeeded
-                ? $"Saved and activated the complete Custom Style '{GetStyleDisplayName(style)}' for both Light and Dark themes. {result.Message}"
-                : result.Message;
+            var result = DeucarianThemeStyleAuthoring.SaveAndActivate(composer, projectRuntimeSettings,
+                DeucarianThemeManagerSelection.FromEditorPrefs(), saveAsNew, assetPath);
+            feedbackMessage = result.Message;
             feedbackType = result.Succeeded ? MessageType.Info : MessageType.Error;
-            if (!result.Succeeded && !string.IsNullOrWhiteSpace(createdStylePath))
-            {
-                bool cleanedUp = RollbackCreatedCustomStyle(createdStylePath, previousDraft);
-                feedbackMessage += cleanedUp
-                    ? " The new custom style asset was removed; your previous staged selection was restored."
-                    : " The new asset could not be removed automatically. Delete it before retrying.";
-                RefreshAssets();
-            }
-
             if (result.Succeeded)
             {
-                composerSource = style;
-                composerEditingStyle = style;
+                composer.Reset(result.Style);
                 viewMode = ViewMode.Theme;
                 DeucarianThemePreviewCoordinator.ClearComposerPreview();
-                RefreshAssets();
                 CaptureBaseline();
             }
+            RefreshAssets();
         }
 
         internal static bool RollbackCreatedCustomStyle(
@@ -260,7 +132,7 @@ namespace Deucarian.Theming.Editor
                 removed = AssetDatabase.DeleteAsset(normalizedPath);
             }
 
-            SetDraft(
+            DeucarianThemeDraftPolicy.SetDraft(
                 previousDraft.Family,
                 previousDraft.Mode,
                 previousDraft.Style);
@@ -291,10 +163,10 @@ namespace Deucarian.Theming.Editor
             }
 
             DeucarianThemeStyle style = assets.DefaultStyle
-                                        ?? ResolveSuggestedStyle(
+                                        ?? DeucarianThemeDraftPolicy.ResolveSuggestedStyle(
                                             assets.ThemeFamily,
                                             DeucarianThemingEditorSettings.ActiveThemeMode);
-            SetDraft(
+            DeucarianThemeDraftPolicy.SetDraft(
                 assets.ThemeFamily,
                 DeucarianThemingEditorSettings.ActiveThemeMode,
                 style);
@@ -311,7 +183,7 @@ namespace Deucarian.Theming.Editor
             }
 
             RefreshRuntimeSettingsValidation();
-            if (!CanCreateRuntimeSettings(runtimeSettingsResourceCount, false))
+            if (!DeucarianThemeRuntimeSettingsAssets.CanCreateRuntimeSettings(runtimeSettingsResourceCount, false))
             {
                 feedbackMessage = runtimeSettingsResourceCount == 1
                     ? "This project already has its one runtime settings resource. Select and configure that asset instead of creating another."
@@ -331,10 +203,10 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            DeucarianThemeRuntimeSettings created = CreateRuntimeSettingsAtPath(path);
+            DeucarianThemeRuntimeSettings created = DeucarianThemeRuntimeSettingsAssets.CreateRuntimeSettingsAtPath(path);
             if (created == null)
             {
-                int resourceCount = FindRuntimeSettingsResourceAssets().Count;
+                int resourceCount = DeucarianThemeRuntimeSettingsAssets.FindRuntimeSettingsResourceAssets().Count;
                 feedbackMessage = resourceCount > 0
                     ? "A runtime settings resource already exists. Select and configure that asset instead of creating a duplicate."
                     : "Use the exact filename DeucarianThemeRuntimeSettings.asset inside a Resources folder.";
@@ -363,48 +235,5 @@ namespace Deucarian.Theming.Editor
             }
         }
 
-        internal static DeucarianThemeRuntimeSettings CreateRuntimeSettingsAtPath(string assetPath)
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                ThemingLog.Editor.Warning("Exit Play Mode before creating runtime settings.");
-                return null;
-            }
-
-            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
-            if (!IsRuntimeSettingsResourcePath(normalizedPath)
-                || AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null
-                || FindRuntimeSettingsResourceAssets().Count > 0)
-            {
-                return null;
-            }
-
-            int slash = normalizedPath.LastIndexOf('/');
-            if (slash > 0)
-            {
-                DeucarianThemingMenuActions.EnsureAssetFolder(normalizedPath.Substring(0, slash));
-            }
-
-            DeucarianThemeRuntimeSettings settings =
-                CreateInstance<DeucarianThemeRuntimeSettings>();
-            AssetDatabase.CreateAsset(settings, normalizedPath);
-            AssetDatabase.SaveAssetIfDirty(settings);
-            AssetDatabase.Refresh();
-            return settings;
-        }
-
-        internal static bool IsRuntimeSettingsResourcePath(string assetPath)
-        {
-            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
-            if (string.IsNullOrWhiteSpace(normalizedPath)
-                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal))
-            {
-                return false;
-            }
-
-            string expectedFile = "/" + DeucarianThemeRuntimeSettings.ResourceName + ".asset";
-            return normalizedPath.EndsWith(expectedFile, StringComparison.OrdinalIgnoreCase)
-                   && normalizedPath.IndexOf("/Resources/", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
     }
 }
