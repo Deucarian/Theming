@@ -12,7 +12,6 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow
     {
 
-
         private void ToggleDeveloperTools()
         {
             SetDeveloperToolsOpen(!developerToolsOpen);

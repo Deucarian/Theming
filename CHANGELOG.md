@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 - 2026-09-09
+
+- Separate default/theme-pack asset creation, repair, naming and storage; remove duplicated asset/path operations while preserving public factory entry points.
+- Compose Theme Manager toolbar controls, asset fields, summaries and developer tools independently of window workflows. Add asset identity and toolbar-state regression coverage.
+
 ## 1.3.0 - Unreleased
 
 - Split asset discovery, authoring, selection, activation and scene application. Add original/processed audio audition, project-local editor state and compact lab workflows.
