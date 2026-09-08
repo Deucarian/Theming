@@ -12,7 +12,6 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow
     {
 
-
         private enum ViewMode
         {
             Theme,
@@ -147,205 +146,66 @@ namespace Deucarian.Theming.Editor
 
         private void BuildWorkbenchToolbar()
         {
-            VisualElement toolbar = workbench?.Toolbar;
-            if (toolbar == null)
-            {
-                return;
-            }
-
-            toolbar.Clear();
-            var lanes = DeucarianEditorCommandBar.CreateLanes(toolbar);
-            themeViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Theme",
-                NavigateToTheme);
-            themeViewButton.name = "deucarian-theme-manager-view-theme";
-            styleComposerViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Style Composer",
-                NavigateToStyleComposer,
-                false,
-                null,
-                "Open the selected Visual Style in Style Composer.");
-            styleComposerViewButton.name = "deucarian-theme-manager-view-style";
-            runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Runtime Settings",
-                NavigateToRuntimeSettings);
-            runtimeSettingsViewButton.name = "deucarian-theme-manager-view-runtime-settings";
-            toolbarSecondaryAction = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Wrench,
-                string.Empty,
-                ExecuteToolbarSecondaryAction,
-                false,
-                "Open the contextual style or setup action.");
-            toolbarSecondaryAction.name = "deucarian-theme-manager-toolbar-secondary";
-            discardChangesButton = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Undo,
-                "Discard changes",
-                DiscardAllChanges,
-                false,
-                "Restore the active project theme and clear every unapplied draft.");
-            discardChangesButton.name = "deucarian-theme-manager-discard-changes";
-            toolbarPrimaryAction = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Check,
-                string.Empty,
-                ExecuteToolbarPrimaryAction,
-                true,
-                "Apply the current staged theme selection.");
-            toolbarPrimaryAction.name = "deucarian-theme-manager-toolbar-primary";
-
-            toolbarSecondarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                SecondaryActionSlotWidth);
-            discardChangesSlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                DiscardActionSlotWidth);
-            toolbarPrimarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                PrimaryActionSlotWidth);
-            toolbarPrimaryStatus = DeucarianEditorCommandBar.CreateState(
-                DeucarianEditorIconIds.Check,
-                "Active",
-                "The staged selection is active in project runtime settings.");
-            toolbarPrimaryStatus.name = "deucarian-theme-manager-toolbar-primary-status";
-            DeucarianEditorCommandBar.SetReservedContent(
-                toolbarSecondarySlot,
-                toolbarSecondaryAction);
-            DeucarianEditorCommandBar.SetReservedContent(
-                discardChangesSlot,
-                discardChangesButton,
-                true);
-            DeucarianEditorCommandBar.SetReservedContent(
-                toolbarPrimarySlot,
-                toolbarPrimaryAction);
-
-            lanes.Leading.Add(themeViewButton);
-            lanes.Leading.Add(styleComposerViewButton);
-            lanes.Leading.Add(runtimeSettingsViewButton);
-            lanes.Trailing.Add(toolbarSecondarySlot);
-            lanes.Trailing.Add(discardChangesSlot);
-            lanes.Trailing.Add(toolbarPrimarySlot);
+            toolbarView = workbench?.Toolbar == null ? null : new DeucarianThemeManagerToolbar(
+                workbench.Toolbar, NavigateToTheme, NavigateToStyleComposer, NavigateToRuntimeSettings,
+                ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction);
         }
 
         private void UpdateWorkbenchToolbar()
         {
-            if (workbench?.Toolbar == null || toolbarPrimaryAction == null)
-            {
-                return;
-            }
+            if (toolbarView == null) return;
 
-            DeucarianThemeManagerSelection selection =
-                DeucarianThemeManagerSelection.FromEditorPrefs();
-            DeucarianEditorCommandBar.SetActive(
-                themeViewButton,
-                viewMode == ViewMode.Theme);
-            DeucarianEditorCommandBar.SetActive(
-                styleComposerViewButton,
-                viewMode == ViewMode.StyleComposer);
-            styleComposerViewButton?.SetEnabled(selection.Style != null);
-            if (styleComposerViewButton != null)
-            {
-                styleComposerViewButton.tooltip = selection.Style != null
-                    ? "Open the selected Visual Style in Style Composer."
-                    : "Choose a Visual Style on the Theme tab before opening Style Composer.";
-            }
-            DeucarianEditorCommandBar.SetActive(
-                runtimeSettingsViewButton,
-                viewMode == ViewMode.RuntimeSettings);
-
+            DeucarianThemeManagerSelection selection = DeucarianThemeManagerSelection.FromEditorPrefs();
+            toolbarView.SetSelection(viewMode == ViewMode.Theme, viewMode == ViewMode.StyleComposer,
+                viewMode == ViewMode.RuntimeSettings, selection.Style != null);
             bool isPlaying = EditorApplication.isPlayingOrWillChangePlaymode;
-            DeucarianThemeManagerActivationStatus status =
-                DeucarianThemeManagerWorkflow.Evaluate(
-                    projectRuntimeSettings,
-                    selection,
-                    projectRuntimeSettingsResourceReady,
-                    projectRuntimeSettingsResourceMessage);
-            IReadOnlyList<string> pendingChanges = GetPendingChangeDescriptions(status);
-            UpdatePendingChangesPresentation(pendingChanges);
+            DeucarianThemeManagerActivationStatus status = DeucarianThemeManagerWorkflow.Evaluate(
+                projectRuntimeSettings, selection, projectRuntimeSettingsResourceReady,
+                projectRuntimeSettingsResourceMessage);
+            UpdatePendingChangesPresentation(GetPendingChangeDescriptions(status));
 
             switch (viewMode)
             {
                 case ViewMode.StyleComposer:
-                    DeucarianEditorCommandBar.SetReservedVisible(
-                        toolbarSecondarySlot,
-                        true);
-                    DeucarianEditorCommandBar.SetText(
-                        toolbarSecondaryAction,
-                        "More");
-                    toolbarSecondaryAction.SetEnabled(composer.Source != null);
-                    toolbarSecondaryAction.tooltip = composer.Source != null
+                    toolbarView.SetSecondary("More", composer.Source != null, composer.Source != null
                         ? "Open additional save and asset actions."
-                        : "Choose a visual style before opening composer actions.";
-                    DeucarianEditorCommandBar.SetText(
-                        toolbarPrimaryAction,
-                        "Save Style & Activate");
+                        : "Choose a visual style before opening composer actions.");
                     bool composerReady = IsComposerReadyToActivate() && !isPlaying;
-                    toolbarPrimaryAction.SetEnabled(composerReady);
-                    toolbarPrimaryAction.tooltip = composerReady
+                    toolbarView.SetPrimary("Save Style & Activate", composerReady, composerReady
                         ? BuildComposerSaveDescription(composer.EditingStyle != null)
-                        : isPlaying
-                            ? "Exit Play Mode before saving and activating."
-                            : "Complete the composer and project runtime setup first.";
-                    ShowPrimaryActionButton();
+                        : isPlaying ? "Exit Play Mode before saving and activating."
+                        : "Complete the composer and project runtime setup first.");
                     break;
-
                 case ViewMode.RuntimeSettings:
-                    DeucarianEditorCommandBar.SetReservedVisible(
-                        toolbarSecondarySlot,
-                        true);
-                    DeucarianEditorCommandBar.SetText(
-                        toolbarSecondaryAction,
-                        "Create Settings...");
                     bool canCreateSettings = DeucarianThemeRuntimeSettingsAssets.CanCreateRuntimeSettings(
-                        runtimeSettingsResourceCount,
-                        isPlaying);
-                    toolbarSecondaryAction.SetEnabled(canCreateSettings);
-                    toolbarSecondaryAction.tooltip = isPlaying
+                        runtimeSettingsResourceCount, isPlaying);
+                    toolbarView.SetSecondary("Create Settings...", canCreateSettings, isPlaying
                         ? "Exit Play Mode before creating runtime settings."
                         : runtimeSettingsResourceCount == 1
                             ? "This project already has its one runtime settings resource. Use the existing asset instead."
                             : runtimeSettingsResourceCount > 1
                                 ? "Multiple runtime settings resources already exist. Remove the duplicates before continuing."
-                            : "Create the single Resources-backed runtime settings asset for this project.";
-                    bool runtimeSettingsInUse = runtimeSettingsCandidateValid
-                                                && runtimeSettingsCandidate == projectRuntimeSettings
-                                                && !RuntimeSettingsCandidateNeedsFamily();
-                    DeucarianEditorCommandBar.SetText(
-                        toolbarPrimaryAction,
-                        runtimeSettingsInUse
-                            ? "In Use"
-                            : RuntimeSettingsCandidateNeedsFamily()
-                            ? "Use & Configure"
-                            : "Use Selected");
-                    bool candidateReady = !runtimeSettingsInUse
-                                          && CanUseRuntimeSettingsCandidate();
-                    toolbarPrimaryAction.SetEnabled(candidateReady);
-                    toolbarPrimaryAction.tooltip = runtimeSettingsInUse
-                        ? "This is the unique runtime settings asset currently used by the project."
-                        : candidateReady
-                        ? "Use the selected runtime settings for this project."
-                        : string.IsNullOrWhiteSpace(runtimeSettingsCandidateMessage)
-                            ? "Choose valid runtime settings first."
-                            : runtimeSettingsCandidateMessage;
-                    ShowPrimaryActionButton();
+                                : "Create the single Resources-backed runtime settings asset for this project.");
+                    bool needsFamily = RuntimeSettingsCandidateNeedsFamily();
+                    bool inUse = runtimeSettingsCandidateValid
+                        && runtimeSettingsCandidate == projectRuntimeSettings && !needsFamily;
+                    bool candidateReady = !inUse && CanUseRuntimeSettingsCandidate();
+                    toolbarView.SetPrimary(inUse ? "In Use" : needsFamily ? "Use & Configure" : "Use Selected",
+                        candidateReady, inUse
+                            ? "This is the unique runtime settings asset currently used by the project."
+                            : candidateReady ? "Use the selected runtime settings for this project."
+                            : string.IsNullOrWhiteSpace(runtimeSettingsCandidateMessage)
+                                ? "Choose valid runtime settings first." : runtimeSettingsCandidateMessage);
                     break;
-
                 default:
-                    DeucarianEditorCommandBar.SetReservedVisible(
-                        toolbarSecondarySlot,
-                        false);
-                    if (status.IsActive)
-                    {
-                        ShowPrimaryActiveStatus();
-                    }
+                    toolbarView.HideSecondary();
+                    if (status.IsActive) toolbarView.ShowActive();
                     else
                     {
-                        DeucarianEditorCommandBar.SetText(
-                            toolbarPrimaryAction,
-                            "Activate");
                         bool canActivate = status.CanActivate && !isPlaying;
-                        toolbarPrimaryAction.SetEnabled(canActivate);
-                        toolbarPrimaryAction.tooltip = canActivate
+                        toolbarView.SetPrimary("Activate", canActivate, canActivate
                             ? "Activate the staged family, mode, and visual style."
-                            : isPlaying
-                                ? "Exit Play Mode before activating a theme."
-                                : status.Message;
-                        ShowPrimaryActionButton();
+                            : isPlaying ? "Exit Play Mode before activating a theme." : status.Message);
                     }
                     break;
             }

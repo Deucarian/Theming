@@ -17,9 +17,6 @@ namespace Deucarian.Theming.Editor
         private const string WallpaperFadeName = "deucarian-theme-manager-top-safe-fade";
         private const string PreferredSizeKey = "Deucarian.Theming.ThemeManager.PreferredSize.920x560";
         private const float PreviewStackBreakpoint = 760f;
-        private const float SecondaryActionSlotWidth = 132f;
-        private const float DiscardActionSlotWidth = 148f;
-        private const float PrimaryActionSlotWidth = 168f;
         private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
         [SerializeField] private ViewMode viewMode;
@@ -42,17 +39,8 @@ namespace Deucarian.Theming.Editor
         private bool runtimeCandidateTouched;
 
         private DeucarianEditorWorkbench workbench;
+        private DeucarianThemeManagerToolbar toolbarView;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
-        private Button themeViewButton;
-        private Button styleComposerViewButton;
-        private Button runtimeSettingsViewButton;
-        private Button toolbarSecondaryAction;
-        private Button toolbarPrimaryAction;
-        private Button discardChangesButton;
-        private VisualElement toolbarSecondarySlot;
-        private VisualElement discardChangesSlot;
-        private VisualElement toolbarPrimarySlot;
-        private VisualElement toolbarPrimaryStatus;
         private DeucarianEditorWorkbenchDrawer developerToolsDrawer;
         private Button developerToolsButton;
         private bool developerToolsOpen;

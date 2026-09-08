@@ -12,97 +12,6 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow
     {
 
-
-        private static void DrawStatus(DeucarianThemeManagerActivationStatus status)
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                string label;
-                DeucarianEditorStatus visualStatus;
-                if (!status.HasRuntimeSettings)
-                {
-                    label = "Setup required";
-                    visualStatus = DeucarianEditorStatus.Error;
-                }
-                else if (!status.RuntimeSettingsReady)
-                {
-                    label = "Setup incomplete";
-                    visualStatus = DeucarianEditorStatus.Warning;
-                }
-                else if (!status.SelectionValid)
-                {
-                    label = "Incomplete";
-                    visualStatus = DeucarianEditorStatus.Warning;
-                }
-                else if (status.IsActive)
-                {
-                    label = "Active";
-                    visualStatus = DeucarianEditorStatus.Success;
-                }
-                else if (!status.HasDraftChanges)
-                {
-                    label = "Needs sync";
-                    visualStatus = DeucarianEditorStatus.Warning;
-                }
-                else
-                {
-                    label = "Not active";
-                    visualStatus = DeucarianEditorStatus.Info;
-                }
-
-                DeucarianEditorStatusBadge.Draw(label, visualStatus, GUILayout.Width(112f));
-                EditorGUILayout.LabelField(status.Message, DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
-            }
-        }
-
-        private static void DrawResolvedSummary(DeucarianThemeManagerSelection selection)
-        {
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Resolved Theme",
-                selection.ResolvedTheme != null ? selection.ResolvedTheme.DisplayName : "Not resolved",
-                "Derived from the selected family and mode.");
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Palette",
-                selection.ResolvedPalette != null ? selection.ResolvedPalette.DisplayName : "Not resolved",
-                "Derived from the resolved theme.");
-        }
-
-        private static void DrawStyleSummary(DeucarianThemeStyle style)
-        {
-            if (style == null)
-            {
-                return;
-            }
-
-            GUILayout.Space(2f);
-            EditorGUILayout.LabelField("Appearance", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            const string tooltip = "This value is composed by the selected visual style. Use Style Composer to change it.";
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Surface",
-                style.SurfaceProfile != null ? style.SurfaceProfile.DisplayName : "Legacy inline",
-                tooltip);
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Corners",
-                style.ShapeProfile != null ? style.ShapeProfile.DisplayName : "Legacy inline",
-                tooltip);
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Border",
-                style.StrokeProfile != null ? style.StrokeProfile.DisplayName : "Legacy inline",
-                tooltip);
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Size",
-                style.Density == DeucarianThemeDensity.Unspecified
-                    ? "Legacy automatic"
-                    : style.Density.ToString(),
-                tooltip);
-            DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
-                "Typography",
-                style.TypographyProfile != null
-                    ? style.TypographyProfile.DisplayName
-                    : "Project TMP default",
-                tooltip);
-        }
-
         private void DrawContextualSetup(
             DeucarianThemeRuntimeSettings settings,
             DeucarianThemeManagerSelection selection,
@@ -178,7 +87,7 @@ namespace Deucarian.Theming.Editor
                         MessageType.Info);
                     GUILayout.Space(4f);
                     EditorGUI.BeginChangeCheck();
-                    runtimeSettingsCandidate = (DeucarianThemeRuntimeSettings)DrawWorkbenchObjectField(
+                    runtimeSettingsCandidate = (DeucarianThemeRuntimeSettings)DeucarianThemeManagerFields.DrawWorkbenchObjectField(
                         "Existing Settings",
                         runtimeSettingsCandidate,
                         typeof(DeucarianThemeRuntimeSettings),
@@ -377,25 +286,25 @@ namespace Deucarian.Theming.Editor
                 ? composer.EditingStyle
                 : composer.Source;
 
-            composer.Surface = (DeucarianThemeSurfaceProfile)DrawWorkbenchObjectField(
+            composer.Surface = (DeucarianThemeSurfaceProfile)DeucarianThemeManagerFields.DrawWorkbenchObjectField(
                 DirtyLabel("Surface", composer.Surface != comparison.SurfaceProfile),
                 composer.Surface,
                 typeof(DeucarianThemeSurfaceProfile),
                 false);
-            composer.Corners = (DeucarianThemeShapeProfile)DrawWorkbenchObjectField(
+            composer.Corners = (DeucarianThemeShapeProfile)DeucarianThemeManagerFields.DrawWorkbenchObjectField(
                 DirtyLabel("Corners", composer.Corners != comparison.ShapeProfile),
                 composer.Corners,
                 typeof(DeucarianThemeShapeProfile),
                 false);
-            composer.Border = (DeucarianThemeStrokeProfile)DrawWorkbenchObjectField(
+            composer.Border = (DeucarianThemeStrokeProfile)DeucarianThemeManagerFields.DrawWorkbenchObjectField(
                 DirtyLabel("Border", composer.Border != comparison.StrokeProfile),
                 composer.Border,
                 typeof(DeucarianThemeStrokeProfile),
                 false);
-            composer.Size = (DeucarianThemeDensity)DrawWorkbenchEnumPopup(
+            composer.Size = (DeucarianThemeDensity)DeucarianThemeManagerFields.DrawWorkbenchEnumPopup(
                 DirtyLabel("Size", composer.Size != comparison.Density),
                 composer.Size);
-            composer.Typography = (DeucarianThemeTypographyProfile)DrawWorkbenchObjectField(
+            composer.Typography = (DeucarianThemeTypographyProfile)DeucarianThemeManagerFields.DrawWorkbenchObjectField(
                 DirtyLabel("Typography", composer.Typography != comparison.TypographyProfile),
                 composer.Typography,
                 typeof(DeucarianThemeTypographyProfile),
