@@ -1,4 +1,5 @@
 using System;
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -23,13 +24,13 @@ namespace Deucarian.Theming.Editor
 
         public static string ActiveThemeGuid
         {
-            get => EditorPrefs.GetString(ActiveThemeGuidKey, string.Empty);
+            get => DeucarianEditorProjectPreferences.GetString(ActiveThemeGuidKey, string.Empty);
             set => SetGuid(ActiveThemeGuidKey, value);
         }
 
         public static string ActiveThemeFamilyGuid
         {
-            get => EditorPrefs.GetString(ActiveThemeFamilyGuidKey, string.Empty);
+            get => DeucarianEditorProjectPreferences.GetString(ActiveThemeFamilyGuidKey, string.Empty);
             set => SetGuid(ActiveThemeFamilyGuidKey, value);
         }
 
@@ -37,12 +38,12 @@ namespace Deucarian.Theming.Editor
         {
             get
             {
-                int stored = EditorPrefs.GetInt(ActiveThemeModeKey, (int)DeucarianThemeMode.Dark);
+                int stored = DeucarianEditorProjectPreferences.GetInt(ActiveThemeModeKey, (int)DeucarianThemeMode.Dark);
                 return stored == (int)DeucarianThemeMode.Light
                     ? DeucarianThemeMode.Light
                     : DeucarianThemeMode.Dark;
             }
-            set => EditorPrefs.SetInt(
+            set => DeucarianEditorProjectPreferences.SetInt(
                 ActiveThemeModeKey,
                 value == DeucarianThemeMode.Light
                     ? (int)DeucarianThemeMode.Light
@@ -51,19 +52,19 @@ namespace Deucarian.Theming.Editor
 
         public static string ActivePaletteGuid
         {
-            get => EditorPrefs.GetString(ActivePaletteGuidKey, string.Empty);
+            get => DeucarianEditorProjectPreferences.GetString(ActivePaletteGuidKey, string.Empty);
             set => SetGuid(ActivePaletteGuidKey, value);
         }
 
         public static string ActiveRoleLibraryGuid
         {
-            get => EditorPrefs.GetString(ActiveRoleLibraryGuidKey, string.Empty);
+            get => DeucarianEditorProjectPreferences.GetString(ActiveRoleLibraryGuidKey, string.Empty);
             set => SetGuid(ActiveRoleLibraryGuidKey, value);
         }
 
         public static string ActiveStyleGuid
         {
-            get => EditorPrefs.GetString(ActiveStyleGuidKey, string.Empty);
+            get => DeucarianEditorProjectPreferences.GetString(ActiveStyleGuidKey, string.Empty);
             set => SetGuid(ActiveStyleGuidKey, value);
         }
 
@@ -71,13 +72,13 @@ namespace Deucarian.Theming.Editor
         {
             get
             {
-                string folder = EditorPrefs.GetString(DefaultAssetFolderKey, DefaultThemeAssetFolder);
+                string folder = DeucarianEditorProjectPreferences.GetString(DefaultAssetFolderKey, DefaultThemeAssetFolder);
                 return string.IsNullOrWhiteSpace(folder) ? DefaultThemeAssetFolder : NormalizeAssetPath(folder);
             }
             set
             {
                 string folder = string.IsNullOrWhiteSpace(value) ? DefaultThemeAssetFolder : NormalizeAssetPath(value);
-                EditorPrefs.SetString(DefaultAssetFolderKey, folder);
+                DeucarianEditorProjectPreferences.SetString(DefaultAssetFolderKey, folder);
             }
         }
 
@@ -172,18 +173,18 @@ namespace Deucarian.Theming.Editor
 
         public static void ResetToDefaults()
         {
-            EditorPrefs.DeleteKey(ActiveThemeGuidKey);
-            EditorPrefs.DeleteKey(ActiveThemeFamilyGuidKey);
-            EditorPrefs.DeleteKey(ActiveThemeModeKey);
-            EditorPrefs.DeleteKey(ActivePaletteGuidKey);
-            EditorPrefs.DeleteKey(ActiveRoleLibraryGuidKey);
-            EditorPrefs.DeleteKey(ActiveStyleGuidKey);
-            EditorPrefs.DeleteKey(DefaultAssetFolderKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActiveThemeGuidKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActiveThemeFamilyGuidKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActiveThemeModeKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActivePaletteGuidKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActiveRoleLibraryGuidKey);
+            DeucarianEditorProjectPreferences.DeleteKey(ActiveStyleGuidKey);
+            DeucarianEditorProjectPreferences.DeleteKey(DefaultAssetFolderKey);
         }
 
         private static void SetGuid(string key, string guid)
         {
-            EditorPrefs.SetString(key, string.IsNullOrWhiteSpace(guid) ? string.Empty : guid.Trim());
+            DeucarianEditorProjectPreferences.SetString(key, string.IsNullOrWhiteSpace(guid) ? string.Empty : guid.Trim());
         }
     }
 }

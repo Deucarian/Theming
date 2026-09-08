@@ -22,8 +22,8 @@ namespace Deucarian.Theming.Editor
         private const float PrimaryActionSlotWidth = 168f;
         private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
-        private ViewMode viewMode;
-        private Vector2 scrollPosition;
+        [SerializeField] private ViewMode viewMode;
+        [SerializeField] private Vector2 scrollPosition;
         private DeucarianThemingMenuActions.AssetSearchResult searchResult;
         private DeucarianThemeRuntimeSettings runtimeSettingsCandidate;
         private DeucarianThemeRuntimeSettings validatedRuntimeSettingsCandidate;
@@ -35,13 +35,7 @@ namespace Deucarian.Theming.Editor
         private string feedbackMessage;
         private MessageType feedbackType = MessageType.Info;
 
-        private DeucarianThemeStyle composerSource;
-        private DeucarianThemeStyle composerEditingStyle;
-        private DeucarianThemeSurfaceProfile composerSurface;
-        private DeucarianThemeShapeProfile composerCorners;
-        private DeucarianThemeStrokeProfile composerBorder;
-        private DeucarianThemeDensity composerSize;
-        private DeucarianThemeTypographyProfile composerTypography;
+        [SerializeField] private DeucarianThemeStyleDraft composer = new DeucarianThemeStyleDraft();
         private DeucarianThemeManagerSelection baselineSelection;
         private DeucarianThemeRuntimeSettings baselineRuntimeSettings;
         private bool baselineCaptured;

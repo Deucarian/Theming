@@ -61,7 +61,7 @@ namespace Deucarian.Theming.Editor
             EditorApplication.projectChanged += HandleProjectChanged;
             DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault();
             RefreshAssets();
-            CaptureBaseline();
+            CaptureBaseline(!composer.HasDraft);
             DeucarianThemePreviewCoordinator.ApplySelectedPreview();
         }
 
@@ -267,8 +267,8 @@ namespace Deucarian.Theming.Editor
                     DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "More");
-                    toolbarSecondaryAction.SetEnabled(composerSource != null);
-                    toolbarSecondaryAction.tooltip = composerSource != null
+                    toolbarSecondaryAction.SetEnabled(composer.Source != null);
+                    toolbarSecondaryAction.tooltip = composer.Source != null
                         ? "Open additional save and asset actions."
                         : "Choose a visual style before opening composer actions.";
                     DeucarianEditorCommandBar.SetText(
@@ -277,7 +277,7 @@ namespace Deucarian.Theming.Editor
                     bool composerReady = IsComposerReadyToActivate() && !isPlaying;
                     toolbarPrimaryAction.SetEnabled(composerReady);
                     toolbarPrimaryAction.tooltip = composerReady
-                        ? BuildComposerSaveDescription(composerEditingStyle != null)
+                        ? BuildComposerSaveDescription(composer.EditingStyle != null)
                         : isPlaying
                             ? "Exit Play Mode before saving and activating."
                             : "Complete the composer and project runtime setup first.";
@@ -291,7 +291,7 @@ namespace Deucarian.Theming.Editor
                     DeucarianEditorCommandBar.SetText(
                         toolbarSecondaryAction,
                         "Create Settings...");
-                    bool canCreateSettings = CanCreateRuntimeSettings(
+                    bool canCreateSettings = DeucarianThemeRuntimeSettingsAssets.CanCreateRuntimeSettings(
                         runtimeSettingsResourceCount,
                         isPlaying);
                     toolbarSecondaryAction.SetEnabled(canCreateSettings);

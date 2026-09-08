@@ -38,986 +38,188 @@ namespace Deucarian.Theming.Editor
         }
 
         public static AssetSearchResult FindExistingAssets(string[] searchFolders = null, bool autoSelectSingleAssets = false)
-        {
-            AssetSearchResult result = new AssetSearchResult(
-                FindAssets<DeucarianThemeFamily>(searchFolders),
-                FindAssets<DeucarianTheme>(searchFolders),
-                FindAssets<DeucarianColorPalette>(searchFolders),
-                FindAssets<DeucarianColorRoleLibrary>(searchFolders),
-                FindAssets<DeucarianThemeStyle>(searchFolders));
-
-            if (autoSelectSingleAssets)
-            {
-                AutoSelectSingleAsset(
-                    result.ThemeFamilies,
-                    DeucarianThemingEditorSettings.ActiveThemeFamily,
-                    family => SetActiveThemeFamilySelection(family, DeucarianThemingEditorSettings.ActiveThemeMode));
-                AutoSelectSingleAsset(result.Themes, DeucarianThemingEditorSettings.ActiveTheme, theme => DeucarianThemingEditorSettings.ActiveTheme = theme);
-                AutoSelectSingleAsset(result.Palettes, DeucarianThemingEditorSettings.ActivePalette, palette => DeucarianThemingEditorSettings.ActivePalette = palette);
-                AutoSelectSingleAsset(result.RoleLibraries, DeucarianThemingEditorSettings.ActiveRoleLibrary, library => DeucarianThemingEditorSettings.ActiveRoleLibrary = library);
-                AutoSelectSingleAsset(result.Styles, DeucarianThemingEditorSettings.ActiveStyle, style => DeucarianThemingEditorSettings.ActiveStyle = style);
-            }
-
-            return result;
-        }
+            => DeucarianThemeSelectionActions.FindExistingAssets(searchFolders, autoSelectSingleAssets);
 
         /// <summary>
         /// Loads the source-controlled runtime settings used as the project theme default.
         /// </summary>
         public static DeucarianThemeRuntimeSettings ResolveProjectRuntimeSettings()
-        {
-            return DeucarianThemeRuntimeResolver.LoadSettings();
-        }
+            => DeucarianThemeSelectionCommands.ResolveProjectRuntimeSettings();
 
         /// <summary>
         /// Populates an empty or invalid local preview selection from the project runtime default.
         /// Existing valid family selections remain local editor overrides.
         /// </summary>
         public static bool TryHydrateActiveAssetsFromProjectDefault()
-        {
-            return TryHydrateActiveAssetsFromProjectDefault(ResolveProjectRuntimeSettings());
-        }
+            => DeucarianThemeSelectionCommands.TryHydrateActiveAssetsFromProjectDefault();
 
         /// <summary>
         /// Populates an empty or invalid local preview selection from the supplied runtime settings.
         /// </summary>
         public static bool TryHydrateActiveAssetsFromProjectDefault(
             DeucarianThemeRuntimeSettings settings)
-        {
-            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            DeucarianThemeMode mode = DeucarianThemingEditorSettings.ActiveThemeMode;
-            DeucarianThemeStyle style = DeucarianThemingEditorSettings.ActiveStyle;
-            bool changed = false;
-
-            if (family == null)
-            {
-                if (settings == null || settings.DefaultThemeFamily == null)
-                {
-                    return false;
-                }
-
-                family = settings.DefaultThemeFamily;
-                mode = settings.DefaultThemeMode;
-                changed = true;
-            }
-
-            DeucarianTheme resolvedTheme = family.ResolveTheme(mode);
-            DeucarianColorPalette resolvedPalette =
-                resolvedTheme != null ? resolvedTheme.ColorPalette : null;
-            DeucarianColorRoleLibrary resolvedLibrary =
-                resolvedPalette != null ? resolvedPalette.RoleLibrary : null;
-            if (style == null && resolvedTheme != null && resolvedTheme.VisualStyle != null)
-            {
-                style = resolvedTheme.VisualStyle;
-                changed = true;
-            }
-
-            if (DeucarianThemingEditorSettings.ActiveTheme != resolvedTheme
-                || DeucarianThemingEditorSettings.ActivePalette != resolvedPalette
-                || DeucarianThemingEditorSettings.ActiveRoleLibrary != resolvedLibrary)
-            {
-                changed = true;
-            }
-
-            DeucarianThemingEditorSettings.SetDraftSelection(family, mode, style);
-            return changed;
-        }
+            => DeucarianThemeSelectionCommands.TryHydrateActiveAssetsFromProjectDefault(settings);
 
         /// <summary>
         /// Writes the active preview family and mode to the source-controlled runtime settings asset.
         /// </summary>
         public static bool SetActiveThemeFamilyAsProjectDefault()
-        {
-            return SetActiveThemeFamilyAsProjectDefault(ResolveProjectRuntimeSettings());
-        }
+            => DeucarianThemeSelectionCommands.SetActiveThemeFamilyAsProjectDefault();
 
         /// <summary>
         /// Writes the active preview family and mode to the supplied runtime settings asset.
         /// </summary>
         public static bool SetActiveThemeFamilyAsProjectDefault(
             DeucarianThemeRuntimeSettings settings)
-        {
-            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            if (settings == null)
-            {
-                ThemingLog.Editor.Warning(
-                    "No Deucarian runtime theme settings were found. Create an asset named '"
-                    + DeucarianThemeRuntimeSettings.ResourceName
-                    + ".asset' in a Resources folder before setting the project default.");
-                return false;
-            }
-
-            if (family == null)
-            {
-                ThemingLog.Editor.Warning("Choose an active Deucarian theme family before setting the project default.");
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("setting the project theme default"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(settings, "Set Deucarian Project Theme Default");
-            settings.Configure(family, DeucarianThemingEditorSettings.ActiveThemeMode);
-            EditorUtility.SetDirty(settings);
-            AssetDatabase.SaveAssets();
-            ThemingLog.Editor.Info(
-                $"Set '{family.name}' ({DeucarianThemingEditorSettings.ActiveThemeMode}) as the Deucarian project theme default.",
-                settings);
-            return true;
-        }
+            => DeucarianThemeSelectionCommands.SetActiveThemeFamilyAsProjectDefault(settings);
 
         public static IReadOnlyList<T> FindAssets<T>(string[] searchFolders = null)
             where T : UnityEngine.Object
-        {
-            string[] normalizedFolders = NormalizeSearchFolders(searchFolders);
-            if (searchFolders != null && normalizedFolders.Length == 0)
-            {
-                return Array.Empty<T>();
-            }
-
-            string filter = "t:" + typeof(T).Name;
-            string[] guids = normalizedFolders == null
-                ? AssetDatabase.FindAssets(filter)
-                : AssetDatabase.FindAssets(filter, normalizedFolders);
-
-            List<T> assets = new List<T>();
-            HashSet<string> seenGuids = new HashSet<string>(StringComparer.Ordinal);
-
-            for (int i = 0; i < guids.Length; i++)
-            {
-                if (!seenGuids.Add(guids[i]))
-                {
-                    continue;
-                }
-
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                T asset = AssetDatabase.LoadAssetAtPath<T>(path);
-                if (asset != null)
-                {
-                    assets.Add(asset);
-                }
-            }
-
-            assets.Sort((left, right) =>
-                string.Compare(AssetDatabase.GetAssetPath(left), AssetDatabase.GetAssetPath(right), StringComparison.OrdinalIgnoreCase));
-            return assets;
-        }
+            => DeucarianThemeAssetCatalog.FindAssets<T>(searchFolders);
 
         public static DeucarianDefaultThemeAssets CreateMissingDefaultThemeAssets()
-        {
-            return CreateMissingDefaultThemeAssets(DeucarianThemingEditorSettings.DefaultAssetFolder);
-        }
+            => DeucarianThemeAssetSetup.CreateMissingDefaultThemeAssets();
 
         public static DeucarianDefaultThemeAssets CreateMissingDefaultThemeAssets(string folder)
-        {
-            if (!CanPersistEditorChanges("creating default theme assets"))
-            {
-                return null;
-            }
-
-            string assetFolder = string.IsNullOrWhiteSpace(folder)
-                ? DeucarianThemingEditorSettings.DefaultThemeAssetFolder
-                : DeucarianThemingEditorSettings.NormalizeAssetPath(folder);
-
-            DeucarianThemingEditorSettings.DefaultAssetFolder = assetFolder;
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateDefaultThemeAssets(assetFolder);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info($"Deucarian default theme assets are ready in {assetFolder}.", assets.Theme);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.CreateMissingDefaultThemeAssets(folder);
 
         public static DeucarianDefaultThemeAssets CreateGameThemeAssets()
-        {
-            return CreateGameThemeAssets(DeucarianDefaultThemeAssetFactory.GameRootFolder);
-        }
+            => DeucarianThemeAssetSetup.CreateGameThemeAssets();
 
         public static DeucarianDefaultThemeAssets CreateGameThemeAssets(string folder)
-        {
-            if (!CanPersistEditorChanges("creating game theme assets"))
-            {
-                return null;
-            }
-
-            string assetFolder = string.IsNullOrWhiteSpace(folder)
-                ? DeucarianDefaultThemeAssetFactory.GameRootFolder
-                : DeucarianThemingEditorSettings.NormalizeAssetPath(folder);
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateGameThemeAssets(assetFolder);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info($"Deucarian game theme assets are ready in {assetFolder}.", assets.Theme);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.CreateGameThemeAssets(folder);
 
         public static IReadOnlyList<DeucarianThemeStyle> CreateBuiltinThemeStyleAssets()
-        {
-            return CreateBuiltinThemeStyleAssets(
-                CombineAssetPath(
-                    DeucarianThemingEditorSettings.DefaultAssetFolder,
-                    DeucarianDefaultThemeAssetFactory.BuiltinStylesFolderName));
-        }
+            => DeucarianThemeAssetSetup.CreateBuiltinThemeStyleAssets();
 
         public static IReadOnlyList<DeucarianThemeStyle> CreateBuiltinThemeStyleAssets(string folder)
-        {
-            if (!CanPersistEditorChanges("creating built-in theme styles"))
-            {
-                return Array.Empty<DeucarianThemeStyle>();
-            }
-
-            string assetFolder = string.IsNullOrWhiteSpace(folder)
-                ? CombineAssetPath(
-                    DeucarianThemingEditorSettings.DefaultAssetFolder,
-                    DeucarianDefaultThemeAssetFactory.BuiltinStylesFolderName)
-                : DeucarianThemingEditorSettings.NormalizeAssetPath(folder);
-
-            IReadOnlyList<DeucarianThemeStyle> styles =
-                DeucarianDefaultThemeAssetFactory.CreateBuiltinThemeStyleAssets(assetFolder);
-            DeucarianThemeStyle defaultStyle = FindStyleById(styles, DeucarianThemeStyleIds.FrostedGlass)
-                ?? (styles.Count > 0 ? styles[0] : null);
-            if (defaultStyle != null)
-            {
-                DeucarianThemingEditorSettings.ActiveStyle = defaultStyle;
-            }
-
-            ThemingLog.Editor.Info($"Deucarian built-in theme styles are ready in {assetFolder}.", defaultStyle);
-            return styles;
-        }
+            => DeucarianThemeAssetSetup.CreateBuiltinThemeStyleAssets(folder);
 
         public static DeucarianDefaultThemeAssets CreateThemeFamily()
-        {
-            if (!CanPersistEditorChanges("creating a theme family"))
-            {
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string familyPath = CombineAssetPath(folder, DeucarianDefaultThemeAssetFactory.ThemeFamilyFileName);
-            return CreateThemeFamily(familyPath);
-        }
+            => DeucarianThemeAssetSetup.CreateThemeFamily();
 
         public static DeucarianDefaultThemeAssets CreateThemeFamily(string familyPath)
-        {
-            if (!CanPersistEditorChanges("creating a theme family"))
-            {
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateThemeFamily(familyPath);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info(
-                $"Deucarian theme family is ready at {AssetDatabase.GetAssetPath(assets.ThemeFamily)}.",
-                assets.ThemeFamily);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.CreateThemeFamily(familyPath);
 
         public static DeucarianDefaultThemeAssets CreateThemeFamilyFromSavePanel()
-        {
-            if (!CanPersistEditorChanges("creating a theme family"))
-            {
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string familyPath = EditorUtility.SaveFilePanelInProject(
-                "Create Theme Family",
-                PathWithoutExtension(DeucarianDefaultThemeAssetFactory.ThemeFamilyFileName),
-                "asset",
-                "Choose where to create the paired light and dark Deucarian theme family.",
-                folder);
-
-            if (string.IsNullOrEmpty(familyPath))
-            {
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = CreateThemeFamily(familyPath);
-            if (assets == null)
-            {
-                return null;
-            }
-
-            DeucarianEditorSelection.SelectAndPing(assets.ThemeFamily);
-            return assets;
-        }
+            => DeucarianThemeAssetDialogs.CreateThemeFamilyFromSavePanel();
 
         public static DeucarianDefaultThemeAssets RepairActiveThemeFamilySetup()
-        {
-            if (!CanPersistEditorChanges("repairing a theme family"))
-            {
-                return null;
-            }
-
-            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
-            if (family == null)
-            {
-                ThemingLog.Editor.Warning("No active Deucarian theme family is selected.");
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairThemeFamilySetup(family);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info($"Repaired Deucarian theme family '{family.name}'.", family);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.RepairActiveThemeFamilySetup();
 
         public static DeucarianDefaultThemeAssets WrapActiveThemeInFamily(
             DeucarianThemeMode existingThemeMode,
             string familyPath)
-        {
-            if (!CanPersistEditorChanges("wrapping a theme in a family"))
-            {
-                return null;
-            }
-
-            if (DeucarianThemingEditorSettings.ActiveThemeFamily != null)
-            {
-                ThemingLog.Editor.Warning(
-                    "The active theme already belongs to a theme family. Select a standalone legacy theme before migration.");
-                return null;
-            }
-
-            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme;
-            if (theme == null)
-            {
-                ThemingLog.Editor.Warning("Choose an active standalone theme before wrapping it in a family.");
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.WrapExistingThemeInFamily(
-                theme,
-                existingThemeMode,
-                familyPath);
-            DeucarianThemingEditorSettings.ActiveThemeMode = existingThemeMode;
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info(
-                $"Wrapped theme '{theme.name}' as the {existingThemeMode} variant of '{assets.ThemeFamily.name}'.",
-                assets.ThemeFamily);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.WrapActiveThemeInFamily(existingThemeMode, familyPath);
 
         public static DeucarianDefaultThemeAssets WrapActiveThemeInFamilyFromSavePanel(
             DeucarianThemeMode existingThemeMode)
-        {
-            if (!CanPersistEditorChanges("wrapping a theme in a family"))
-            {
-                return null;
-            }
-
-            if (DeucarianThemingEditorSettings.ActiveThemeFamily != null)
-            {
-                ThemingLog.Editor.Warning(
-                    "The active theme already belongs to a theme family. Select a standalone legacy theme before migration.");
-                return null;
-            }
-
-            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme;
-            if (theme == null)
-            {
-                ThemingLog.Editor.Warning("Choose an active standalone theme before wrapping it in a family.");
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string familyPath = EditorUtility.SaveFilePanelInProject(
-                $"Wrap Theme As {existingThemeMode}",
-                theme.name + "Family",
-                "asset",
-                $"Choose the family asset that will reference '{theme.name}' as its {existingThemeMode} variant.",
-                folder);
-            return string.IsNullOrEmpty(familyPath)
-                ? null
-                : WrapActiveThemeInFamily(existingThemeMode, familyPath);
-        }
+            => DeucarianThemeAssetDialogs.WrapActiveThemeInFamilyFromSavePanel(existingThemeMode);
 
         public static DeucarianDefaultThemeAssets CreateMinimalPalette()
-        {
-            if (!CanPersistEditorChanges("creating a minimal palette"))
-            {
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string palettePath = CombineAssetPath(folder, DeucarianDefaultThemeAssetFactory.MinimalPaletteFileName);
-            return CreateMinimalPalette(palettePath);
-        }
+            => DeucarianThemeAssetSetup.CreateMinimalPalette();
 
         public static DeucarianDefaultThemeAssets CreateMinimalPalette(string palettePath)
-        {
-            if (!CanPersistEditorChanges("creating a minimal palette"))
-            {
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.CreateMinimalPalette(palettePath);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info($"Deucarian minimal palette is ready at {AssetDatabase.GetAssetPath(assets.Palette)}.", assets.Palette);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.CreateMinimalPalette(palettePath);
 
         public static DeucarianDefaultThemeAssets CreateMinimalPaletteFromSavePanel()
-        {
-            if (!CanPersistEditorChanges("creating a minimal palette"))
-            {
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string palettePath = EditorUtility.SaveFilePanelInProject(
-                "Create Minimal Palette",
-                PathWithoutExtension(DeucarianDefaultThemeAssetFactory.MinimalPaletteFileName),
-                "asset",
-                "Choose where to create the minimal Deucarian palette.",
-                folder);
-
-            if (string.IsNullOrEmpty(palettePath))
-            {
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = CreateMinimalPalette(palettePath);
-            if (assets == null)
-            {
-                return null;
-            }
-
-            DeucarianEditorSelection.SelectAndPing(assets.Palette);
-            return assets;
-        }
+            => DeucarianThemeAssetDialogs.CreateMinimalPaletteFromSavePanel();
 
         public static DeucarianDefaultThemeAssets CreateThemeFromActivePalette()
-        {
-            return RepairActivePaletteSetup();
-        }
+            => DeucarianThemeAssetSetup.CreateThemeFromActivePalette();
 
         public static DeucarianDefaultThemeAssets RepairActivePaletteSetup()
-        {
-            if (!CanPersistEditorChanges("repairing a palette"))
-            {
-                return null;
-            }
-
-            DeucarianColorPalette palette = ResolveOrCreateActivePaletteFirst();
-            if (palette == null)
-            {
-                ThemingLog.Editor.Warning("No active Deucarian palette is selected. Choose one palette or create a minimal palette first.");
-                return null;
-            }
-
-            DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairPaletteSetup(palette);
-            StoreDefaultAssetSelections(assets);
-            ThemingLog.Editor.Info($"Repaired Deucarian palette setup for '{palette.name}'.", palette);
-            return assets;
-        }
+            => DeucarianThemeAssetSetup.RepairActivePaletteSetup();
 
         public static DeucarianColorPalette CreatePaletteFromTheme(DeucarianTheme theme, string palettePath)
-        {
-            if (!CanPersistEditorChanges("creating a palette from a theme"))
-            {
-                return null;
-            }
-
-            DeucarianColorPalette palette = DeucarianDefaultThemeAssetFactory.CreatePaletteFromTheme(theme, palettePath);
-            DeucarianThemingEditorSettings.ActivePalette = palette;
-            if (palette != null && palette.RoleLibrary != null)
-            {
-                DeucarianThemingEditorSettings.ActiveRoleLibrary = palette.RoleLibrary;
-            }
-
-            ThemingLog.Editor.Info($"Created Deucarian palette '{palette.name}' from theme '{theme.name}'.", palette);
-            return palette;
-        }
+            => DeucarianThemeAssetSetup.CreatePaletteFromTheme(theme, palettePath);
 
         public static DeucarianColorPalette CreatePaletteFromActiveThemeFromSavePanel()
-        {
-            if (!CanPersistEditorChanges("creating a palette from a theme"))
-            {
-                return null;
-            }
-
-            DeucarianTheme theme = ResolveOrCreateActiveTheme();
-            if (theme == null || theme.ColorPalette == null)
-            {
-                ThemingLog.Editor.Warning("No active Deucarian theme with a palette is selected.");
-                return null;
-            }
-
-            string folder = EnsureAssetFolder(DeucarianDefaultThemeAssetFactory.MinimalPaletteRootFolder);
-            string palettePath = EditorUtility.SaveFilePanelInProject(
-                "Create Palette From Active Theme",
-                theme.name + "Palette",
-                "asset",
-                "Choose where to create or update the palette copy.",
-                folder);
-
-            if (string.IsNullOrEmpty(palettePath))
-            {
-                return null;
-            }
-
-            DeucarianColorPalette palette = CreatePaletteFromTheme(theme, palettePath);
-            DeucarianEditorSelection.SelectAndPing(palette);
-            return palette;
-        }
+            => DeucarianThemeAssetDialogs.CreatePaletteFromActiveThemeFromSavePanel();
 
         public static int RepairGeneratedAssetNames(string[] searchFolders = null)
-        {
-            if (!CanPersistEditorChanges("repairing generated asset names"))
-            {
-                return 0;
-            }
-
-            string[] folders = searchFolders == null
-                ? NormalizeSearchFolders(new[] { DeucarianThemingEditorSettings.DefaultProjectFolder })
-                : NormalizeSearchFolders(searchFolders);
-            if (folders == null || folders.Length == 0)
-            {
-                ThemingLog.Editor.Info("No Deucarian generated asset folders were found to repair.");
-                return 0;
-            }
-
-            int repaired = 0;
-            repaired += RepairAssetNames<DeucarianThemeFamily>(folders);
-            repaired += RepairAssetNames<DeucarianColorRole>(folders);
-            repaired += RepairAssetNames<DeucarianColorRoleLibrary>(folders);
-            repaired += RepairAssetNames<DeucarianColorPalette>(folders);
-            repaired += RepairAssetNames<DeucarianTheme>(folders);
-            repaired += RepairAssetNames<DeucarianThemeStyle>(folders);
-
-            if (repaired > 0)
-            {
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
-
-            ThemingLog.Editor.Info($"Repaired {repaired} Deucarian generated asset name(s).");
-            return repaired;
-        }
+            => DeucarianThemeAssetCatalog.RepairGeneratedAssetNames(searchFolders);
 
         public static DeucarianThemeFamily ResolveOrCreateActiveThemeFamily(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
             string createFolder = null)
-        {
-            DeucarianThemeFamily activeFamily = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            if (activeFamily != null)
-            {
-                return activeFamily;
-            }
-
-            IReadOnlyList<DeucarianThemeFamily> families = FindAssets<DeucarianThemeFamily>(searchFolders);
-            if (families.Count == 1)
-            {
-                SetActiveThemeFamilySelection(families[0], DeucarianThemingEditorSettings.ActiveThemeMode);
-                return families[0];
-            }
-
-            if (families.Count == 0)
-            {
-                if (!CanPersistEditorChanges("creating a theme family"))
-                {
-                    return null;
-                }
-
-                string folder = string.IsNullOrWhiteSpace(createFolder)
-                    ? DeucarianThemingEditorSettings.DefaultAssetFolder
-                    : EnsureAssetFolder(createFolder);
-                string familyPath = CombineAssetPath(folder, "DefaultThemeFamily.asset");
-                DeucarianDefaultThemeAssets assets = CreateThemeFamily(familyPath);
-                return assets != null ? assets.ThemeFamily : null;
-            }
-
-            if (openManagerForMultiple)
-            {
-                DeucarianThemeManagerWindow.OpenWindow();
-            }
-
-            return null;
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActiveThemeFamily(openManagerForMultiple, searchFolders, createFolder);
 
         public static DeucarianTheme ResolveOrCreateActiveTheme(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
             string createFolder = null)
-        {
-            return ResolveOrCreateActiveAsset(
-                DeucarianThemingEditorSettings.ActiveTheme,
-                theme => DeucarianThemingEditorSettings.ActiveTheme = theme,
-                FindAssets<DeucarianTheme>(searchFolders),
-                assets => assets.Theme,
-                openManagerForMultiple,
-                createFolder);
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActiveTheme(openManagerForMultiple, searchFolders, createFolder);
 
         public static DeucarianColorPalette ResolveOrCreateActivePaletteFirst(
             bool openManagerForMultiple = true,
             string[] searchFolders = null)
-        {
-            DeucarianColorPalette activePalette = DeucarianThemingEditorSettings.ActivePalette;
-            if (activePalette != null)
-            {
-                return activePalette;
-            }
-
-            IReadOnlyList<DeucarianColorPalette> palettes = FindAssets<DeucarianColorPalette>(searchFolders);
-            if (palettes.Count == 1)
-            {
-                DeucarianThemingEditorSettings.ActivePalette = palettes[0];
-                return palettes[0];
-            }
-
-            if (palettes.Count == 0)
-            {
-                DeucarianDefaultThemeAssets assets = CreateMinimalPalette();
-                return assets != null ? assets.Palette : null;
-            }
-
-            if (openManagerForMultiple)
-            {
-                DeucarianThemeManagerWindow.OpenWindow();
-            }
-
-            return null;
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActivePaletteFirst(openManagerForMultiple, searchFolders);
 
         public static DeucarianColorPalette ResolveOrCreateActivePalette(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
             string createFolder = null)
-        {
-            return ResolveOrCreateActiveAsset(
-                DeucarianThemingEditorSettings.ActivePalette,
-                palette => DeucarianThemingEditorSettings.ActivePalette = palette,
-                FindAssets<DeucarianColorPalette>(searchFolders),
-                assets => assets.Palette,
-                openManagerForMultiple,
-                createFolder);
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActivePalette(openManagerForMultiple, searchFolders, createFolder);
 
         public static DeucarianColorRoleLibrary ResolveOrCreateActiveRoleLibrary(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
             string createFolder = null)
-        {
-            return ResolveOrCreateActiveAsset(
-                DeucarianThemingEditorSettings.ActiveRoleLibrary,
-                library => DeucarianThemingEditorSettings.ActiveRoleLibrary = library,
-                FindAssets<DeucarianColorRoleLibrary>(searchFolders),
-                assets => assets.RoleLibrary,
-                openManagerForMultiple,
-                createFolder);
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActiveRoleLibrary(openManagerForMultiple, searchFolders, createFolder);
 
         public static DeucarianThemeStyle ResolveOrCreateActiveStyle(
             bool openManagerForMultiple = true,
             string[] searchFolders = null,
             string createFolder = null)
-        {
-            DeucarianThemeStyle activeStyle = DeucarianThemingEditorSettings.ActiveStyle;
-            if (activeStyle != null)
-            {
-                return activeStyle;
-            }
-
-            IReadOnlyList<DeucarianThemeStyle> foundStyles = FindAssets<DeucarianThemeStyle>(searchFolders);
-            if (foundStyles.Count == 1)
-            {
-                DeucarianThemingEditorSettings.ActiveStyle = foundStyles[0];
-                return foundStyles[0];
-            }
-
-            if (foundStyles.Count == 0)
-            {
-                string folder = string.IsNullOrWhiteSpace(createFolder)
-                    ? CombineAssetPath(
-                        DeucarianThemingEditorSettings.DefaultAssetFolder,
-                        DeucarianDefaultThemeAssetFactory.BuiltinStylesFolderName)
-                    : createFolder;
-                IReadOnlyList<DeucarianThemeStyle> createdStyles = CreateBuiltinThemeStyleAssets(folder);
-                return FindStyleById(createdStyles, DeucarianThemeStyleIds.FrostedGlass)
-                    ?? (createdStyles.Count > 0 ? createdStyles[0] : null);
-            }
-
-            if (openManagerForMultiple)
-            {
-                DeucarianThemeManagerWindow.OpenWindow();
-            }
-
-            return null;
-        }
+            => DeucarianThemeSelectionActions.ResolveOrCreateActiveStyle(openManagerForMultiple, searchFolders, createFolder);
 
         public static DeucarianTheme SelectActiveTheme()
-        {
-            DeucarianTheme theme = ResolveOrCreateActiveTheme();
-            DeucarianEditorSelection.SelectAndPing(theme);
-            return theme;
-        }
+            => DeucarianThemeSelectionActions.SelectActiveTheme();
 
         public static DeucarianThemeFamily SelectActiveThemeFamily()
-        {
-            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
-            DeucarianEditorSelection.SelectAndPing(family);
-            return family;
-        }
+            => DeucarianThemeSelectionActions.SelectActiveThemeFamily();
 
         public static DeucarianColorPalette SelectActivePalette()
-        {
-            DeucarianColorPalette palette = ResolveOrCreateActivePalette();
-            DeucarianEditorSelection.SelectAndPing(palette);
-            return palette;
-        }
+            => DeucarianThemeSelectionActions.SelectActivePalette();
 
         public static DeucarianColorRoleLibrary SelectActiveRoleLibrary()
-        {
-            DeucarianColorRoleLibrary library = ResolveOrCreateActiveRoleLibrary();
-            DeucarianEditorSelection.SelectAndPing(library);
-            return library;
-        }
+            => DeucarianThemeSelectionActions.SelectActiveRoleLibrary();
 
         public static DeucarianThemeStyle SelectActiveStyle()
-        {
-            DeucarianThemeStyle style = ResolveOrCreateActiveStyle();
-            DeucarianEditorSelection.SelectAndPing(style);
-            return style;
-        }
+            => DeucarianThemeSelectionActions.SelectActiveStyle();
 
         public static int SetActiveThemeFamilyAndApply(DeucarianThemeFamily family)
-        {
-            SetActiveThemeFamilySelection(family, DeucarianThemingEditorSettings.ActiveThemeMode);
-            if (family == null)
-            {
-                return 0;
-            }
-
-            return ApplyThemeFamilyToOpenScene(
-                family,
-                DeucarianThemingEditorSettings.ActiveThemeMode,
-                false,
-                false);
-        }
+            => DeucarianThemeSelectionCommands.SetActiveThemeFamilyAndApply(family);
 
         public static int SetActiveThemeModeAndApply(DeucarianThemeMode mode)
-        {
-            DeucarianThemingEditorSettings.ActiveThemeMode = mode;
-            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            if (family == null)
-            {
-                return 0;
-            }
-
-            SetActiveThemeFamilySelection(family, mode);
-            return ApplyThemeFamilyToOpenScene(family, mode, false, false);
-        }
+            => DeucarianThemeSelectionCommands.SetActiveThemeModeAndApply(mode);
 
         public static int SetActiveThemeAndApply(DeucarianTheme theme)
-        {
-            DeucarianThemingEditorSettings.ActiveThemeFamily = null;
-            DeucarianThemingEditorSettings.ActiveTheme = theme;
-            if (theme == null)
-            {
-                return 0;
-            }
-
-            return ApplyThemeToOpenScene(theme, false, false);
-        }
+            => DeucarianThemeSelectionCommands.SetActiveThemeAndApply(theme);
 
         public static bool SetActivePaletteAndApply(DeucarianColorPalette palette)
-        {
-            DeucarianThemingEditorSettings.ActivePalette = palette;
-            if (palette == null)
-            {
-                return false;
-            }
-
-            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme
-                ?? ResolveOrCreateActiveTheme(false);
-            if (theme == null)
-            {
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("assigning a theme palette"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(theme, "Assign Deucarian Theme Palette");
-            theme.SetColorPalette(palette);
-            EditorUtility.SetDirty(theme);
-            AssetDatabase.SaveAssets();
-            RefreshOpenSceneProvidersUsingAsset(theme);
-            return true;
-        }
+            => DeucarianThemeSelectionCommands.SetActivePaletteAndApply(palette);
 
         public static bool SetActiveRoleLibraryAndApply(DeucarianColorRoleLibrary roleLibrary)
-        {
-            DeucarianThemingEditorSettings.ActiveRoleLibrary = roleLibrary;
-            if (roleLibrary == null)
-            {
-                return false;
-            }
-
-            DeucarianColorPalette palette = DeucarianThemingEditorSettings.ActivePalette
-                ?? ResolveOrCreateActivePalette(false);
-            if (palette == null)
-            {
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("assigning a palette role library"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(palette, "Assign Deucarian Palette Role Library");
-            palette.SetRoleLibrary(roleLibrary);
-            EditorUtility.SetDirty(palette);
-            AssetDatabase.SaveAssets();
-            RefreshOpenSceneProvidersUsingAsset(palette);
-            return true;
-        }
+            => DeucarianThemeSelectionCommands.SetActiveRoleLibraryAndApply(roleLibrary);
 
         public static bool SetActiveStyleAndApply(DeucarianThemeStyle style)
-        {
-            DeucarianThemingEditorSettings.ActiveStyle = style;
-            if (style == null)
-            {
-                return false;
-            }
-
-            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            if (family != null)
-            {
-                return AssignStyleToThemeFamily(family, style);
-            }
-
-            DeucarianTheme theme = DeucarianThemingEditorSettings.ActiveTheme
-                ?? ResolveOrCreateActiveTheme(false);
-            if (theme == null)
-            {
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("assigning a theme style"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(theme, "Assign Deucarian Theme Style");
-            theme.SetVisualStyle(style);
-            EditorUtility.SetDirty(theme);
-            AssetDatabase.SaveAssets();
-            RefreshOpenSceneProvidersUsingAsset(theme);
-            return true;
-        }
+            => DeucarianThemeSelectionCommands.SetActiveStyleAndApply(style);
 
         /// <summary>
         /// Opens a project save panel and creates a reusable custom style from the active composition.
         /// No asset is created until the user confirms the save location.
         /// </summary>
         public static DeucarianThemeStyle CreateStyleVariantFromActiveFromSavePanel()
-        {
-            DeucarianThemeStyle source = DeucarianThemingEditorSettings.ActiveStyle;
-            if (source == null)
-            {
-                ThemingLog.Editor.Warning("Creating a custom style requires an active Deucarian style.");
-                return null;
-            }
-
-            string sourcePath = AssetDatabase.GetAssetPath(source);
-            string defaultFolder = string.IsNullOrEmpty(sourcePath)
-                ? DeucarianThemingEditorSettings.DefaultAssetFolder
-                : sourcePath.Substring(0, sourcePath.LastIndexOf('/'));
-            string suggestedName = string.IsNullOrWhiteSpace(source.DisplayName)
-                ? "Custom Theme Style"
-                : source.DisplayName + " Custom";
-            string variantPath = EditorUtility.SaveFilePanelInProject(
-                "Create Deucarian Custom Style",
-                suggestedName,
-                "asset",
-                "Choose a source-controlled location for the reusable custom presentation style.",
-                defaultFolder);
-            return string.IsNullOrWhiteSpace(variantPath)
-                ? null
-                : CreateStyleVariant(source, variantPath);
-        }
+            => DeucarianThemeAssetDialogs.CreateStyleVariantFromActiveFromSavePanel();
 
         /// <summary>Legacy API that creates and activates a source-controlled custom style.</summary>
         public static DeucarianThemeStyle CreateStyleVariant(
             DeucarianThemeStyle source,
             string assetPath)
-        {
-            if (!CanPersistEditorChanges("creating a style variant"))
-            {
-                return null;
-            }
-
-            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
-            if (source == null
-                || string.IsNullOrWhiteSpace(normalizedPath)
-                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal)
-                || !normalizedPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
-            {
-                ThemingLog.Editor.Warning("A custom style requires an active source style and an .asset path under Assets.");
-                return null;
-            }
-
-            if (AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null)
-            {
-                ThemingLog.Editor.Warning($"A Deucarian asset already exists at '{normalizedPath}'.");
-                return null;
-            }
-
-            string fileName = PathWithoutExtension(normalizedPath);
-            string variantId = BuildVariantStyleId(fileName);
-            int slashIndex = normalizedPath.LastIndexOf('/');
-            if (slashIndex > 0)
-            {
-                EnsureAssetFolder(normalizedPath.Substring(0, slashIndex));
-            }
-
-            DeucarianThemeStyle variant = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
-            variant.name = fileName;
-            variant.Configure(
-                variantId,
-                fileName,
-                $"Reusable custom presentation style created from {source.DisplayName}.",
-                source.SurfaceTreatment,
-                source.DarkSurfaceTint,
-                source.LightSurfaceTint,
-                source.SurfaceTintStrength,
-                source.SurfaceAlphaMultiplier,
-                source.MinimumSurfaceAlpha,
-                source.MaximumSurfaceAlpha,
-                source.BorderTint,
-                source.BorderTintStrength,
-                source.BorderAlpha,
-                source.BorderWidth,
-                source.CornerRadius,
-                source.UseGeneratedNoiseTexture,
-                source.TextureTint,
-                source.GeneratedTextureSize,
-                source.GeneratedTextureBlurRadius,
-                source.GeneratedTextureBlurStrength);
-            variant.SetVariantMetadata(
-                variantId,
-                fileName,
-                $"Reusable custom presentation style created from {source.DisplayName}.");
-            variant.SetComposition(
-                source.SurfaceProfile,
-                source.ShapeProfile,
-                source.StrokeProfile,
-                source.Density,
-                source.TypographyProfile,
-                true);
-
-            AssetDatabase.CreateAsset(variant, normalizedPath);
-            AssetDatabase.SaveAssets();
-            DeucarianThemingEditorSettings.ActiveStyle = variant;
-            SetActiveStyleAndApply(variant);
-            DeucarianEditorSelection.SelectAndPing(variant);
-            return variant;
-        }
+            => DeucarianThemeStyleAssets.CreateStyleVariant(source, assetPath);
 
         /// <summary>
         /// Creates a complete project-authored custom style without assigning it to themes or providers.
@@ -1030,16 +232,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeShapeProfile corners,
             DeucarianThemeStrokeProfile border,
             DeucarianThemeDensity size)
-        {
-            return CreateCustomStyle(
-                source,
-                assetPath,
-                surface,
-                corners,
-                border,
-                size,
-                source != null ? source.TypographyProfile : null);
-        }
+            => DeucarianThemeStyleAssets.CreateCustomStyle(source, assetPath, surface, corners, border, size);
 
         /// <summary>Creates a complete custom style with an optional TMP typography profile.</summary>
         public static DeucarianThemeStyle CreateCustomStyle(
@@ -1050,103 +243,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeStrokeProfile border,
             DeucarianThemeDensity size,
             DeucarianThemeTypographyProfile typography)
-        {
-            if (!CanPersistEditorChanges("creating a custom style"))
-            {
-                return null;
-            }
-
-            string normalizedPath = DeucarianThemingEditorSettings.NormalizeAssetPath(assetPath);
-            if (source == null
-                || surface == null
-                || corners == null
-                || border == null
-                || size == DeucarianThemeDensity.Unspecified
-                || string.IsNullOrWhiteSpace(normalizedPath)
-                || !normalizedPath.StartsWith("Assets/", StringComparison.Ordinal)
-                || !normalizedPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
-            {
-                ThemingLog.Editor.Warning(
-                    "A custom style requires a source, Surface, Corners, Border, Size, and an .asset path under Assets.");
-                return null;
-            }
-
-            if (AssetDatabase.LoadMainAssetAtPath(normalizedPath) != null)
-            {
-                ThemingLog.Editor.Warning($"A Deucarian asset already exists at '{normalizedPath}'.");
-                return null;
-            }
-
-            string fileName = PathWithoutExtension(normalizedPath);
-            int slashIndex = normalizedPath.LastIndexOf('/');
-            if (slashIndex > 0)
-            {
-                EnsureAssetFolder(normalizedPath.Substring(0, slashIndex));
-            }
-
-            string customId = "deucarian.style.custom." + Guid.NewGuid().ToString("N");
-            DeucarianThemeStyle customStyle = ScriptableObject.CreateInstance<DeucarianThemeStyle>();
-            customStyle.name = fileName;
-            customStyle.Configure(
-                customId,
-                fileName,
-                $"Custom presentation style created from {source.DisplayName}.",
-                source.SurfaceTreatment,
-                source.DarkSurfaceTint,
-                source.LightSurfaceTint,
-                source.SurfaceTintStrength,
-                source.SurfaceAlphaMultiplier,
-                source.MinimumSurfaceAlpha,
-                source.MaximumSurfaceAlpha,
-                source.BorderTint,
-                source.BorderTintStrength,
-                source.BorderAlpha,
-                source.BorderWidth,
-                source.CornerRadius,
-                source.UseGeneratedNoiseTexture,
-                source.TextureTint,
-                source.GeneratedTextureSize,
-                source.GeneratedTextureBlurRadius,
-                source.GeneratedTextureBlurStrength);
-            customStyle.SetCustomStyleMetadata(
-                customId,
-                fileName,
-                $"Custom presentation style created from {source.DisplayName}.");
-            customStyle.SetComposition(surface, corners, border, size, typography, true);
-
-            AssetDatabase.CreateAsset(customStyle, normalizedPath);
-            EditorUtility.SetDirty(customStyle);
-            AssetDatabase.SaveAssetIfDirty(customStyle);
-            DeucarianThemingEditorSettings.ActiveStyle = customStyle;
-            return customStyle;
-        }
-
-        private static string BuildVariantStyleId(string fileName)
-        {
-            string source = string.IsNullOrWhiteSpace(fileName) ? "custom" : fileName.Trim();
-            System.Text.StringBuilder slug = new System.Text.StringBuilder(source.Length);
-            bool pendingSeparator = false;
-            for (int i = 0; i < source.Length; i++)
-            {
-                char character = char.ToLowerInvariant(source[i]);
-                if (char.IsLetterOrDigit(character))
-                {
-                    if (pendingSeparator && slug.Length > 0)
-                    {
-                        slug.Append('-');
-                    }
-
-                    slug.Append(character);
-                    pendingSeparator = false;
-                }
-                else
-                {
-                    pendingSeparator = slug.Length > 0;
-                }
-            }
-
-            return "deucarian.style.variant." + (slug.Length > 0 ? slug.ToString() : "custom");
-        }
+            => DeucarianThemeStyleAssets.CreateCustomStyle(source, assetPath, surface, corners, border, size, typography);
 
         /// <summary>Legacy API that updates a project-authored custom style and refreshes active providers.</summary>
         public static bool UpdateStyleVariantComposition(
@@ -1155,641 +252,41 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeShapeProfile shape,
             DeucarianThemeStrokeProfile stroke,
             DeucarianThemeDensity density)
-        {
-            if (style == null || !style.IsVariant)
-            {
-                ThemingLog.Editor.Warning("Only project-authored Deucarian custom styles can be edited as compositions.");
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("editing a custom style"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(style, "Edit Deucarian Custom Style");
-            style.SetComposition(surface, shape, stroke, density, true);
-            EditorUtility.SetDirty(style);
-            AssetDatabase.SaveAssets();
-            DeucarianThemingEditorSettings.ActiveStyle = style;
-            RefreshOpenSceneProvidersUsingAsset(style);
-            return true;
-        }
+            => DeucarianThemeStyleAssets.UpdateStyleVariantComposition(style, surface, shape, stroke, density);
 
         public static bool AssignActiveStyleToActiveTheme()
-        {
-            DeucarianTheme theme = ResolveOrCreateActiveTheme();
-            DeucarianThemeStyle style = ResolveOrCreateActiveStyle();
-            if (theme == null || style == null)
-            {
-                ThemingLog.Editor.Warning("Assigning a Deucarian style requires both an active theme and an active style.");
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("assigning an active theme style"))
-            {
-                return false;
-            }
-
-            Undo.RecordObject(theme, "Assign Deucarian Theme Style");
-            theme.SetVisualStyle(style);
-            EditorUtility.SetDirty(theme);
-            AssetDatabase.SaveAssets();
-            int refreshed = RefreshOpenSceneProvidersUsingAsset(theme);
-            string providerNote = refreshed > 0 ? $" Refreshed {refreshed} open scene provider(s)." : string.Empty;
-            ThemingLog.Editor.Info(
-                $"Assigned Deucarian style '{style.name}' to theme '{theme.name}'.{providerNote}",
-                theme);
-            return true;
-        }
+            => DeucarianThemeSelectionCommands.AssignActiveStyleToActiveTheme();
 
         public static bool AssignActiveStyleToActiveThemeFamily()
-        {
-            DeucarianThemeFamily family = ResolveOrCreateActiveThemeFamily();
-            DeucarianThemeStyle style = ResolveOrCreateActiveStyle();
-            if (family == null || style == null)
-            {
-                ThemingLog.Editor.Warning("Assigning a shared Deucarian style requires an active theme family and style.");
-                return false;
-            }
-
-            return AssignStyleToThemeFamily(family, style);
-        }
+            => DeucarianThemeSelectionCommands.AssignActiveStyleToActiveThemeFamily();
 
         public static void SelectAndPing(UnityEngine.Object asset)
-        {
-            DeucarianEditorSelection.SelectAndPing(asset);
-        }
+            => DeucarianThemeAssetDialogs.SelectAndPing(asset);
 
         public static void OpenThemeAssetsFolder()
-        {
-            string folder = EnsureAssetFolder(DeucarianThemingEditorSettings.DefaultAssetFolder);
-            UnityEngine.Object folderAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(folder);
-            if (folderAsset != null)
-            {
-                DeucarianEditorSelection.SelectAndPing(folderAsset);
-                return;
-            }
-
-            ThemingLog.Editor.Info($"Deucarian theme assets folder: {folder}");
-        }
+            => DeucarianThemeAssetDialogs.OpenThemeAssetsFolder();
 
         public static int ApplyActiveThemeToOpenScene(bool createProviderIfMissing = true, bool askBeforeCreate = true)
-        {
-            DeucarianThemeFamily family = DeucarianThemingEditorSettings.ActiveThemeFamily;
-            if (family != null)
-            {
-                return ApplyThemeFamilyToOpenScene(
-                    family,
-                    DeucarianThemingEditorSettings.ActiveThemeMode,
-                    createProviderIfMissing,
-                    askBeforeCreate);
-            }
-
-            DeucarianTheme theme = ResolveOrCreateActiveTheme();
-            if (theme == null)
-            {
-                ThemingLog.Editor.Warning("No active Deucarian theme is selected. Open the Theme Manager and choose one.");
-                return 0;
-            }
-
-            return ApplyThemeToOpenScene(theme, createProviderIfMissing, askBeforeCreate);
-        }
+            => DeucarianThemeSceneCommands.ApplyActiveThemeToOpenScene(createProviderIfMissing, askBeforeCreate);
 
         public static int ApplyThemeFamilyToOpenScene(
             DeucarianThemeFamily family,
             DeucarianThemeMode mode,
             bool createProviderIfMissing = true,
             bool askBeforeCreate = true)
-        {
-            if (family == null)
-            {
-                ThemingLog.Editor.Warning("Cannot apply a null Deucarian theme family to the open scene.");
-                return 0;
-            }
-
-            DeucarianTheme resolvedTheme = family.ResolveTheme(mode);
-            if (resolvedTheme == null)
-            {
-                ThemingLog.Editor.Warning(
-                    $"Cannot apply theme family '{family.name}' because neither variant is assigned.",
-                    family);
-                return 0;
-            }
-
-            DeucarianThemeProvider[] providers = FindThemeProvidersInOpenScenes();
-            if (providers.Length == 0)
-            {
-                if (!CanPersistSceneChanges
-                    || !createProviderIfMissing
-                    || !ShouldCreateThemeProvider(askBeforeCreate))
-                {
-                    ThemingLog.Editor.Warning("No DeucarianThemeProvider was found in the open scenes.");
-                    return 0;
-                }
-
-                DeucarianThemeProvider createdProvider = CreateThemeFamilyProvider();
-                providers = new[] { createdProvider };
-                Selection.activeObject = createdProvider.gameObject;
-            }
-
-            int applied = 0;
-            for (int i = 0; i < providers.Length; i++)
-            {
-                DeucarianThemeProvider provider = providers[i];
-                if (provider == null || !provider.gameObject.scene.IsValid())
-                {
-                    continue;
-                }
-
-                if (CanPersistSceneChanges)
-                {
-                    Undo.RecordObject(provider, "Apply Deucarian Theme Family");
-                }
-
-                provider.SetThemeFamily(family, mode);
-                PersistProviderSceneChange(provider);
-                applied++;
-            }
-
-            if (applied > 0)
-            {
-                ThemingLog.Editor.Info(
-                    $"Applied Deucarian theme family '{family.name}' in {mode} mode to {applied} theme provider(s).",
-                    family);
-            }
-
-            return applied;
-        }
+            => DeucarianThemeSceneCommands.ApplyThemeFamilyToOpenScene(family, mode, createProviderIfMissing, askBeforeCreate);
 
         public static int ApplyThemeToOpenScene(
             DeucarianTheme theme,
             bool createProviderIfMissing = true,
             bool askBeforeCreate = true)
-        {
-            if (theme == null)
-            {
-                ThemingLog.Editor.Warning("Cannot apply a null Deucarian theme to the open scene.");
-                return 0;
-            }
-
-            DeucarianThemeProvider[] providers = FindThemeProvidersInOpenScenes();
-            if (providers.Length == 0)
-            {
-                if (!CanPersistSceneChanges
-                    || !createProviderIfMissing
-                    || !ShouldCreateThemeProvider(askBeforeCreate))
-                {
-                    ThemingLog.Editor.Warning("No DeucarianThemeProvider was found in the open scenes.");
-                    return 0;
-                }
-
-                DeucarianThemeProvider createdProvider = CreateThemeProvider(theme);
-                providers = new[] { createdProvider };
-                Selection.activeObject = createdProvider.gameObject;
-            }
-
-            int applied = 0;
-            for (int i = 0; i < providers.Length; i++)
-            {
-                DeucarianThemeProvider provider = providers[i];
-                if (provider == null || !provider.gameObject.scene.IsValid())
-                {
-                    continue;
-                }
-
-                if (CanPersistSceneChanges)
-                {
-                    Undo.RecordObject(provider, "Apply Deucarian Theme");
-                }
-
-                provider.SetTheme(theme);
-                provider.ApplyThemeToChildren(true);
-                PersistProviderSceneChange(provider);
-                applied++;
-            }
-
-            if (applied > 0)
-            {
-                ThemingLog.Editor.Info($"Applied Deucarian theme '{theme.name}' to {applied} theme provider(s).", theme);
-            }
-
-            return applied;
-        }
+            => DeucarianThemeSceneCommands.ApplyThemeToOpenScene(theme, createProviderIfMissing, askBeforeCreate);
 
         public static string EnsureAssetFolder(string folder)
-        {
-            string normalized = DeucarianThemingEditorSettings.NormalizeAssetPath(folder);
-            if (string.IsNullOrEmpty(normalized))
-            {
-                normalized = DeucarianThemingEditorSettings.DefaultThemeAssetFolder;
-            }
-
-            if (normalized != "Assets" && !normalized.StartsWith("Assets/", StringComparison.Ordinal))
-            {
-                throw new ArgumentException("Theme asset folders must be under the Assets folder.", nameof(folder));
-            }
-
-            if (AssetDatabase.IsValidFolder(normalized))
-            {
-                return normalized;
-            }
-
-            string[] parts = normalized.Split('/');
-            string current = parts[0];
-            for (int i = 1; i < parts.Length; i++)
-            {
-                string next = current + "/" + parts[i];
-                if (!AssetDatabase.IsValidFolder(next))
-                {
-                    AssetDatabase.CreateFolder(current, parts[i]);
-                }
-
-                current = next;
-            }
-
-            AssetDatabase.Refresh();
-            return normalized;
-        }
-
-        private static int RepairAssetNames<T>(string[] searchFolders)
-            where T : UnityEngine.Object
-        {
-            string[] guids = searchFolders == null
-                ? AssetDatabase.FindAssets("t:" + typeof(T).Name)
-                : AssetDatabase.FindAssets("t:" + typeof(T).Name, searchFolders);
-
-            int repaired = 0;
-            HashSet<string> seenGuids = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < guids.Length; i++)
-            {
-                if (!seenGuids.Add(guids[i]))
-                {
-                    continue;
-                }
-
-                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-                T asset = AssetDatabase.LoadAssetAtPath<T>(path);
-                if (asset == null)
-                {
-                    continue;
-                }
-
-                string expectedName = PathWithoutExtension(path);
-                if (!string.Equals(asset.name, expectedName, StringComparison.Ordinal))
-                {
-                    asset.name = expectedName;
-                    EditorUtility.SetDirty(asset);
-                    repaired++;
-                }
-            }
-
-            return repaired;
-        }
-
-        private static string CombineAssetPath(string left, string right)
-        {
-            return DeucarianThemingEditorSettings.NormalizeAssetPath(left.TrimEnd('/') + "/" + right.TrimStart('/'));
-        }
-
-        private static string PathWithoutExtension(string path)
-        {
-            string fileName = path;
-            int slashIndex = fileName.LastIndexOf('/');
-            if (slashIndex >= 0)
-            {
-                fileName = fileName.Substring(slashIndex + 1);
-            }
-
-            return fileName.EndsWith(".asset", StringComparison.OrdinalIgnoreCase)
-                ? fileName.Substring(0, fileName.Length - ".asset".Length)
-                : fileName;
-        }
-
-        private static T ResolveOrCreateActiveAsset<T>(
-            T activeAsset,
-            Action<T> setActiveAsset,
-            IReadOnlyList<T> foundAssets,
-            Func<DeucarianDefaultThemeAssets, T> getCreatedAsset,
-            bool openManagerForMultiple,
-            string createFolder)
-            where T : UnityEngine.Object
-        {
-            if (activeAsset != null)
-            {
-                return activeAsset;
-            }
-
-            if (foundAssets.Count == 1)
-            {
-                T onlyAsset = foundAssets[0];
-                setActiveAsset(onlyAsset);
-                return onlyAsset;
-            }
-
-            if (foundAssets.Count == 0)
-            {
-                DeucarianDefaultThemeAssets assets = CreateMissingDefaultThemeAssets(
-                    string.IsNullOrWhiteSpace(createFolder) ? DeucarianThemingEditorSettings.DefaultAssetFolder : createFolder);
-                if (assets == null)
-                {
-                    return null;
-                }
-
-                T createdAsset = getCreatedAsset(assets);
-                setActiveAsset(createdAsset);
-                return createdAsset;
-            }
-
-            if (openManagerForMultiple)
-            {
-                DeucarianThemeManagerWindow.OpenWindow();
-            }
-
-            return null;
-        }
-
-        private static void StoreDefaultAssetSelections(DeucarianDefaultThemeAssets assets)
-        {
-            if (assets == null)
-            {
-                return;
-            }
-
-            if (assets.ThemeFamily != null)
-            {
-                SetActiveThemeFamilySelection(
-                    assets.ThemeFamily,
-                    DeucarianThemingEditorSettings.ActiveThemeMode);
-            }
-            else
-            {
-                DeucarianThemingEditorSettings.ActiveThemeFamily = null;
-            }
-
-            if (assets.ThemeFamily == null && assets.Theme != null)
-            {
-                DeucarianThemingEditorSettings.ActiveTheme = assets.Theme;
-            }
-
-            if (assets.ThemeFamily == null && assets.Palette != null)
-            {
-                DeucarianThemingEditorSettings.ActivePalette = assets.Palette;
-            }
-
-            if (assets.RoleLibrary != null)
-            {
-                DeucarianThemingEditorSettings.ActiveRoleLibrary = assets.RoleLibrary;
-            }
-
-            if (assets.DefaultStyle != null)
-            {
-                DeucarianThemingEditorSettings.ActiveStyle = assets.DefaultStyle;
-            }
-            else if (assets.Styles.Count > 0)
-            {
-                DeucarianThemingEditorSettings.ActiveStyle = assets.Styles[0];
-            }
-        }
-
-        private static void SetActiveThemeFamilySelection(
-            DeucarianThemeFamily family,
-            DeucarianThemeMode mode)
-        {
-            DeucarianThemingEditorSettings.ActiveThemeFamily = family;
-            DeucarianThemingEditorSettings.ActiveThemeMode = mode;
-            if (family == null)
-            {
-                return;
-            }
-
-            DeucarianTheme theme = family.ResolveTheme(mode);
-            DeucarianColorPalette palette = theme != null ? theme.ColorPalette : null;
-            DeucarianThemingEditorSettings.ActiveTheme = theme;
-            DeucarianThemingEditorSettings.ActivePalette = palette;
-            DeucarianThemingEditorSettings.ActiveRoleLibrary = palette != null ? palette.RoleLibrary : null;
-            if (theme != null && theme.VisualStyle != null)
-            {
-                DeucarianThemingEditorSettings.ActiveStyle = theme.VisualStyle;
-            }
-        }
-
-        private static bool AssignStyleToThemeFamily(
-            DeucarianThemeFamily family,
-            DeucarianThemeStyle style)
-        {
-            if (family == null || style == null)
-            {
-                return false;
-            }
-
-            if (!CanPersistEditorChanges("assigning a shared family style"))
-            {
-                return false;
-            }
-
-            DeucarianTheme lightTheme = family.LightTheme;
-            DeucarianTheme darkTheme = family.DarkTheme;
-            if (lightTheme != null)
-            {
-                Undo.RecordObject(lightTheme, "Assign Shared Deucarian Theme Style");
-            }
-
-            if (darkTheme != null && darkTheme != lightTheme)
-            {
-                Undo.RecordObject(darkTheme, "Assign Shared Deucarian Theme Style");
-            }
-
-            bool changed = family.SetSharedVisualStyle(style);
-
-            if (changed)
-            {
-                if (lightTheme != null)
-                {
-                    EditorUtility.SetDirty(lightTheme);
-                }
-
-                if (darkTheme != null)
-                {
-                    EditorUtility.SetDirty(darkTheme);
-                }
-
-                AssetDatabase.SaveAssets();
-                RefreshOpenSceneProvidersUsingAsset(family);
-            }
-
-            ThemingLog.Editor.Info(
-                $"Assigned Deucarian style '{style.name}' to both variants of family '{family.name}'.",
-                family);
-            return true;
-        }
-
-        private static DeucarianThemeStyle FindStyleById(IReadOnlyList<DeucarianThemeStyle> styles, string styleId)
-        {
-            string normalizedId = DeucarianColorRole.NormalizeId(styleId);
-            for (int i = 0; i < styles.Count; i++)
-            {
-                DeucarianThemeStyle style = styles[i];
-                if (style != null && string.Equals(style.StyleId, normalizedId, StringComparison.Ordinal))
-                {
-                    return style;
-                }
-            }
-
-            return null;
-        }
-
-        private static void AutoSelectSingleAsset<T>(IReadOnlyList<T> assets, T activeAsset, Action<T> setActiveAsset)
-            where T : UnityEngine.Object
-        {
-            if (activeAsset == null && assets.Count == 1)
-            {
-                setActiveAsset(assets[0]);
-            }
-        }
-
-        private static string[] NormalizeSearchFolders(string[] searchFolders)
-        {
-            if (searchFolders == null)
-            {
-                return null;
-            }
-
-            List<string> validFolders = new List<string>();
-            for (int i = 0; i < searchFolders.Length; i++)
-            {
-                string folder = DeucarianThemingEditorSettings.NormalizeAssetPath(searchFolders[i]);
-                if (!string.IsNullOrEmpty(folder) && AssetDatabase.IsValidFolder(folder))
-                {
-                    validFolders.Add(folder);
-                }
-            }
-
-            return validFolders.ToArray();
-        }
-
-        private static bool ShouldCreateThemeProvider(bool askBeforeCreate)
-        {
-            return !askBeforeCreate || EditorUtility.DisplayDialog(
-                "Create Deucarian Theme Provider?",
-                "No DeucarianThemeProvider exists in the open scenes. Create one named 'Deucarian Theme Provider' and assign the active theme?",
-                "Create",
-                "Cancel");
-        }
-
-        private static DeucarianThemeProvider[] FindThemeProvidersInOpenScenes()
-        {
-#if UNITY_2023_1_OR_NEWER || UNITY_6000_0_OR_NEWER
-            return UnityEngine.Object.FindObjectsByType<DeucarianThemeProvider>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
-#else
-#pragma warning disable CS0618
-            return UnityEngine.Object.FindObjectsOfType<DeucarianThemeProvider>(true);
-#pragma warning restore CS0618
-#endif
-        }
+            => DeucarianThemeAssetCatalog.EnsureAssetFolder(folder);
 
         public static int RefreshOpenSceneProvidersUsingAsset(UnityEngine.Object asset)
-        {
-            if (asset == null)
-            {
-                return 0;
-            }
+            => DeucarianThemeSceneCommands.RefreshOpenSceneProvidersUsingAsset(asset);
 
-            DeucarianThemeProvider[] providers = FindThemeProvidersInOpenScenes();
-            int refreshed = 0;
-            for (int i = 0; i < providers.Length; i++)
-            {
-                DeucarianThemeProvider provider = providers[i];
-                if (provider == null
-                    || !provider.UsesThemeAsset(asset)
-                    || !provider.gameObject.scene.IsValid())
-                {
-                    continue;
-                }
-
-                provider.RefreshThemeGraph();
-                refreshed++;
-            }
-
-            return refreshed;
-        }
-
-        private static DeucarianThemeProvider CreateThemeProvider(DeucarianTheme theme)
-        {
-            if (!CanPersistSceneChanges)
-            {
-                return null;
-            }
-
-            GameObject gameObject = new GameObject("Deucarian Theme Provider");
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (activeScene.IsValid() && activeScene.isLoaded)
-            {
-                SceneManager.MoveGameObjectToScene(gameObject, activeScene);
-            }
-
-            Undo.RegisterCreatedObjectUndo(gameObject, "Create Deucarian Theme Provider");
-            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
-            provider.SetTheme(theme);
-            EditorUtility.SetDirty(provider);
-            if (provider.gameObject.scene.IsValid())
-            {
-                EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
-            }
-
-            return provider;
-        }
-
-        private static DeucarianThemeProvider CreateThemeFamilyProvider()
-        {
-            if (!CanPersistSceneChanges)
-            {
-                return null;
-            }
-
-            GameObject gameObject = new GameObject("Deucarian Theme Provider");
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (activeScene.IsValid() && activeScene.isLoaded)
-            {
-                SceneManager.MoveGameObjectToScene(gameObject, activeScene);
-            }
-
-            Undo.RegisterCreatedObjectUndo(gameObject, "Create Deucarian Theme Provider");
-            DeucarianThemeProvider provider = gameObject.AddComponent<DeucarianThemeProvider>();
-            EditorUtility.SetDirty(provider);
-            if (provider.gameObject.scene.IsValid())
-            {
-                EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
-            }
-
-            return provider;
-        }
-
-        private static bool CanPersistSceneChanges => !EditorApplication.isPlayingOrWillChangePlaymode;
-
-        private static bool CanPersistEditorChanges(string operation)
-        {
-            if (CanPersistSceneChanges)
-            {
-                return true;
-            }
-
-            ThemingLog.Editor.Warning(
-                $"Exit Play Mode before {operation}. Theme preview changes remain available while playing.");
-            return false;
-        }
-
-        private static void PersistProviderSceneChange(DeucarianThemeProvider provider)
-        {
-            if (!CanPersistSceneChanges || provider == null || !provider.gameObject.scene.IsValid())
-            {
-                return;
-            }
-
-            EditorUtility.SetDirty(provider);
-            EditorSceneManager.MarkSceneDirty(provider.gameObject.scene);
-        }
     }
 }

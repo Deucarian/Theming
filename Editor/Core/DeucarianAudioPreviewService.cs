@@ -1,5 +1,7 @@
 using System;
 using System.Reflection;
+using Deucarian.Media;
+using Deucarian.Media.Unity;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,11 +17,19 @@ namespace Deucarian.Theming.Editor
     }
 
     /// <summary>Contains Unity's editor-only preview reflection behind one testable boundary.</summary>
-    public sealed class DeucarianAudioPreviewService : IDeucarianAudioPreviewService
+    public interface IDeucarianProcessedAudioPreviewService : IDeucarianAudioPreviewService
+    {
+        bool PlayProcessed(AudioClip clip, float volume, float pitch);
+        string LastError { get; }
+    }
+
+    public sealed class DeucarianAudioPreviewService : IDeucarianProcessedAudioPreviewService
     {
         private readonly MethodInfo playMethod;
         private readonly MethodInfo stopMethod;
         private readonly MethodInfo isPlayingMethod;
+        private IMediaResourceLease<AudioClip> processedClip;
+        public string LastError { get; private set; }
 
         public DeucarianAudioPreviewService()
         {
@@ -95,6 +105,38 @@ namespace Deucarian.Theming.Editor
         }
 
         public void Stop()
+        {
+            try { StopPlayback(); }
+            finally
+            {
+                processedClip?.Dispose();
+                processedClip = null;
+            }
+        }
+
+        public bool PlayProcessed(AudioClip clip, float volume, float pitch)
+        {
+            LastError = null;
+            if (!IsAvailable || clip == null) return false;
+            Stop();
+            IMediaResourceLease<AudioClip> candidate = null;
+            try
+            {
+                candidate = UnityMediaResourceLease.CreateOwned(DeucarianAudioPreviewBuffer.Create(clip, volume, pitch));
+                if (!Play(candidate.Resource)) return false;
+                processedClip = candidate;
+                candidate = null;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                LastError = exception.Message;
+                return false;
+            }
+            finally { candidate?.Dispose(); }
+        }
+
+        private void StopPlayback()
         {
             if (stopMethod == null)
             {
