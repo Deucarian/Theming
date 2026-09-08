@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace Deucarian.Theming.Editor
 {
-    internal interface IDeucarianAudioPreviewService
+    /// <summary>Shared source-clip audition boundary for Deucarian editor labs.</summary>
+    public interface IDeucarianAudioPreviewService
     {
         bool IsAvailable { get; }
         bool IsPlaying { get; }
@@ -14,7 +15,7 @@ namespace Deucarian.Theming.Editor
     }
 
     /// <summary>Contains Unity's editor-only preview reflection behind one testable boundary.</summary>
-    internal sealed class DeucarianAudioPreviewService : IDeucarianAudioPreviewService
+    public sealed class DeucarianAudioPreviewService : IDeucarianAudioPreviewService
     {
         private readonly MethodInfo playMethod;
         private readonly MethodInfo stopMethod;

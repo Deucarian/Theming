@@ -2,6 +2,8 @@
 
 ## 1.2.0 - Unreleased
 
+- Exposed the existing editor audio preview service contract for reuse by package labs.
+
 - Added semantic audio roles, multi-variant cues, pitch variation, and safe intentional silence.
 - Added explicit Default, XR, WebGL, Desktop, and Mobile palette profiles with deterministic fallback provenance.
 - Added Media-owned pooled one-shot output integration and canonical button activation semantics.
