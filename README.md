@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.3.0`.
+Current package version: `1.3.1`.
 
 ## When to use it
 

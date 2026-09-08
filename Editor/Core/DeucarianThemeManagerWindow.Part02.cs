@@ -12,7 +12,6 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow
     {
 
-
         private void UpdateWorkbenchFooter()
         {
             if (workbenchFooter == null)
@@ -86,26 +85,6 @@ namespace Deucarian.Theming.Editor
             DeucarianEditorWorkbenchSurfaces.SetFooterIcon(workbenchFooter, iconId);
             DeucarianEditorWorkbenchSurfaces.SetFooterStatus(workbenchFooter, visualStatus);
             DeucarianEditorWorkbenchSurfaces.SetFooterBusy(workbenchFooter, false);
-        }
-
-        private void ShowPrimaryActionButton()
-        {
-            if (toolbarPrimarySlot != null && toolbarPrimaryAction?.parent != toolbarPrimarySlot)
-            {
-                DeucarianEditorCommandBar.SetReservedContent(
-                    toolbarPrimarySlot,
-                    toolbarPrimaryAction);
-            }
-        }
-
-        private void ShowPrimaryActiveStatus()
-        {
-            if (toolbarPrimarySlot != null && toolbarPrimaryStatus?.parent != toolbarPrimarySlot)
-            {
-                DeucarianEditorCommandBar.SetReservedContent(
-                    toolbarPrimarySlot,
-                    toolbarPrimaryStatus);
-            }
         }
 
         private static DeucarianEditorStatus ToEditorStatus(MessageType messageType)
@@ -343,10 +322,10 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerSelection selection,
             DeucarianThemeManagerActivationStatus status)
         {
-            DrawStatus(status);
+            DeucarianThemeManagerSummary.DrawStatus(status);
             GUILayout.Space(8f);
 
-            DrawAssetDropdown(
+            DeucarianThemeManagerFields.DrawAssetDropdown(
                 DirtyLabel("Theme Family", status.FamilyDirty),
                 selection.Family,
                 searchResult.ThemeFamilies,
@@ -360,7 +339,7 @@ namespace Deucarian.Theming.Editor
                 });
 
             EditorGUI.BeginChangeCheck();
-            DeucarianThemeMode mode = (DeucarianThemeMode)DrawWorkbenchEnumPopup(
+            DeucarianThemeMode mode = (DeucarianThemeMode)DeucarianThemeManagerFields.DrawWorkbenchEnumPopup(
                 DirtyLabel("Mode", status.ModeDirty),
                 selection.Mode);
             if (EditorGUI.EndChangeCheck())
@@ -370,7 +349,7 @@ namespace Deucarian.Theming.Editor
                 GUIUtility.ExitGUI();
             }
 
-            DrawAssetDropdown(
+            DeucarianThemeManagerFields.DrawAssetDropdown(
                 DirtyLabel("Visual Style", status.StyleDirty),
                 selection.Style,
                 searchResult.Styles,
@@ -382,39 +361,10 @@ namespace Deucarian.Theming.Editor
                 });
 
             GUILayout.Space(6f);
-            DrawResolvedSummary(selection);
-            DrawStyleSummary(selection.Style);
-            DrawAudioSummary(selection.ResolvedTheme);
+            DeucarianThemeManagerSummary.DrawResolvedSummary(selection);
+            DeucarianThemeManagerSummary.DrawStyleSummary(selection.Style);
+            DeucarianThemeManagerSummary.DrawAudioSummary(selection.ResolvedTheme);
         }
 
-        private static void DrawAudioSummary(DeucarianTheme theme)
-        {
-            DeucarianAudioPaletteSet set = theme != null ? theme.AudioPaletteSet : null;
-            DeucarianAudioExperience previewExperience =
-                DeucarianAudioPaletteLabWindow.PreviewExperience;
-            DeucarianAudioPalette resolved = set != null
-                ? set.GetPalette(previewExperience) ?? set.DefaultPalette
-                : null;
-            int warningCount = set != null ? set.GetValidationWarnings().Count : 1;
-
-            GUILayout.Space(8f);
-            EditorGUILayout.LabelField("Audio Palette", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            EditorGUILayout.LabelField(
-                set != null
-                    ? $"{set.name} · {previewExperience} · "
-                      + (resolved != null ? resolved.DisplayName : "Missing palette")
-                    : "No Audio Palette Set is linked to the resolved theme.",
-                DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
-            EditorGUILayout.LabelField(
-                warningCount == 0 ? "Audio validation: ready" : $"Audio validation: {warningCount} issue(s)",
-                DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
-            using (new EditorGUI.DisabledScope(set == null))
-            {
-                if (GUILayout.Button("Open Audio Palette Lab"))
-                {
-                    DeucarianAudioPaletteLabWindow.Open(set);
-                }
-            }
-        }
     }
 }
