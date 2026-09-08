@@ -153,11 +153,11 @@ namespace Deucarian.Theming.Editor
                 return false;
             }
 
-            bool sameSource = composerSource == style;
+            bool sameSource = composer.Source == style;
             if (!sameSource && IsComposerDraftDirty())
             {
-                bool keepEditing = ShouldKeepCurrentComposerDraft(
-                    GetStyleDisplayName(composerSource),
+                bool keepEditing = DeucarianThemeEditorConfirmations.ShouldKeepCurrentComposerDraft(
+                    GetStyleDisplayName(composer.Source),
                     GetStyleDisplayName(style));
                 if (keepEditing)
                 {
@@ -173,7 +173,7 @@ namespace Deucarian.Theming.Editor
 
             if (stageSelection)
             {
-                SetDraft(
+                DeucarianThemeDraftPolicy.SetDraft(
                     DeucarianThemingEditorSettings.ActiveThemeFamily,
                     DeucarianThemingEditorSettings.ActiveThemeMode,
                     style);
@@ -193,28 +193,6 @@ namespace Deucarian.Theming.Editor
             }
 
             return true;
-        }
-
-        internal static bool ShouldKeepCurrentComposerDraft(
-            string currentStyleName,
-            string requestedStyleName,
-            Func<string, string, string, string, string, int> showDialog = null)
-        {
-            Func<string, string, string, string, string, int> dialog = showDialog
-                ?? EditorUtility.DisplayDialogComplex;
-            string current = string.IsNullOrWhiteSpace(currentStyleName)
-                ? "the current style"
-                : currentStyleName;
-            string requested = string.IsNullOrWhiteSpace(requestedStyleName)
-                ? "the selected style"
-                : requestedStyleName;
-            int choice = dialog(
-                "Keep Style Composer Changes?",
-                $"{current} has unapplied composer changes. Keep editing it, or discard those composer changes and switch to {requested}?",
-                "Keep editing",
-                "Cancel",
-                "Discard draft and switch");
-            return choice != 2;
         }
 
         private static string GetStyleDisplayName(DeucarianThemeStyle style)
@@ -346,7 +324,7 @@ namespace Deucarian.Theming.Editor
                         "Palette, surfaces, controls, status, and typography in one specimen.",
                         DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
                     GUILayout.Space(6f);
-                    DrawThemePreview(
+                    DeucarianThemeSpecimenRenderer.DrawThemePreview(
                         selection.ResolvedTheme,
                         selection.Style,
                         selection.Style != null ? selection.Style.SurfaceProfile : null,
@@ -374,9 +352,9 @@ namespace Deucarian.Theming.Editor
                 searchResult.ThemeFamilies,
                 family =>
                 {
-                    DeucarianThemeStyle suggestedStyle = ResolveSuggestedStyle(family, selection.Mode)
+                    DeucarianThemeStyle suggestedStyle = DeucarianThemeDraftPolicy.ResolveSuggestedStyle(family, selection.Mode)
                                                          ?? selection.Style;
-                    SetDraft(family, selection.Mode, suggestedStyle);
+                    DeucarianThemeDraftPolicy.SetDraft(family, selection.Mode, suggestedStyle);
                     UpdateWorkbenchToolbar();
                     Repaint();
                 });
@@ -387,7 +365,7 @@ namespace Deucarian.Theming.Editor
                 selection.Mode);
             if (EditorGUI.EndChangeCheck())
             {
-                SetDraft(selection.Family, mode, selection.Style);
+                DeucarianThemeDraftPolicy.SetDraft(selection.Family, mode, selection.Style);
                 UpdateWorkbenchToolbar();
                 GUIUtility.ExitGUI();
             }
@@ -398,7 +376,7 @@ namespace Deucarian.Theming.Editor
                 searchResult.Styles,
                 style =>
                 {
-                    SetDraft(selection.Family, selection.Mode, style);
+                    DeucarianThemeDraftPolicy.SetDraft(selection.Family, selection.Mode, style);
                     UpdateWorkbenchToolbar();
                     Repaint();
                 });

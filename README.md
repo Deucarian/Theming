@@ -14,7 +14,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.2.0`.
+Current package version: `1.3.0`.
 
 ## When to use it
 
@@ -76,6 +76,14 @@ Done.
 3. Set `UseProviderExperience` or assign an explicit `ExperienceOverride`. XR hosts must select `XR` explicitly even when the player platform is Android.
 4. Request semantic roles such as `deucarian.ui.audio.activate`, `deucarian.input.audio.key`, or `deucarian.feedback.audio.warning`.
 5. Open **Deucarian Control Center > Experience > Audio Palette Lab** to inspect Default, XR, WebGL, Desktop, and Mobile without changing Unity build target.
+
+The Lab keeps platform/context and playback actions visible while content scrolls.
+Start with **Use project palette**, **Browse palettes**, or **Try package defaults**.
+**Original clip** plays the source recording; **Processed preview** auditions the
+resolved cue's volume/pitch and optional input intensity. The current clip is
+named and can be located in the Project window. Processed preview requires
+readable, decompressed sample data and reports unavailable formats explicitly;
+it does not pretend to reproduce the application's mixer or spatial acoustics.
 
 Interaction sources may pass `DeucarianAudioPlaybackModifiers.FromIntensity(...)`
 to `PlayRole` or `PlayRoleById`. This scales the palette-authored volume and pitch

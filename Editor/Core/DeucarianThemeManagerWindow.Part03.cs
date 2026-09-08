@@ -224,13 +224,6 @@ namespace Deucarian.Theming.Editor
                        runtimeSettingsCandidate.DefaultThemeFamily);
         }
 
-        internal static bool CanCreateRuntimeSettings(
-            int existingRuntimeSettingsCount,
-            bool isPlaying)
-        {
-            return existingRuntimeSettingsCount == 0 && !isPlaying;
-        }
-
         private bool CanUseRuntimeSettingsCandidate()
         {
             DeucarianThemeManagerSelection draft =
@@ -275,7 +268,7 @@ namespace Deucarian.Theming.Editor
 
         private void DrawStyleComposer()
         {
-            if (composerSource == null)
+            if (composer.Source == null)
             {
                 ReturnToTheme("Choose a visual style before customizing it.", MessageType.Warning);
                 return;
@@ -283,9 +276,9 @@ namespace Deucarian.Theming.Editor
 
             DrawStyleComposerContext();
 
-            string composerTitle = composerEditingStyle != null
-                ? composerEditingStyle.DisplayName
-                : composerSource.DisplayName;
+            string composerTitle = composer.EditingStyle != null
+                ? composer.EditingStyle.DisplayName
+                : composer.Source.DisplayName;
             DrawFlatSplit(
                 () =>
                 {
@@ -313,14 +306,14 @@ namespace Deucarian.Theming.Editor
                 });
 
             EditorGUILayout.HelpBox(
-                BuildComposerSaveDescription(composerEditingStyle != null),
+                BuildComposerSaveDescription(composer.EditingStyle != null),
                 MessageType.Info);
 
             bool complete = IsComposerComplete();
             DeucarianThemeManagerSelection candidate = new DeucarianThemeManagerSelection(
                 DeucarianThemingEditorSettings.ActiveThemeFamily,
                 DeucarianThemingEditorSettings.ActiveThemeMode,
-                composerEditingStyle ?? composerSource);
+                composer.EditingStyle ?? composer.Source);
             DeucarianThemeRuntimeSettings settings = projectRuntimeSettings;
             bool projectReady = settings != null
                                 && projectRuntimeSettingsResourceReady
@@ -380,31 +373,31 @@ namespace Deucarian.Theming.Editor
 
         private void DrawComposerFields()
         {
-            DeucarianThemeStyle comparison = composerEditingStyle != null
-                ? composerEditingStyle
-                : composerSource;
+            DeucarianThemeStyle comparison = composer.EditingStyle != null
+                ? composer.EditingStyle
+                : composer.Source;
 
-            composerSurface = (DeucarianThemeSurfaceProfile)DrawWorkbenchObjectField(
-                DirtyLabel("Surface", composerSurface != comparison.SurfaceProfile),
-                composerSurface,
+            composer.Surface = (DeucarianThemeSurfaceProfile)DrawWorkbenchObjectField(
+                DirtyLabel("Surface", composer.Surface != comparison.SurfaceProfile),
+                composer.Surface,
                 typeof(DeucarianThemeSurfaceProfile),
                 false);
-            composerCorners = (DeucarianThemeShapeProfile)DrawWorkbenchObjectField(
-                DirtyLabel("Corners", composerCorners != comparison.ShapeProfile),
-                composerCorners,
+            composer.Corners = (DeucarianThemeShapeProfile)DrawWorkbenchObjectField(
+                DirtyLabel("Corners", composer.Corners != comparison.ShapeProfile),
+                composer.Corners,
                 typeof(DeucarianThemeShapeProfile),
                 false);
-            composerBorder = (DeucarianThemeStrokeProfile)DrawWorkbenchObjectField(
-                DirtyLabel("Border", composerBorder != comparison.StrokeProfile),
-                composerBorder,
+            composer.Border = (DeucarianThemeStrokeProfile)DrawWorkbenchObjectField(
+                DirtyLabel("Border", composer.Border != comparison.StrokeProfile),
+                composer.Border,
                 typeof(DeucarianThemeStrokeProfile),
                 false);
-            composerSize = (DeucarianThemeDensity)DrawWorkbenchEnumPopup(
-                DirtyLabel("Size", composerSize != comparison.Density),
-                composerSize);
-            composerTypography = (DeucarianThemeTypographyProfile)DrawWorkbenchObjectField(
-                DirtyLabel("Typography", composerTypography != comparison.TypographyProfile),
-                composerTypography,
+            composer.Size = (DeucarianThemeDensity)DrawWorkbenchEnumPopup(
+                DirtyLabel("Size", composer.Size != comparison.Density),
+                composer.Size);
+            composer.Typography = (DeucarianThemeTypographyProfile)DrawWorkbenchObjectField(
+                DirtyLabel("Typography", composer.Typography != comparison.TypographyProfile),
+                composer.Typography,
                 typeof(DeucarianThemeTypographyProfile),
                 false);
         }
