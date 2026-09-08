@@ -183,7 +183,7 @@ namespace Deucarian.Theming.Editor
 
         internal static string CombineAssetPath(string left, string right)
         {
-            return DeucarianThemingEditorSettings.NormalizeAssetPath(left.TrimEnd('/') + "/" + right.TrimStart('/'));
+            return DeucarianThemeAssetNaming.CombineAssetPath(left, right);
         }
 
         internal static string PathWithoutExtension(string path)

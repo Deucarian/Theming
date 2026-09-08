@@ -157,9 +157,7 @@ namespace Deucarian.Theming.Editor
 
         public static string NormalizeAssetPath(string path)
         {
-            return string.IsNullOrWhiteSpace(path)
-                ? string.Empty
-                : path.Replace('\\', '/').Trim().TrimEnd('/');
+            return DeucarianThemeAssetNaming.NormalizeAssetPath(path);
         }
 
         public static void ClearActiveAssets()

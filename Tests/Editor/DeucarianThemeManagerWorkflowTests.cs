@@ -1194,6 +1194,15 @@ namespace Deucarian.Theming.Editor.Tests
                 string assetPath = AssetDatabase.GetAssetPath(script);
                 string absolutePath = ResolveAbsoluteAssetPath(assetPath);
                 string source = ReadPartialClassSource(absolutePath);
+                StringAssert.Contains("new DeucarianThemeManagerToolbar", source);
+                StringAssert.DoesNotContain("private Button toolbarPrimaryAction", source);
+                foreach (string presenter in new[]
+                {
+                    "DeucarianThemeManagerToolbar.cs", "DeucarianThemeManagerFields.cs",
+                    "DeucarianThemeManagerSummary.cs", "DeucarianThemeDeveloperToolsView.cs"
+                })
+                    source += Environment.NewLine + File.ReadAllText(
+                        Path.Combine(Path.GetDirectoryName(absolutePath), presenter));
 
                 StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
                 StringAssert.Contains("DeucarianEditorCommandBar", source);

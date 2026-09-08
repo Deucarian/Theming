@@ -12,7 +12,6 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow
     {
 
-
         private static string DirtyLabel(string label, bool dirty)
         {
             return dirty ? label + " *" : label;
@@ -89,22 +88,9 @@ namespace Deucarian.Theming.Editor
 
         private void UpdatePendingChangesPresentation(IReadOnlyList<string> changes)
         {
-            int count = changes != null ? changes.Count : 0;
-            bool visible = count > 0;
             currentPendingChanges = changes ?? Array.Empty<string>();
-            if (discardChangesButton != null)
-            {
-                bool canDiscard = visible && !EditorApplication.isPlayingOrWillChangePlaymode;
-                DeucarianEditorCommandBar.SetReservedVisible(
-                    discardChangesSlot,
-                    true);
-                discardChangesButton.SetEnabled(canDiscard);
-                discardChangesButton.tooltip = canDiscard
-                    ? "Restore the active project theme and clear every unapplied draft."
-                    : visible
-                        ? "Exit Play Mode before discarding staged changes."
-                        : "There are no unapplied changes to discard.";
-            }
+            toolbarView?.SetPendingChanges(currentPendingChanges.Count,
+                EditorApplication.isPlayingOrWillChangePlaymode);
         }
 
         private void DiscardAllChanges()
