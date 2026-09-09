@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 - 2026-09-09
+
+- Migrate Theme Manager and Audio Palette Lab to the shared Editor workspace. Separate preview selection from explicit activation, show role clips and source provenance, and retain composer, coverage and manual audition workflows.
+
 ## 1.3.1 - 2026-09-09
 
 - Separate default/theme-pack asset creation, repair, naming and storage; remove duplicated asset/path operations while preserving public factory entry points.

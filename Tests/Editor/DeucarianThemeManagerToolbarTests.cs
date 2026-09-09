@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using UnityEngine.UIElements;
+using Deucarian.Editor;
 using Deucarian.Theming.Editor;
 
 namespace Deucarian.Theming.Tests
@@ -9,37 +10,39 @@ namespace Deucarian.Theming.Tests
         [TestCase(0, false, false)]
         [TestCase(1, false, true)]
         [TestCase(1, true, false)]
-        public void PendingChangesControlDiscardWithoutChangingReservedLayout(int count, bool playing, bool enabled)
+        public void PendingChangesExposeDiscardOnlyWhenNeeded(int count, bool playing, bool enabled)
         {
-            var root = new VisualElement();
-            var toolbar = new DeucarianThemeManagerToolbar(root, () => { }, () => { }, () => { },
-                () => { }, () => { }, () => { });
-            toolbar.SetPendingChanges(count, playing);
-            Button discard = root.Q<Button>("deucarian-theme-manager-discard-changes");
-            Assert.That(discard.enabledSelf, Is.EqualTo(enabled));
-            Assert.That(discard.parent, Is.Not.Null);
-            Assert.That(discard.tooltip, Is.Not.Empty);
+            using (var workspace = new DeucarianEditorWorkspace(new VisualElement(), "Test"))
+            {
+                var toolbar = Create(workspace);
+                toolbar.SetPendingChanges(count, playing);
+                var discard = workspace.PageActions.Q<Button>("deucarian-theme-manager-discard-changes");
+                Assert.AreEqual(enabled, discard.enabledSelf);
+                Assert.AreEqual(count > 0 ? DisplayStyle.Flex : DisplayStyle.None, discard.style.display.value);
+            }
         }
 
         [Test]
-        public void ActiveStatusAndActionShareOneSlotAndCanSwitchRepeatedly()
+        public void ActiveStateRetainsActionIdentityAndCanSwitchRepeatedly()
         {
-            var root = new VisualElement();
-            var toolbar = new DeucarianThemeManagerToolbar(root, () => { }, () => { }, () => { },
-                () => { }, () => { }, () => { });
-            Button action = root.Q<Button>("deucarian-theme-manager-toolbar-primary");
-            VisualElement slot = action.parent;
-            toolbar.ShowActive();
-            Assert.That(action.parent, Is.Null);
-            Assert.That(slot.childCount, Is.EqualTo(1));
-            Assert.That(slot[0].name, Is.EqualTo("deucarian-theme-manager-toolbar-primary-status"));
-            toolbar.SetPrimary("Activate", false, "Choose a theme first.");
-            Assert.That(action.parent, Is.SameAs(slot));
-            Assert.That(slot.childCount, Is.EqualTo(1));
-            Assert.That(action.enabledSelf, Is.False);
-            Assert.That(action.tooltip, Is.EqualTo("Choose a theme first."));
-            toolbar.SetSelection(true, false, false, false);
-            Assert.That(root.Q<Button>("deucarian-theme-manager-view-style").enabledSelf, Is.False);
+            using (var workspace = new DeucarianEditorWorkspace(new VisualElement(), "Test"))
+            {
+                var toolbar = Create(workspace);
+                var action = workspace.PageActions.Q<Button>("deucarian-theme-manager-toolbar-primary");
+                toolbar.ShowActive();
+                Assert.AreSame(workspace.PageActions, action.parent);
+                Assert.AreEqual("Active in project", action.text);
+                Assert.IsFalse(action.enabledSelf);
+                toolbar.SetPrimary("Activate", false, "Choose a theme first.");
+                Assert.AreSame(action, workspace.PageActions.Q<Button>("deucarian-theme-manager-toolbar-primary"));
+                Assert.AreEqual("Apply to project", action.text);
+                Assert.AreEqual("Choose a theme first.", action.tooltip);
+                toolbar.SetSelection(true, false, false, false);
+                Assert.IsFalse(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-style").enabledSelf);
+            }
         }
+
+        private static DeucarianThemeManagerToolbar Create(DeucarianEditorWorkspace workspace)
+            => new DeucarianThemeManagerToolbar(workspace, () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
     }
 }

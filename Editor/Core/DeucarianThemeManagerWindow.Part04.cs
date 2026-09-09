@@ -40,9 +40,9 @@ namespace Deucarian.Theming.Editor
 
         private void BuildDeveloperToolsDrawer()
         {
-            if (workbench?.Drawer == null) return;
+            if (workspace?.Drawer == null) return;
             developerToolsOpen = false;
-            developerToolsDrawer = DeucarianThemeDeveloperToolsView.Build(workbench.Drawer,
+            developerToolsDrawer = DeucarianThemeDeveloperToolsView.Build(workspace.Drawer,
                 () => SetDeveloperToolsOpen(false), CreateThemeFamily, RefreshAssets);
         }
 

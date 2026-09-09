@@ -11,6 +11,7 @@ namespace Deucarian.Theming.Editor
         private const string PackageId = "com.deucarian.theming";
         private static readonly IDisposable ToolRegistration;
         private static readonly IDisposable CardRegistration;
+        private static readonly IDisposable AudioRegistration;
 
         static ThemingControlCenterRegistration()
         {
@@ -24,6 +25,12 @@ namespace Deucarian.Theming.Editor
                     PackageId,
                     searchTerms: new[] { "theme", "palette", "style", "colors" },
                     order: 130));
+
+            AudioRegistration = DeucarianToolRegistry.Register(new DeucarianToolDescriptor(
+                DeucarianEditorWorkspaceNavigation.AudioToolId, "Audio Palette Lab",
+                "Audition project audio by semantic role and experience.", DeucarianControlCenterArea.Experience,
+                DeucarianAudioPaletteLabWindow.OpenWindow, PackageId,
+                searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135));
 
             CardRegistration = DeucarianControlCenterRegistry.RegisterCardProvider(
                 new ThemingCardProvider());

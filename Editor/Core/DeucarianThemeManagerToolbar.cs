@@ -6,144 +6,53 @@ namespace Deucarian.Theming.Editor
 {
     internal sealed class DeucarianThemeManagerToolbar
     {
-        private const float SecondaryActionSlotWidth = 132f;
-        private const float DiscardActionSlotWidth = 148f;
-        private const float PrimaryActionSlotWidth = 168f;
-        private readonly Button themeViewButton;
-        private readonly Button styleComposerViewButton;
-        private readonly Button runtimeSettingsViewButton;
-        private readonly Button toolbarSecondaryAction;
-        private readonly Button toolbarPrimaryAction;
-        private readonly Button discardChangesButton;
-        private readonly VisualElement toolbarSecondarySlot;
-        private readonly VisualElement discardChangesSlot;
-        private readonly VisualElement toolbarPrimarySlot;
-        private readonly VisualElement toolbarPrimaryStatus;
+        private readonly DeucarianEditorChoiceBar tabs;
+        private readonly Button secondary;
+        private readonly Button primary;
+        private readonly Button discard;
 
-        internal DeucarianThemeManagerToolbar(VisualElement toolbar,
+        internal DeucarianThemeManagerToolbar(DeucarianEditorWorkspace workspace,
             Action navigateToTheme, Action navigateToStyleComposer, Action navigateToRuntimeSettings,
-            Action executeToolbarSecondaryAction, Action discardAllChanges, Action executeToolbarPrimaryAction)
+            Action executeSecondary, Action discardAllChanges, Action executePrimary)
         {
-            toolbar.Clear();
-            var lanes = DeucarianEditorCommandBar.CreateLanes(toolbar);
-            themeViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Theme",
-                navigateToTheme);
-            themeViewButton.name = "deucarian-theme-manager-view-theme";
-            styleComposerViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Style Composer",
-                navigateToStyleComposer,
-                false,
-                null,
-                "Open the selected Visual Style in Style Composer.");
-            styleComposerViewButton.name = "deucarian-theme-manager-view-style";
-            runtimeSettingsViewButton = DeucarianEditorCommandBar.CreateToggle(
-                "Runtime Settings",
-                navigateToRuntimeSettings);
-            runtimeSettingsViewButton.name = "deucarian-theme-manager-view-runtime-settings";
-            toolbarSecondaryAction = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Wrench,
-                string.Empty,
-                executeToolbarSecondaryAction,
-                false,
-                "Open the contextual style or setup action.");
-            toolbarSecondaryAction.name = "deucarian-theme-manager-toolbar-secondary";
-            discardChangesButton = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Undo,
-                "Discard changes",
-                discardAllChanges,
-                false,
-                "Restore the active project theme and clear every unapplied draft.");
-            discardChangesButton.name = "deucarian-theme-manager-discard-changes";
-            toolbarPrimaryAction = DeucarianEditorCommandBar.CreateAction(
-                DeucarianEditorIconIds.Check,
-                string.Empty,
-                executeToolbarPrimaryAction,
-                true,
-                "Apply the current staged theme selection.");
-            toolbarPrimaryAction.name = "deucarian-theme-manager-toolbar-primary";
-
-            toolbarSecondarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                SecondaryActionSlotWidth);
-            discardChangesSlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                DiscardActionSlotWidth);
-            toolbarPrimarySlot = DeucarianEditorCommandBar.CreateReservedSlot(
-                PrimaryActionSlotWidth);
-            toolbarPrimaryStatus = DeucarianEditorCommandBar.CreateState(
-                DeucarianEditorIconIds.Check,
-                "Active",
-                "The staged selection is active in project runtime settings.");
-            toolbarPrimaryStatus.name = "deucarian-theme-manager-toolbar-primary-status";
-            DeucarianEditorCommandBar.SetReservedContent(
-                toolbarSecondarySlot,
-                toolbarSecondaryAction);
-            DeucarianEditorCommandBar.SetReservedContent(
-                discardChangesSlot,
-                discardChangesButton,
-                true);
-            DeucarianEditorCommandBar.SetReservedContent(
-                toolbarPrimarySlot,
-                toolbarPrimaryAction);
-
-            lanes.Leading.Add(themeViewButton);
-            lanes.Leading.Add(styleComposerViewButton);
-            lanes.Leading.Add(runtimeSettingsViewButton);
-            lanes.Trailing.Add(toolbarSecondarySlot);
-            lanes.Trailing.Add(discardChangesSlot);
-            lanes.Trailing.Add(toolbarPrimarySlot);
+            tabs = new DeucarianEditorChoiceBar(new[] { "Theme", "Style Composer", "Project setup" }, 0, true);
+            tabs.Changed += value => { if (value == 0) navigateToTheme(); else if (value == 1) navigateToStyleComposer(); else navigateToRuntimeSettings(); };
+            tabs.ElementAt(0).name = "deucarian-theme-manager-view-theme";
+            tabs.ElementAt(1).name = "deucarian-theme-manager-view-style";
+            tabs.ElementAt(2).name = "deucarian-theme-manager-view-runtime-settings";
+            workspace.Tabs.Add(tabs);
+            secondary = DeucarianEditorWorkspaceControls.Button("More", executeSecondary);
+            secondary.name = "deucarian-theme-manager-toolbar-secondary";
+            discard = DeucarianEditorWorkspaceControls.Button("Discard changes", discardAllChanges);
+            discard.name = "deucarian-theme-manager-discard-changes";
+            primary = DeucarianEditorWorkspaceControls.Button("Apply to project", executePrimary, true);
+            primary.name = "deucarian-theme-manager-toolbar-primary";
+            workspace.PageActions.Add(secondary);
+            workspace.PageActions.Add(discard);
+            workspace.PageActions.Add(primary);
         }
 
         internal void SetSelection(bool theme, bool composer, bool runtimeSettings, bool styleAvailable)
         {
-            DeucarianEditorCommandBar.SetActive(themeViewButton, theme);
-            DeucarianEditorCommandBar.SetActive(styleComposerViewButton, composer);
-            DeucarianEditorCommandBar.SetActive(runtimeSettingsViewButton, runtimeSettings);
-            styleComposerViewButton.SetEnabled(styleAvailable);
-            styleComposerViewButton.tooltip = styleAvailable
-                ? "Open the selected Visual Style in Style Composer."
-                : "Choose a Visual Style on the Theme tab before opening Style Composer.";
+            tabs.SetValueWithoutNotify(composer ? 1 : runtimeSettings ? 2 : 0);
+            tabs.SetChoiceEnabled(1, styleAvailable, styleAvailable ? "Compose selected style" : "Choose a visual style first.");
         }
-
         internal void SetSecondary(string text, bool enabled, string tooltip)
         {
-            DeucarianEditorCommandBar.SetReservedVisible(toolbarSecondarySlot, true);
-            Configure(toolbarSecondaryAction, text, enabled, tooltip);
+            DeucarianEditorWorkspaceControls.Show(secondary, true);
+            Configure(secondary, text, enabled, tooltip);
         }
-
-        internal void HideSecondary()
-        {
-            DeucarianEditorCommandBar.SetReservedVisible(toolbarSecondarySlot, false);
-        }
-
-        internal void SetPrimary(string text, bool enabled, string tooltip)
-        {
-            Configure(toolbarPrimaryAction, text, enabled, tooltip);
-            ShowPrimary(toolbarPrimaryAction);
-        }
-
-        internal void ShowActive() => ShowPrimary(toolbarPrimaryStatus);
-
+        internal void HideSecondary() => DeucarianEditorWorkspaceControls.Show(secondary, false);
+        internal void SetPrimary(string text, bool enabled, string tooltip) => Configure(primary, text == "Activate" ? "Apply to project" : text, enabled, tooltip);
+        internal void ShowActive() => Configure(primary, "Active in project", false, "This preview matches the active project theme.");
         internal void SetPendingChanges(int count, bool isPlaying)
         {
-            bool visible = count > 0;
-            bool canDiscard = visible && !isPlaying;
-            DeucarianEditorCommandBar.SetReservedVisible(discardChangesSlot, true);
-            discardChangesButton.SetEnabled(canDiscard);
-            discardChangesButton.tooltip = canDiscard
-                ? "Restore the active project theme and clear every unapplied draft."
-                : visible ? "Exit Play Mode before discarding staged changes."
-                : "There are no unapplied changes to discard.";
+            DeucarianEditorWorkspaceControls.Show(discard, count > 0);
+            discard.SetEnabled(count > 0 && !isPlaying);
         }
-
-        private void ShowPrimary(VisualElement content)
-        {
-            if (content.parent != toolbarPrimarySlot)
-                DeucarianEditorCommandBar.SetReservedContent(toolbarPrimarySlot, content);
-        }
-
         private static void Configure(Button button, string text, bool enabled, string tooltip)
         {
-            DeucarianEditorCommandBar.SetText(button, text);
+            button.text = text;
             button.SetEnabled(enabled);
             button.tooltip = tooltip;
         }
