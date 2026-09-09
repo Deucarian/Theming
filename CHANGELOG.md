@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.4] - 2026-09-09
+
+### Changed
+
+- Adopt the shared Editor 1.7 workspace presentation: neutral surfaces, readable typography, consistent actions and aligned controls.
+- Preserve package workflows and native serialized editing; this is an editor-only presentation update.
+
 ## [1.4.3] - 2026-09-09
 
 - Refresh Audio Palette Lab data without rebuilding its controls. Preserve expanded sections, role selection, test-pad controls and intensity values across navigation and refresh.

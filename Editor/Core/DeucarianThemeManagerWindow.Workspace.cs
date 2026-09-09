@@ -96,7 +96,7 @@ namespace Deucarian.Theming.Editor
                 var selection = Selection;
                 if (selection.ResolvedTheme == null)
                 {
-                    EditorGUILayout.HelpBox("Choose a theme family to preview its colours and controls.", MessageType.Info);
+                    DeucarianEditorTextGUI.HelpBox("Choose a theme family to preview its colours and controls.", MessageType.Info);
                     return;
                 }
                 var style = selection.Style;

@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using System.Collections.Generic;
 using Deucarian.Theming.UIToolkit;
 using UnityEditor;
@@ -11,6 +12,11 @@ namespace Deucarian.Theming.Editor
         private readonly DeucarianThemingInspectorListFilterState bindingsFilter =
             new DeucarianThemingInspectorListFilterState();
         private List<string> validationWarnings = new List<string>();
+
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
 
         public override void OnInspectorGUI()
         {
@@ -26,12 +32,12 @@ namespace Deucarian.Theming.Editor
             DeucarianUIToolkitThemeApplier applier = (DeucarianUIToolkitThemeApplier)target;
 
             EditorGUILayout.Space();
-            if (GUILayout.Button("Apply Now"))
+            if (DeucarianEditorActionGUI.Button("Apply Now"))
             {
                 applier.ApplyNow();
             }
 
-            if (GUILayout.Button("Validate Bindings"))
+            if (DeucarianEditorActionGUI.Button("Validate Bindings"))
             {
                 validationWarnings = applier.ValidateBindings();
             }
@@ -47,7 +53,7 @@ namespace Deucarian.Theming.Editor
             IReadOnlyList<DeucarianUIToolkitThemeBinding> bindings = applier.Bindings;
             if (bindings == null || bindings.Count == 0)
             {
-                EditorGUILayout.HelpBox("No UI Toolkit theme bindings are configured.", MessageType.Info);
+                DeucarianEditorTextGUI.HelpBox("No UI Toolkit theme bindings are configured.", MessageType.Info);
                 return;
             }
 
@@ -58,26 +64,26 @@ namespace Deucarian.Theming.Editor
                 DeucarianUIToolkitThemeBinding binding = bindings[bindingIndex];
                 if (binding == null)
                 {
-                    EditorGUILayout.HelpBox($"Binding {bindingIndex} is null.", MessageType.Warning);
+                    DeucarianEditorTextGUI.HelpBox($"Binding {bindingIndex} is null.", MessageType.Warning);
                     continue;
                 }
 
                 string selector = GetSelectorLabel(binding);
                 int matchCount = applier.CountMatches(binding);
-                EditorGUILayout.LabelField(
+                DeucarianEditorTextGUI.LabelField(
                     $"Binding {bindingIndex}",
                     $"{selector} -> {binding.StyleProperty} ({matchCount} matches)");
 
                 if (binding.ColorRole == null)
                 {
-                    EditorGUILayout.HelpBox($"Binding {bindingIndex} has no color role.", MessageType.Warning);
+                    DeucarianEditorTextGUI.HelpBox($"Binding {bindingIndex} has no color role.", MessageType.Warning);
                 }
 
                 if (string.IsNullOrWhiteSpace(binding.UssSelector)
                     && string.IsNullOrWhiteSpace(binding.ElementName)
                     && string.IsNullOrWhiteSpace(binding.ElementClass))
                 {
-                    EditorGUILayout.HelpBox(
+                    DeucarianEditorTextGUI.HelpBox(
                         $"Binding {bindingIndex} targets the UIDocument root.",
                         MessageType.Info);
                 }
@@ -135,7 +141,7 @@ namespace Deucarian.Theming.Editor
 
             for (int i = 0; i < warnings.Count; i++)
             {
-                EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+                DeucarianEditorTextGUI.HelpBox(warnings[i], MessageType.Warning);
             }
         }
     }
@@ -146,6 +152,11 @@ namespace Deucarian.Theming.Editor
         private readonly DeucarianThemingInspectorListFilterState variableMappingsFilter =
             new DeucarianThemingInspectorListFilterState();
         private List<string> previewNames = new List<string>();
+
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
 
         public override void OnInspectorGUI()
         {
@@ -163,22 +174,22 @@ namespace Deucarian.Theming.Editor
             EditorGUILayout.Space();
             if (variables.RoleLibrary == null)
             {
-                EditorGUILayout.HelpBox("Assign a role library to generate UI Toolkit variables.", MessageType.Warning);
+                DeucarianEditorTextGUI.HelpBox("Assign a role library to generate UI Toolkit variables.", MessageType.Warning);
             }
 
-            if (GUILayout.Button("Apply Variables Now"))
+            if (DeucarianEditorActionGUI.Button("Apply Variables Now"))
             {
                 variables.ApplyVariablesNow();
             }
 
-            if (GUILayout.Button("Preview Variable Names"))
+            if (DeucarianEditorActionGUI.Button("Preview Variable Names"))
             {
                 previewNames = variables.PreviewVariableNames();
             }
 
             if (previewNames != null && previewNames.Count > 0)
             {
-                EditorGUILayout.HelpBox(string.Join("\n", previewNames), MessageType.Info);
+                DeucarianEditorTextGUI.HelpBox(string.Join("\n", previewNames), MessageType.Info);
             }
         }
     }

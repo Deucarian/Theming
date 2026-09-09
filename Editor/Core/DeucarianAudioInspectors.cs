@@ -8,6 +8,9 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianAudioRole))]
     public sealed class DeucarianAudioRoleEditor : UnityEditor.Editor
     {
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -30,6 +33,9 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianAudioRoleLibrary))]
     public sealed class DeucarianAudioRoleLibraryEditor : UnityEditor.Editor
     {
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -46,14 +52,14 @@ namespace Deucarian.Theming.Editor
                     : DeucarianEditorStatus.Warning);
 
             EditorGUILayout.Space();
-            if (GUILayout.Button("Remove Null Roles"))
+            if (DeucarianEditorActionGUI.Button("Remove Null Roles"))
             {
                 Undo.RecordObject(library, "Remove Null Audio Roles");
                 library.RemoveNullRoles();
                 EditorUtility.SetDirty(library);
             }
 
-            if (GUILayout.Button("Sort By Category Then Display Name"))
+            if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
             {
                 Undo.RecordObject(library, "Sort Audio Roles");
                 library.SortRolesByCategoryAndName();
@@ -65,6 +71,9 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianAudioPaletteSet))]
     public sealed class DeucarianAudioPaletteSetEditor : UnityEditor.Editor
     {
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -79,7 +88,7 @@ namespace Deucarian.Theming.Editor
                     ? DeucarianEditorStatus.Success
                     : DeucarianEditorStatus.Warning);
 
-            if (GUILayout.Button("Open Audio Palette Lab"))
+            if (DeucarianEditorActionGUI.Button("Open Audio Palette Lab"))
             {
                 DeucarianAudioPaletteLabWindow.Open(set);
             }
@@ -89,6 +98,9 @@ namespace Deucarian.Theming.Editor
     [CustomEditor(typeof(DeucarianAudioPalette))]
     public sealed class DeucarianAudioPaletteEditor : UnityEditor.Editor
     {
+        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
+            DeucarianEditorInspector.Create(OnInspectorGUI);
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -99,13 +111,13 @@ namespace Deucarian.Theming.Editor
             List<string> warnings = palette.GetValidationWarnings();
             for (int i = 0; i < warnings.Count; i++)
             {
-                EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+                DeucarianEditorTextGUI.HelpBox(warnings[i], MessageType.Warning);
             }
 
             EditorGUILayout.Space();
             using (new EditorGUI.DisabledScope(palette.RoleLibrary == null))
             {
-                if (GUILayout.Button("Add Missing Roles From Library"))
+                if (DeucarianEditorActionGUI.Button("Add Missing Roles From Library"))
                 {
                     Undo.RecordObject(palette, "Add Missing Audio Roles");
                     palette.AddMissingRolesFromLibrary();
@@ -113,7 +125,7 @@ namespace Deucarian.Theming.Editor
                 }
             }
 
-            if (GUILayout.Button("Remove Null Entries"))
+            if (DeucarianEditorActionGUI.Button("Remove Null Entries"))
             {
                 Undo.RecordObject(palette, "Remove Null Audio Entries");
                 palette.RemoveNullEntries();
@@ -122,7 +134,7 @@ namespace Deucarian.Theming.Editor
 
             using (new EditorGUI.DisabledScope(false))
             {
-                if (GUILayout.Button("Sort By Category Then Display Name"))
+                if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
                 {
                     Undo.RecordObject(palette, "Sort Audio Palette Entries");
                     palette.SortEntriesByCategoryAndName();
