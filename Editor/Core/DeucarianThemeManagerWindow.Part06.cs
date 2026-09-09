@@ -131,10 +131,6 @@ namespace Deucarian.Theming.Editor
 
         private void ResetComposerFromStyle(DeucarianThemeStyle style) => composer.Reset(style);
 
-        internal static void ApplyPreferredSizeOnce(DeucarianThemeManagerWindow window)
-        {
-            if (window != null) DeucarianEditorWorkspace.ConfigureWindow(window);
-        }
 
         private bool IsComposerComplete() => composer.IsComplete;
 
