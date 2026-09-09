@@ -1071,7 +1071,7 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("new DeucarianEditorWorkspace", source);
                 StringAssert.Contains("DeucarianEditorCommandBar", source);
                 StringAssert.Contains("new DeucarianEditorChoiceBar", source);
-                StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawCompactIconAction", source);
+                StringAssert.Contains("DeucarianEditorWorkspaceControls.Button", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.BeginEmbeddedPage", source);
                 StringAssert.DoesNotContain("DrawWorkbenchAction", source);
                 StringAssert.Contains("Preview selection", source);
