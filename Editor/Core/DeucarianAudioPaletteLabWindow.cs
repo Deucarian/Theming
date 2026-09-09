@@ -36,6 +36,7 @@ namespace Deucarian.Theming.Editor
                 "Audio Palette Lab");
             window.minSize = new Vector2(520f, 420f);
             window.TryAdoptSelection();
+            window.workspace?.Refresh(true);
             window.Show();
             window.Focus();
         }

@@ -75,6 +75,8 @@ namespace Deucarian.Theming.Editor
             developerToolsButton = null;
         }
 
+        private void OnInspectorUpdate() => UpdateWorkbenchToolbar();
+
         internal void CreateGUI()
         {
             workspace?.Dispose();
