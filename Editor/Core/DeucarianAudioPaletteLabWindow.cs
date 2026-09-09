@@ -76,12 +76,23 @@ namespace Deucarian.Theming.Editor
         public void CreateGUI()
         {
             navigation?.Dispose();
-            navigation = new DeucarianEditorPageSession(this, DeucarianEditorWorkspaceNavigation.AudioToolId, BuildPage, deactivateHome: StopPreview);
+            navigation = new DeucarianEditorPageSession(this, DeucarianEditorWorkspaceNavigation.AudioToolId, BuildPage, ActivatePage, deactivateHome: StopPreview);
         }
 
         internal static IDeucarianEditorPage CreatePage() =>
             DeucarianEditorWindowPages.Create<DeucarianAudioPaletteLabWindow>(
-                (window, root) => window.BuildPage(root), activate: (window, route) => window.workspace?.Refresh(true), deactivate: window => window.StopPreview());
+                (window, root) => window.BuildPage(root), activate: (window, route) => window.ActivatePage(route), deactivate: window => window.StopPreview());
+
+        private void ActivatePage(string route)
+        {
+            if (route != null && route.StartsWith("palette:", StringComparison.Ordinal))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(route.Substring(8));
+                var selected = AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(path);
+                if (selected != null) HandlePaletteSetChanged(selected);
+            }
+            workspace?.Refresh(true);
+        }
 
         private DeucarianEditorPageSession navigation;
         private VisualElement pageRoot;
