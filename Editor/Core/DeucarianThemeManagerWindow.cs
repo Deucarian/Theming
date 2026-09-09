@@ -38,7 +38,8 @@ namespace Deucarian.Theming.Editor
         private bool baselineCaptured;
         private bool runtimeCandidateTouched;
 
-        private DeucarianEditorWorkbench workbench;
+        private DeucarianEditorWorkspace workspace;
+        private ThemeWorkspaceContent workspaceContent;
         private DeucarianThemeManagerToolbar toolbarView;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
         private DeucarianEditorWorkbenchDrawer developerToolsDrawer;
@@ -47,7 +48,7 @@ namespace Deucarian.Theming.Editor
         private IReadOnlyList<string> currentPendingChanges = Array.Empty<string>();
         private int runtimeSettingsResourceCount;
 
-        internal DeucarianEditorWorkbench WorkbenchForTests => workbench;
+        internal DeucarianEditorWorkspace WorkspaceForTests => workspace;
         internal DeucarianEditorWorkbenchFooter FooterForTests => workbenchFooter;
         internal DeucarianEditorWorkbenchDrawer DeveloperToolsDrawerForTests => developerToolsDrawer;
     }

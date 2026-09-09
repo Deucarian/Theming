@@ -68,8 +68,8 @@ namespace Deucarian.Theming.Editor
         {
             EditorApplication.projectChanged -= HandleProjectChanged;
             DeucarianThemePreviewCoordinator.ClearComposerPreview();
-            workbench?.Dispose();
-            workbench = null;
+            workspace?.Dispose();
+            workspace = null;
             workbenchFooter = null;
             developerToolsDrawer = null;
             developerToolsButton = null;
@@ -77,36 +77,15 @@ namespace Deucarian.Theming.Editor
 
         internal void CreateGUI()
         {
-            workbench?.Dispose();
-            workbench = DeucarianEditorWorkbench.Create(
-                rootVisualElement,
-                new DeucarianEditorWorkbenchOptions
-                {
-                    // Package headers are intentionally disabled for now. Keep the
-                    // shared header implementation available for a future UI pass.
-                    // IncludeHeader = true,
-                    IncludeToolbar = true,
-                    IncludeDrawer = true,
-                    IncludeFooter = true,
-                    // HeaderPackageKey = "theming",
-                    // HeaderTitle = "Deucarian Theming",
-                    // HeaderSubtitle = "Compose, preview, and activate the project theme.",
-                    ToolbarLayout = DeucarianEditorWorkbenchToolbarLayout.StableActionLanes,
-                    DrawerMode = DeucarianEditorWorkbenchDrawerMode.Overlay,
-                    TopSafeFadeName = WallpaperFadeName
-                });
-            if (workbench.Content == null || workbench.Toolbar == null)
-            {
-                return;
-            }
-
+            workspace?.Dispose();
+            rootVisualElement.Clear();
+            workspace = new DeucarianEditorWorkspace(rootVisualElement, Application.productName, true);
+            workspace.Title.text = "Theme Manager";
+            workspace.Subtitle.text = "Preview a theme. Apply it when you’re ready.";
+            DeucarianEditorWorkspaceNavigation.Populate(workspace, DeucarianToolIds.ThemeManager);
+            DeucarianEditorWorkspaceControls.Show(workspace.Scope, false);
             BuildWorkbenchToolbar();
-            IMGUIContainer content = workbench.AddImGuiContent(
-                DrawWindowGui,
-                "deucarian-theme-manager-content");
-            content.style.flexGrow = 1f;
-            content.style.minHeight = 0f;
-            content.style.backgroundColor = Color.clear;
+            workspaceContent = new ThemeWorkspaceContent(this, workspace);
             BuildDeveloperToolsDrawer();
             BuildWorkbenchFooter();
             UpdateWorkbenchToolbar();
@@ -114,12 +93,12 @@ namespace Deucarian.Theming.Editor
 
         private void BuildWorkbenchFooter()
         {
-            if (workbench?.Footer == null)
+            if (workspace?.Footer == null)
             {
                 return;
             }
 
-            workbench.Footer.Clear();
+            workspace.Footer.Clear();
             workbenchFooter = DeucarianEditorWorkbenchSurfaces.CreateFooter(
                 "●",
                 "Ready",
@@ -141,13 +120,13 @@ namespace Deucarian.Theming.Editor
                 "Open asset creation, repair, and legacy utilities.",
                 128f);
             developerToolsButton?.AddToClassList(DeucarianEditorWorkbenchToolbar.ToggleClass);
-            workbench.Footer.Add(workbenchFooter.Root);
+            workspace.Footer.Add(workbenchFooter.Root);
         }
 
         private void BuildWorkbenchToolbar()
         {
-            toolbarView = workbench?.Toolbar == null ? null : new DeucarianThemeManagerToolbar(
-                workbench.Toolbar, NavigateToTheme, NavigateToStyleComposer, NavigateToRuntimeSettings,
+            toolbarView = workspace == null ? null : new DeucarianThemeManagerToolbar(
+                workspace, NavigateToTheme, NavigateToStyleComposer, NavigateToRuntimeSettings,
                 ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction);
         }
 
@@ -211,6 +190,7 @@ namespace Deucarian.Theming.Editor
             }
 
             UpdateWorkbenchFooter();
+            workspaceContent?.Refresh();
         }
     }
 }
