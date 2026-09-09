@@ -24,6 +24,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
+            window.navigation?.Navigate(DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.RefreshAssets();
             window.Show();
@@ -35,6 +36,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
+            window.navigation?.Navigate(DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.RefreshAssets();
             if (style != null)
