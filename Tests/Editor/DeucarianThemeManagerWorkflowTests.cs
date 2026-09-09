@@ -1085,7 +1085,7 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("Back to Theme", source);
                 StringAssert.Contains("Connect the project", source);
                 StringAssert.DoesNotContain("Project Setup", source);
-                StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
+                StringAssert.Contains("new DeucarianEditorWorkspaceForm", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawReadOnlyRow", source);
                 StringAssert.Contains("BuildDeveloperToolsDrawer", source);
                 StringAssert.Contains("DeucarianEditorWorkspaceControls.Show", source);

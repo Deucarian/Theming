@@ -34,7 +34,7 @@ namespace Deucarian.Theming.Editor
         {
             DeucarianAudioPaletteLabWindow window = GetWindow<DeucarianAudioPaletteLabWindow>(
                 "Audio Palette Lab");
-            window.minSize = new Vector2(520f, 420f);
+            DeucarianEditorWorkspace.ConfigureWindow(window);
             window.TryAdoptSelection();
             window.workspace?.Refresh(true);
             window.Show();

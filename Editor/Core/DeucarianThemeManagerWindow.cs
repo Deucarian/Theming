@@ -15,9 +15,7 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow : EditorWindow
     {
         private const string WallpaperFadeName = "deucarian-theme-manager-top-safe-fade";
-        private const string PreferredSizeKey = "Deucarian.Theming.ThemeManager.PreferredSize.920x560";
         private const float PreviewStackBreakpoint = 760f;
-        private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
         [SerializeField] private ViewMode viewMode;
         [SerializeField] private Vector2 scrollPosition;

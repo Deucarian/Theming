@@ -133,14 +133,7 @@ namespace Deucarian.Theming.Editor
 
         internal static void ApplyPreferredSizeOnce(DeucarianThemeManagerWindow window)
         {
-            if (window == null || DeucarianEditorProjectPreferences.GetBool(PreferredSizeKey, false))
-            {
-                return;
-            }
-
-            Rect current = window.position;
-            window.position = new Rect(current.x, current.y, PreferredSize.x, PreferredSize.y);
-            DeucarianEditorProjectPreferences.SetBool(PreferredSizeKey, true);
+            if (window != null) DeucarianEditorWorkspace.ConfigureWindow(window);
         }
 
         private bool IsComposerComplete() => composer.IsComplete;

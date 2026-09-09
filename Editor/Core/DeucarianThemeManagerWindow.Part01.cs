@@ -24,7 +24,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
-            window.minSize = new Vector2(520f, 420f);
+            window.minSize = DeucarianEditorWorkspace.MinimumWindowSize;
             ApplyPreferredSizeOnce(window);
             window.RefreshAssets();
             window.Show();
@@ -36,7 +36,7 @@ namespace Deucarian.Theming.Editor
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
-            window.minSize = new Vector2(520f, 420f);
+            window.minSize = DeucarianEditorWorkspace.MinimumWindowSize;
             ApplyPreferredSizeOnce(window);
             window.RefreshAssets();
             if (style != null)
@@ -50,7 +50,7 @@ namespace Deucarian.Theming.Editor
 
         private void OnEnable()
         {
-            minSize = new Vector2(520f, 420f);
+            minSize = DeucarianEditorWorkspace.MinimumWindowSize;
             if (!Application.isBatchMode)
             {
                 ApplyPreferredSizeOnce(this);
