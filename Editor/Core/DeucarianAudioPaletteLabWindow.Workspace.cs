@@ -19,7 +19,7 @@ namespace Deucarian.Theming.Editor
             internal AudioPaletteWorkspace(DeucarianAudioPaletteLabWindow owner)
             {
                 this.owner = owner;
-                view = new DeucarianEditorCollectionWorkspace(owner.rootVisualElement, Application.productName,
+                view = new DeucarianEditorCollectionWorkspace(owner.PageRoot, Application.productName,
                     "Audio Palette Lab", "Find a role. Hear its sound. Compare experiences.", "audio", "Search audio roles…");
                 view.Workspace.PageActions.Add(DeucarianEditorWorkspaceControls.Button("Stop audio", owner.StopPreview));
                 var categories = new DeucarianEditorChoiceBar(new[] { "All roles", "UI", "Input", "Feedback" }, owner.categoryFilter, true);

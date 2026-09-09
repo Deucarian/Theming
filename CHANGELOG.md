@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.1] - 2026-09-09
+
+- Keep sidebar navigation in the current workspace and retain page drafts while switching tools.
+- Support explicitly opening independent workspaces through the sidebar context menu.
+
+
 ## 1.4.0 - 2026-09-09
 
 - Migrate Theme Manager and Audio Palette Lab to the shared Editor workspace. Separate preview selection from explicit activation, show role clips and source provenance, and retain composer, coverage and manual audition workflows.

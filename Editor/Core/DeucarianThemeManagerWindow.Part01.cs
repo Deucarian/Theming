@@ -22,8 +22,9 @@ namespace Deucarian.Theming.Editor
         public static void OpenWindow()
         {
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
-            DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
+            DeucarianThemeManagerWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
+            window.navigation?.Navigate(DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.RefreshAssets();
             window.Show();
@@ -33,8 +34,9 @@ namespace Deucarian.Theming.Editor
         public static void OpenStyleComposer(DeucarianThemeStyle style)
         {
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
-            DeucarianThemeManagerWindow window = GetWindow<DeucarianThemeManagerWindow>("Theme Manager");
+            DeucarianThemeManagerWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianThemeManagerWindow>("Theme Manager");
             window.hideFlags |= HideFlags.DontSave;
+            window.navigation?.Navigate(DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.RefreshAssets();
             if (style != null)
@@ -63,6 +65,8 @@ namespace Deucarian.Theming.Editor
 
         private void OnDisable()
         {
+            navigation?.Dispose();
+            navigation = null;
             EditorApplication.projectChanged -= HandleProjectChanged;
             DeucarianThemePreviewCoordinator.ClearComposerPreview();
             workspace?.Dispose();
@@ -73,12 +77,29 @@ namespace Deucarian.Theming.Editor
         }
 
         private void OnInspectorUpdate() => UpdateWorkbenchToolbar();
-
         internal void CreateGUI()
         {
+            navigation?.Dispose();
+            navigation = new DeucarianEditorPageSession(this, DeucarianToolIds.ThemeManager, BuildPage);
+        }
+
+        internal static IDeucarianEditorPage CreatePage()
+        {
+            DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
+            return DeucarianEditorWindowPages.Create<DeucarianThemeManagerWindow>(
+                (window, root) => window.BuildPage(root), update: window => window.UpdateWorkbenchToolbar());
+        }
+
+        private DeucarianEditorPageSession navigation;
+        private VisualElement pageRoot;
+        private VisualElement PageRoot => pageRoot ?? rootVisualElement;
+
+        private void BuildPage(VisualElement root)
+        {
+            pageRoot = root;
             workspace?.Dispose();
-            rootVisualElement.Clear();
-            workspace = new DeucarianEditorWorkspace(rootVisualElement, Application.productName, true);
+            PageRoot.Clear();
+            workspace = new DeucarianEditorWorkspace(PageRoot, Application.productName, true);
             workspace.Title.text = "Theme Manager";
             workspace.Subtitle.text = "Preview a theme. Apply it when you’re ready.";
             DeucarianEditorWorkspaceNavigation.Populate(workspace, DeucarianToolIds.ThemeManager);

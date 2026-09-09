@@ -1,10 +1,15 @@
 # Deucarian Theming
 
+## In-window navigation
+
+The left sidebar changes pages in the current window, keeping each page's draft and session alive. Right-click a sidebar item and choose **Open in new window** for an independent workspace. Closing a workspace releases its pages; ordinary page changes do not reset lab messages or stop package operations.
+
+
 ## Shared workspace (1.4.0)
 
 Migrate Theme Manager and Audio Palette Lab to the shared Editor workspace. Separate preview selection from explicit activation, show role clips and source provenance, and retain composer, coverage and manual audition workflows.
 
-Requires Editor 1.4.1 or newer. Development is delivered through Git `#develop`; this change does not promote the stable `#main` channel.
+Requires Editor 1.5.0 or newer. Development is delivered through Git `#develop`; this change does not promote the stable `#main` channel.
 
 ## What this is
 
@@ -20,7 +25,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.4.0`.
+Current package version: `1.4.1`.
 
 ## When to use it
 
