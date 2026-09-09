@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Deucarian.Editor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor
 {
@@ -32,7 +33,7 @@ namespace Deucarian.Theming.Editor
 
         public static void OpenWindow()
         {
-            DeucarianAudioPaletteLabWindow window = GetWindow<DeucarianAudioPaletteLabWindow>(
+            DeucarianAudioPaletteLabWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianAudioPaletteLabWindow>(
                 "Audio Palette Lab");
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.TryAdoptSelection();
@@ -44,7 +45,7 @@ namespace Deucarian.Theming.Editor
         public static void Open(DeucarianAudioPaletteSet set)
         {
             OpenWindow();
-            DeucarianAudioPaletteLabWindow window = GetWindow<DeucarianAudioPaletteLabWindow>();
+            DeucarianAudioPaletteLabWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianAudioPaletteLabWindow>();
             window.HandlePaletteSetChanged(set);
             window.workspace?.Refresh(true);
             window.Repaint();
@@ -63,17 +64,33 @@ namespace Deucarian.Theming.Editor
 
         private void OnDisable()
         {
+            navigation?.Dispose();
+            navigation = null;
             AssemblyReloadEvents.beforeAssemblyReload -= StopPreview;
             EditorApplication.playModeStateChanged -= HandlePlayModeChanged;
             StopPreview();
             workspace?.Dispose();
             workspace = null;
         }
-
         public void CreateGUI()
         {
+            navigation?.Dispose();
+            navigation = new DeucarianEditorPageSession(this, DeucarianEditorWorkspaceNavigation.AudioToolId, BuildPage, deactivateHome: StopPreview);
+        }
+
+        internal static IDeucarianEditorPage CreatePage() =>
+            DeucarianEditorWindowPages.Create<DeucarianAudioPaletteLabWindow>(
+                (window, root) => window.BuildPage(root), activate: (window, route) => window.workspace?.Refresh(true), deactivate: window => window.StopPreview());
+
+        private DeucarianEditorPageSession navigation;
+        private VisualElement pageRoot;
+        private VisualElement PageRoot => pageRoot ?? rootVisualElement;
+
+        private void BuildPage(VisualElement root)
+        {
+            pageRoot = root;
             workspace?.Dispose();
-            rootVisualElement.Clear();
+            PageRoot.Clear();
             workspace = new AudioPaletteWorkspace(this);
         }
 

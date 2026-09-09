@@ -24,13 +24,13 @@ namespace Deucarian.Theming.Editor
                     DeucarianThemingMenu.OpenThemeManager,
                     PackageId,
                     searchTerms: new[] { "theme", "palette", "style", "colors" },
-                    order: 130));
+                    order: 130, createPage: DeucarianThemeManagerWindow.CreatePage));
 
             AudioRegistration = DeucarianToolRegistry.Register(new DeucarianToolDescriptor(
                 DeucarianEditorWorkspaceNavigation.AudioToolId, "Audio Palette Lab",
                 "Audition project audio by semantic role and experience.", DeucarianControlCenterArea.Experience,
                 DeucarianAudioPaletteLabWindow.OpenWindow, PackageId,
-                searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135));
+                searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135, createPage: DeucarianAudioPaletteLabWindow.CreatePage));
 
             CardRegistration = DeucarianControlCenterRegistry.RegisterCardProvider(
                 new ThemingCardProvider());
