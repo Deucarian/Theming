@@ -24,13 +24,13 @@ namespace Deucarian.Theming.Editor
                     DeucarianThemingMenu.OpenThemeManager,
                     PackageId,
                     searchTerms: new[] { "theme", "palette", "style", "colors" },
-                    order: 130, createPage: DeucarianThemeManagerWindow.CreatePage));
+                    order: 130, createPage: DeucarianThemeManagerWindow.CreatePage, navigationPath: "Appearance"));
 
             AudioRegistration = DeucarianToolRegistry.Register(new DeucarianToolDescriptor(
                 DeucarianEditorWorkspaceNavigation.AudioToolId, "Audio Palette Lab",
                 "Audition project audio by semantic role and experience.", DeucarianControlCenterArea.Experience,
                 DeucarianAudioPaletteLabWindow.OpenWindow, PackageId,
-                searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135, createPage: DeucarianAudioPaletteLabWindow.CreatePage));
+                searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135, createPage: DeucarianAudioPaletteLabWindow.CreatePage, navigationPath: "Audio"));
 
             CardRegistration = DeucarianControlCenterRegistry.RegisterCardProvider(
                 new ThemingCardProvider());
@@ -72,11 +72,11 @@ namespace Deucarian.Theming.Editor
                             new DeucarianControlCenterAction(
                                 PackageId + ".open",
                                 "Open Theme Manager",
-                                DeucarianThemingMenu.OpenThemeManager),
+                                DeucarianThemingMenu.OpenThemeManager, navigationToolId: DeucarianToolIds.ThemeManager),
                             new DeucarianControlCenterAction(
                                 PackageId + ".open-audio-palette-lab",
                                 "Open Audio Palette Lab",
-                                DeucarianThemingMenu.OpenAudioPaletteLab),
+                                DeucarianThemingMenu.OpenAudioPaletteLab, navigationToolId: DeucarianEditorWorkspaceNavigation.AudioToolId),
                             new DeucarianControlCenterAction(
                                 PackageId + ".create-family",
                                 "Create Theme Family",
