@@ -64,7 +64,7 @@ namespace Deucarian.Theming.Editor
         private static void DrawSectionHeading(string heading)
         {
             GUILayout.Space(8f);
-            EditorGUILayout.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            DeucarianEditorTextGUI.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
         }
 
         private IReadOnlyList<string> GetPendingChangeDescriptions(

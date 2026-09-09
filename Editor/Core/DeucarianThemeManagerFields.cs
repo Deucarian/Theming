@@ -107,7 +107,7 @@ namespace Deucarian.Theming.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(6f);
-                    search = EditorGUILayout.TextField(search, EditorStyles.toolbarSearchField);
+                    search = DeucarianEditorInputGUI.TextField(search, DeucarianEditorWorkbenchGUI.InputStyles.Search);
                     GUILayout.Space(6f);
                 }
 
@@ -147,7 +147,7 @@ namespace Deucarian.Theming.Editor
                 bool isSelected = asset == selected;
                 string label = (isSelected ? "[x] " : "      ") + displayName;
                 GUIContent content = new GUIContent(label, path);
-                if (!GUILayout.Button(content, EditorStyles.label, GUILayout.Height(24f)))
+                if (!DeucarianEditorActionGUI.Button(content, DeucarianEditorWorkbenchGUI.LabelStyle, GUILayout.Height(24f)))
                 {
                     return;
                 }
