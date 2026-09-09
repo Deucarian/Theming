@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.3] - 2026-09-09
+
+- Refresh Audio Palette Lab data without rebuilding its controls. Preserve expanded sections, role selection, test-pad controls and intensity values across navigation and refresh.
+- Require Editor 1.6.1 for window-owned navigation state and consistent page activation.
+- Test repeated switching with an in-memory palette and real role library; no project assets or automatic audio playback are needed.
+
 ## [1.4.2] - 2026-09-09
 
 - Register package tooling and navigation actions as shared Control Center pages. Preserve the domain workflow while using Editor-owned submenus, in-window navigation, and UI scaling.

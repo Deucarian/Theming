@@ -38,7 +38,7 @@ namespace Deucarian.Theming.Editor
             window.navigation?.Navigate(DeucarianEditorWorkspaceNavigation.AudioToolId);
             DeucarianEditorWorkspace.ConfigureWindow(window);
             window.TryAdoptSelection();
-            window.workspace?.Refresh(true);
+            window.workspace?.Refresh();
             window.Show();
             window.Focus();
         }
@@ -48,7 +48,7 @@ namespace Deucarian.Theming.Editor
             OpenWindow();
             DeucarianAudioPaletteLabWindow window = DeucarianEditorWindowPages.GetStandalone<DeucarianAudioPaletteLabWindow>();
             window.HandlePaletteSetChanged(set);
-            window.workspace?.Refresh(true);
+            window.workspace?.Refresh();
             window.Repaint();
         }
 
@@ -91,7 +91,7 @@ namespace Deucarian.Theming.Editor
                 var selected = AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(path);
                 if (selected != null) HandlePaletteSetChanged(selected);
             }
-            workspace?.Refresh(true);
+            workspace?.Refresh();
         }
 
         private DeucarianEditorPageSession navigation;
@@ -106,7 +106,7 @@ namespace Deucarian.Theming.Editor
             workspace = new AudioPaletteWorkspace(this);
         }
 
-        private void OnProjectChange() => workspace?.Refresh(true);
+        private void OnProjectChange() => workspace?.Refresh();
 
         private IReadOnlyList<DeucarianAudioRole> CollectRoles() => DeucarianAudioRoleBrowserModel.Collect(paletteSet, experience);
 
