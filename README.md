@@ -4,7 +4,7 @@
 
 Migrate Theme Manager and Audio Palette Lab to the shared Editor workspace. Separate preview selection from explicit activation, show role clips and source provenance, and retain composer, coverage and manual audition workflows.
 
-Requires Editor 1.4.0 or newer. Development is delivered through Git `#develop`; this change does not promote the stable `#main` channel.
+Requires Editor 1.4.1 or newer. Development is delivered through Git `#develop`; this change does not promote the stable `#main` channel.
 
 ## What this is
 
