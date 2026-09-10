@@ -5,6 +5,8 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Deucarian.Editor;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor.Tests
 {
@@ -171,6 +173,46 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.That(settings.UseVisualStyling, Is.False);
             Undo.PerformUndo();
             Assert.That(settings.UseVisualStyling, Is.True);
+        }
+
+        [Test]
+        public void DisabledPalettePagesExplainAdoptionAndKeepNavigationAccessible()
+        {
+            settings.SetFeatures(false, false);
+            foreach (string id in new[] { DeucarianToolIds.ThemeManager, DeucarianEditorWorkspaceNavigation.AudioToolId })
+            {
+                Assert.That(DeucarianToolRegistry.TryGet(id, out var tool), Is.True);
+                Assert.That(tool.IsFeatureEnabled(), Is.False);
+                using (var page = tool.CreatePage())
+                {
+                    page.Activate(null);
+                    Assert.That(page.Root.Q("capability-disabled").style.display.value, Is.EqualTo(DisplayStyle.Flex));
+                    Assert.That(page.Root.Q<Button>("capability-open-settings").enabledInHierarchy, Is.True);
+                    Assert.That(page.Root.Q(className: "dw-gated-content").enabledSelf, Is.False);
+                    Assert.That(page.Root.Q<SliderInt>("workspace-scale-slider").enabledInHierarchy, Is.True);
+                    page.Deactivate();
+                }
+            }
+        }
+
+        [Test]
+        public void AudioLabRejectsAuditionWhenProjectAudioIsOff()
+        {
+            settings.SetFeatures(true, false);
+            var lab = Asset<DeucarianAudioPaletteLabWindow>();
+            var preview = new Preview();
+            lab.SetPreviewServiceForTests(preview);
+            Assert.That(lab.PreviewForTests(new DeucarianAudioCue(Clip())), Is.False);
+            Assert.That(preview.Plays, Is.Zero);
+        }
+
+        private sealed class Preview : IDeucarianAudioPreviewService
+        {
+            internal int Plays;
+            public bool IsAvailable => true;
+            public bool IsPlaying { get; private set; }
+            public bool Play(AudioClip clip) { Plays++; IsPlaying = true; return true; }
+            public void Stop() { IsPlaying = false; }
         }
 
         private T Asset<T>() where T : ScriptableObject

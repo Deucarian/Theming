@@ -73,7 +73,6 @@ namespace Deucarian.Theming.Editor
             openAudio.name = "theming-open-audio";
             audio.Actions.Add(openAudio);
             content.Add(audio.Root);
-            content.Add(DeucarianEditorFeatureSection.Information("These settings affect your app, not the Control Center's appearance."));
             message = DeucarianEditorWorkspaceControls.Label(string.Empty, "dw-feature-status");
             content.Add(message);
             Refresh();
@@ -148,8 +147,7 @@ namespace Deucarian.Theming.Editor
             visual.Details.SetEnabled(store.CanWrite);
             audio.Details.SetEnabled(store.CanWrite);
             message.text = store.Problem ?? saveProblem ?? (EditorApplication.isPlayingOrWillChangePlaymode
-                ? "Exit Play Mode to change project defaults. Audio previews remain available."
-                : settings == null ? "Using existing component settings. Changes here create project defaults." : string.Empty);
+                ? "Exit Play Mode to change project defaults." : string.Empty);
             DeucarianEditorWorkspaceControls.Show(message, message.text.Length > 0);
             RefreshConnections();
         }

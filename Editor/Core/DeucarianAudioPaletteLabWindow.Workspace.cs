@@ -19,6 +19,7 @@ namespace Deucarian.Theming.Editor
             private VisualElement paletteDetails;
             private VisualElement roleDetails;
             private Label selectedHeading;
+            private readonly DeucarianThemingEditorFeatureGate featureGate;
 
             internal AudioPaletteWorkspace(DeucarianAudioPaletteLabWindow owner)
             {
@@ -38,6 +39,7 @@ namespace Deucarian.Theming.Editor
                 view.Workspace.SetSearchPrompt("Search audio roles…");
                 view.Workspace.SearchField.RegisterValueChangedCallback(evt => { owner.search = evt.newValue ?? ""; Refresh(); });
                 Refresh();
+                featureGate = DeucarianThemingEditorFeatureGate.Wrap(view.Workspace, true, owner.StopPreview);
             }
 
             internal void Refresh()
@@ -68,6 +70,7 @@ namespace Deucarian.Theming.Editor
                 roleForm.Refresh();
                 view.Workspace.FooterLeading.text = owner.feedback;
                 view.Workspace.FooterTrailing.text = "Editor audition · " + owner.experience;
+                featureGate?.Refresh();
             }
 
             private void BuildDetails()
@@ -104,7 +107,7 @@ namespace Deucarian.Theming.Editor
                 }
                 var modifiers = paletteForm.Section("Press intensity", true);
                 modifiers.Toggle("audio-use-intensity", "Simulate intensity", () => owner.useIntensity, value => { owner.useIntensity = value; Refresh(); });
-                var intensityField = modifiers.Number("audio-intensity", "Intensity (0–1)", () => owner.intensity, value => { owner.intensity = float.IsNaN(value) ? 0.5f : Mathf.Clamp01(value); Refresh(); });
+                var intensityField = modifiers.Slider("audio-intensity", "Intensity", 0, 1, () => owner.intensity, value => { owner.intensity = float.IsNaN(value) ? 0.5f : Mathf.Clamp01(value); Refresh(); });
                 modifiers.VisibleWhen(intensityField, () => owner.useIntensity);
                 var pad = paletteForm.Section("Test pad", true);
                 for (int i = 0; i < TestPadRoleIds.Length; i++)
@@ -156,7 +159,7 @@ namespace Deucarian.Theming.Editor
                 if (guids.Length == 0) menu.AddDisabledItem(new GUIContent("No project palettes"));
                 menu.ShowAsContext();
             }
-            public void Dispose() => view.Dispose();
+            public void Dispose() { featureGate?.Dispose(); view.Dispose(); }
         }
     }
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.0] - 2026-09-10
+
+- Remove the redundant Project setup information strip. Disabled visual/audio palettes keep their assets but gate editing and audition, with a clear route to Project setup.
+- Stop editor audio when project audio is disabled and use shared intensity sliders.
+
 ## [1.5.0] - 2026-09-10
 
 - Add Theming > Project setup, with independent saved visual styling and audio switches; keep visual and audio palettes together in one package.

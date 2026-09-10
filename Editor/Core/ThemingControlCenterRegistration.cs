@@ -32,14 +32,23 @@ namespace Deucarian.Theming.Editor
                     PackageId,
                     searchTerms: new[] { "theme", "palette", "style", "colors" },
                     order: 130, createPage: DeucarianThemeManagerWindow.CreatePage, navigationPath: "Theming",
-                    navigationGroupIcon: DeucarianEditorIconIds.Palette, navigationLabel: "Visual palettes", showNavigationIcon: false));
+                    navigationGroupIcon: DeucarianEditorIconIds.Palette, navigationLabel: "Visual palettes", showNavigationIcon: false,
+                    isFeatureEnabled: () => DeucarianThemeRuntimeResolver.UseVisualStyling));
 
             AudioRegistration = DeucarianToolRegistry.Register(new DeucarianToolDescriptor(
                 DeucarianEditorWorkspaceNavigation.AudioToolId, "Audio Palette Lab",
                 "Audition project audio by semantic role and experience.", DeucarianControlCenterArea.Experience,
                 DeucarianAudioPaletteLabWindow.OpenWindow, PackageId,
                 searchTerms: new[] { "audio", "sound", "preview", "palette" }, order: 135, createPage: DeucarianAudioPaletteLabWindow.CreatePage, navigationPath: "Theming",
-                navigationGroupIcon: DeucarianEditorIconIds.Palette, navigationLabel: "Audio palettes", showNavigationIcon: false));
+                navigationGroupIcon: DeucarianEditorIconIds.Palette, navigationLabel: "Audio palettes", showNavigationIcon: false,
+                isFeatureEnabled: () => DeucarianThemeRuntimeResolver.UseAudio));
+
+            DeucarianThemeAssetChangeBus.AssetChanged += asset =>
+            {
+                if (asset is DeucarianThemeRuntimeSettings) DeucarianToolRegistry.RefreshPresentation();
+            };
+            Undo.undoRedoPerformed += DeucarianToolRegistry.RefreshPresentation;
+            EditorApplication.projectChanged += DeucarianToolRegistry.RefreshPresentation;
 
             CardRegistration = DeucarianControlCenterRegistry.RegisterCardProvider(
                 new ThemingCardProvider());
