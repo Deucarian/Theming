@@ -187,6 +187,7 @@ namespace Deucarian.Theming.Editor.Tests
         }
     }
 
+    [ExecuteAlways]
     public sealed class ProjectAdoptionVisualTarget : DeucarianThemeTargetBehaviour
     {
         public int Applied { get; private set; }
