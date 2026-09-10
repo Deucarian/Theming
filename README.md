@@ -1,5 +1,18 @@
 # Deucarian Theming
 
+## Choose what your app uses
+
+Open **Theming > Project setup** in the Control Center. Theming includes both visual styling and audio; either can be enabled independently. This does not change the Control Center's appearance.
+
+- **Visual styling off:** package visual adapters do not apply Deucarian palettes. Your existing app styling stays in charge. It does not restore colors already applied to a scene or asset: change project adoption before entering Play Mode.
+- **Audio on:** themed players use their explicit overrides/providers first, then the project's audio palette set and experience. Apps can keep their own visuals while using semantic button, keyboard and warning sounds.
+- **Audio off:** themed players reject new cues, including direct overrides, and stop their active voices. This does not mute unrelated application audio.
+- **Connected in this app:** checks reflect loaded button adapters or successful cue observations in loaded scenes, not the existence of palette assets. Hover a connection for its evidence; run the app and exercise dynamic integrations to verify them.
+
+Opening this page creates nothing. An explicit edit saves the unique `DeucarianThemeRuntimeSettings` Resources asset, with Undo support. Existing projects remain enabled until they choose otherwise; absent settings preserve component-owned configuration. Editing is disabled during Play Mode or when duplicate settings assets need resolving. Switching a feature off keeps its configuration and assets, and the palette editors remain available for preview. These switches do not install/uninstall packages or automatically wire application controls.
+
+The **Open Audio Palette Lab** action stays in the current window and selects the saved palette set. Keyboard and warning integrations can be observed through each player's `RolePlayed` event and `PlayedRoleIds` history; failed or intentionally silent playback is not reported as successful audio.
+
 ## In-window navigation
 
 The left sidebar changes pages in the current window, keeping each page's draft and session alive. Right-click a sidebar item and choose **Open in new window** for an independent workspace. Closing a workspace releases its pages; ordinary page changes do not reset lab messages or stop package operations.
@@ -25,7 +38,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.4.4`.
+Current package version: `1.5.0` (requires Editor `1.8.0`).
 
 ## When to use it
 

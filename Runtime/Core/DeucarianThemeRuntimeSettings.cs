@@ -15,6 +15,33 @@ namespace Deucarian.Theming
         [SerializeField] private DeucarianTheme defaultTheme;
         [SerializeField] private DeucarianThemeFamily defaultThemeFamily;
         [SerializeField] private DeucarianThemeMode defaultThemeMode = DeucarianThemeMode.Dark;
+        [SerializeField] private bool useVisualStyling = true;
+        [SerializeField] private bool useAudio = true;
+        [SerializeField] private DeucarianAudioPaletteSet defaultAudioPaletteSet;
+        [SerializeField] private DeucarianAudioExperience defaultAudioExperience;
+
+        public bool UseVisualStyling => useVisualStyling;
+        public bool UseAudio => useAudio;
+        public DeucarianAudioPaletteSet DefaultAudioPaletteSet => defaultAudioPaletteSet;
+        public DeucarianAudioExperience DefaultAudioExperience => defaultAudioExperience;
+
+        public void SetFeatures(bool visualStyling, bool audio)
+        {
+            if (useVisualStyling == visualStyling && useAudio == audio) return;
+            useVisualStyling = visualStyling;
+            useAudio = audio;
+            NotifyChanged();
+        }
+
+        public void ConfigureAudio(DeucarianAudioPaletteSet paletteSet, DeucarianAudioExperience experience)
+        {
+            if (!System.Enum.IsDefined(typeof(DeucarianAudioExperience), experience))
+                throw new System.ArgumentOutOfRangeException(nameof(experience));
+            if (defaultAudioPaletteSet == paletteSet && defaultAudioExperience == experience) return;
+            defaultAudioPaletteSet = paletteSet;
+            defaultAudioExperience = experience;
+            NotifyChanged();
+        }
 
         /// <summary>Resolved concrete theme used when a runtime provider or target needs a project default.</summary>
         public DeucarianTheme DefaultTheme => ResolvedDefaultTheme;
@@ -87,6 +114,8 @@ namespace Deucarian.Theming
         private void OnValidate()
         {
             defaultThemeMode = NormalizeThemeMode(defaultThemeMode);
+            if (!System.Enum.IsDefined(typeof(DeucarianAudioExperience), defaultAudioExperience))
+                defaultAudioExperience = DeucarianAudioExperience.Default;
             NotifyChanged();
         }
 
