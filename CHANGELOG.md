@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.4.4] - 2026-09-09
+
+### Changed
+
+- Adopt the shared Editor 1.7 workspace presentation: neutral surfaces, readable typography, consistent actions and aligned controls.
+- Preserve package workflows and native serialized editing; this is an editor-only presentation update.
+
+## [1.4.3] - 2026-09-09
+
+- Refresh Audio Palette Lab data without rebuilding its controls. Preserve expanded sections, role selection, test-pad controls and intensity values across navigation and refresh.
+- Require Editor 1.6.1 for window-owned navigation state and consistent page activation.
+- Test repeated switching with an in-memory palette and real role library; no project assets or automatic audio playback are needed.
+
+## [1.4.2] - 2026-09-09
+
+- Register package tooling and navigation actions as shared Control Center pages. Preserve the domain workflow while using Editor-owned submenus, in-window navigation, and UI scaling.
+
+## [1.4.1] - 2026-09-09
+
+- Keep sidebar navigation in the current workspace and retain page drafts while switching tools.
+- Support explicitly opening independent workspaces through the sidebar context menu.
+
+
+## 1.4.0 - 2026-09-09
+
+- Migrate Theme Manager and Audio Palette Lab to the shared Editor workspace. Separate preview selection from explicit activation, show role clips and source provenance, and retain composer, coverage and manual audition workflows.
+
 ## 1.3.1 - 2026-09-09
 
 - Separate default/theme-pack asset creation, repair, naming and storage; remove duplicated asset/path operations while preserving public factory entry points.

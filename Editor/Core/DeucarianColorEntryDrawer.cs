@@ -1,3 +1,4 @@
+using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace Deucarian.Theming.Editor
             EditorGUI.PropertyField(roleRect, roleProperty, GUIContent.none);
             EditorGUI.PropertyField(colorRect, colorProperty, GUIContent.none);
             EditorGUI.PropertyField(secondLine, noteProperty);
-            EditorGUI.LabelField(thirdLine, GetRoleMetadata(roleProperty), EditorStyles.miniLabel);
+            EditorGUI.LabelField(thirdLine, GetRoleMetadata(roleProperty), DeucarianEditorWorkbenchGUI.InputStyles.NativeCaption);
 
             EditorGUI.EndProperty();
         }

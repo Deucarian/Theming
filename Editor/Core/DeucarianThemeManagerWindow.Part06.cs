@@ -64,7 +64,7 @@ namespace Deucarian.Theming.Editor
         private static void DrawSectionHeading(string heading)
         {
             GUILayout.Space(8f);
-            EditorGUILayout.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            DeucarianEditorTextGUI.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
         }
 
         private IReadOnlyList<string> GetPendingChangeDescriptions(
@@ -131,17 +131,6 @@ namespace Deucarian.Theming.Editor
 
         private void ResetComposerFromStyle(DeucarianThemeStyle style) => composer.Reset(style);
 
-        internal static void ApplyPreferredSizeOnce(DeucarianThemeManagerWindow window)
-        {
-            if (window == null || DeucarianEditorProjectPreferences.GetBool(PreferredSizeKey, false))
-            {
-                return;
-            }
-
-            Rect current = window.position;
-            window.position = new Rect(current.x, current.y, PreferredSize.x, PreferredSize.y);
-            DeucarianEditorProjectPreferences.SetBool(PreferredSizeKey, true);
-        }
 
         private bool IsComposerComplete() => composer.IsComplete;
 

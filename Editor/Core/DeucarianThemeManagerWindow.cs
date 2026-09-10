@@ -15,9 +15,7 @@ namespace Deucarian.Theming.Editor
     public sealed partial class DeucarianThemeManagerWindow : EditorWindow
     {
         private const string WallpaperFadeName = "deucarian-theme-manager-top-safe-fade";
-        private const string PreferredSizeKey = "Deucarian.Theming.ThemeManager.PreferredSize.920x560";
         private const float PreviewStackBreakpoint = 760f;
-        private static readonly Vector2 PreferredSize = new Vector2(920f, 560f);
 
         [SerializeField] private ViewMode viewMode;
         [SerializeField] private Vector2 scrollPosition;
@@ -38,7 +36,8 @@ namespace Deucarian.Theming.Editor
         private bool baselineCaptured;
         private bool runtimeCandidateTouched;
 
-        private DeucarianEditorWorkbench workbench;
+        private DeucarianEditorWorkspace workspace;
+        private ThemeWorkspaceContent workspaceContent;
         private DeucarianThemeManagerToolbar toolbarView;
         private DeucarianEditorWorkbenchFooter workbenchFooter;
         private DeucarianEditorWorkbenchDrawer developerToolsDrawer;
@@ -47,7 +46,7 @@ namespace Deucarian.Theming.Editor
         private IReadOnlyList<string> currentPendingChanges = Array.Empty<string>();
         private int runtimeSettingsResourceCount;
 
-        internal DeucarianEditorWorkbench WorkbenchForTests => workbench;
+        internal DeucarianEditorWorkspace WorkspaceForTests => workspace;
         internal DeucarianEditorWorkbenchFooter FooterForTests => workbenchFooter;
         internal DeucarianEditorWorkbenchDrawer DeveloperToolsDrawerForTests => developerToolsDrawer;
     }
