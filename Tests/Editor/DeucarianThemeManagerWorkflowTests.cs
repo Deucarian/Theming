@@ -972,167 +972,31 @@ namespace Deucarian.Theming.Editor.Tests
         [Test]
         public void ThemeManagerUsesSharedResponsiveWorkbenchAndToolbar()
         {
-            DeucarianThemeManagerWindow window =
-                ScriptableObject.CreateInstance<DeucarianThemeManagerWindow>();
+            var window = ScriptableObject.CreateInstance<DeucarianThemeManagerWindow>();
             try
             {
                 window.CreateGUI();
-                DeucarianEditorWorkbench workbench = window.WorkbenchForTests;
-
-                Assert.IsNotNull(workbench);
-                Assert.IsNull(workbench.Header);
-                Assert.IsNotNull(workbench.Toolbar);
-                Assert.IsNotNull(workbench.Content);
-                Assert.IsNotNull(workbench.Drawer);
-                Assert.IsNotNull(workbench.Footer);
-                Assert.IsNotNull(window.FooterForTests);
-                Assert.IsNotNull(window.DeveloperToolsDrawerForTests);
-                Assert.AreSame(workbench.Footer, window.FooterForTests.Root.parent);
-                Assert.AreSame(workbench.Drawer, window.DeveloperToolsDrawerForTests.Root.parent);
-                Assert.AreEqual("deucarian-theme-manager-footer", window.FooterForTests.Root.name);
-                Assert.IsTrue(window.FooterForTests.Root.ClassListContains(
-                    DeucarianEditorWorkbenchSurfaces.FooterClass));
-                Assert.AreEqual(
-                    "Refresh",
-                    window.FooterForTests.Action.Q<Label>(
-                        className: DeucarianEditorWorkbenchToolbar.IconLabelClass).text);
-                StringAssert.StartsWith(
-                    "com.deucarian.theming ",
-                    window.FooterForTests.Version.text);
-                Assert.AreEqual(2, window.FooterForTests.Actions.childCount);
-                Assert.IsTrue(window.FooterForTests.Action.ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.IsTrue(window.FooterForTests.Actions.ElementAt(1).ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.IsTrue(workbench.Toolbar.ClassListContains(
-                    DeucarianEditorWorkbenchToolbar.StableActionLanesClass));
-                Assert.IsTrue(workbench.Toolbar.ClassListContains(
-                    DeucarianEditorCommandBar.RootClass));
-                Assert.IsTrue(workbench.Drawer.ClassListContains(
-                    DeucarianEditorWorkbenchSurfaces.OverlayDrawerHostClass));
-                Button themeButton = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-view-theme");
-                Button styleButton = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-view-style");
-                Button settingsButton = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-view-runtime-settings");
-                Button secondary = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-toolbar-secondary");
-                Button primary = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-toolbar-primary");
-                VisualElement primaryStatus = workbench.Toolbar.Q<VisualElement>(
-                    "deucarian-theme-manager-toolbar-primary-status");
-                Button discard = workbench.Toolbar.Q<Button>(
-                    "deucarian-theme-manager-discard-changes");
-                Assert.IsNotNull(themeButton);
-                Assert.IsNotNull(styleButton);
-                Assert.IsNotNull(settingsButton);
-                Assert.IsNotNull(secondary);
-                Assert.That(primary != null || primaryStatus != null, Is.True);
-                Assert.IsNotNull(discard);
-                Assert.IsTrue(secondary.ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.IsTrue(discard.ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.IsTrue(secondary.ClassListContains(
-                    DeucarianEditorCommandBar.ActionClass));
-                Assert.IsTrue(discard.ClassListContains(
-                    DeucarianEditorCommandBar.ActionClass));
-                Assert.NotNull(discard.Q<VisualElement>(
-                    className: DeucarianEditorIconTextButton.GapClass));
-                Assert.AreEqual(
-                    8f,
-                    discard.Q<VisualElement>(
-                        className: DeucarianEditorIconTextButton.GapClass).style.width.value.value);
-                Assert.IsTrue(themeButton.ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.IsTrue(styleButton.ClassListContains(
-                    DeucarianEditorIconTextButton.RootClass));
-                Assert.AreEqual(
-                    "Style Composer",
-                    styleButton.Q<Label>(
-                        className: DeucarianEditorWorkbenchToolbar.IconLabelClass).text);
-                VisualElement visiblePrimary = primary != null
-                    ? (VisualElement)primary
-                    : primaryStatus;
-                Assert.NotNull(visiblePrimary.Q<Image>(
-                    className: DeucarianEditorWorkbenchToolbar.IconClass));
-                Assert.NotNull(discard.Q<Image>(className: DeucarianEditorWorkbenchToolbar.IconClass));
-                IMGUIContainer content = workbench.Content.Q<IMGUIContainer>(
-                    "deucarian-theme-manager-content");
-                Assert.IsNotNull(content);
-                Assert.AreEqual(1f, content.style.flexGrow.value);
-                Assert.AreEqual(0f, content.style.minHeight.value.value);
-                Assert.AreEqual(Color.clear, content.style.backgroundColor.value);
-                VisualElement navigation = workbench.Toolbar.Q<VisualElement>(
-                    className: DeucarianEditorCommandBar.NavigationGroupClass);
-                VisualElement actions = workbench.Toolbar.Q<VisualElement>(
-                    className: DeucarianEditorCommandBar.ActionGroupClass);
-                Assert.IsNotNull(navigation);
-                Assert.IsNotNull(actions);
-                Assert.IsTrue(navigation.ClassListContains(
-                    DeucarianEditorWorkbenchToolbar.NavigationGroupClass));
-                Assert.IsTrue(navigation.ClassListContains(
-                    DeucarianEditorCommandBar.NavigationGroupClass));
-                Assert.AreSame(themeButton, navigation.ElementAt(0));
-                Assert.AreSame(styleButton, navigation.ElementAt(1));
-                Assert.AreSame(settingsButton, navigation.ElementAt(2));
-                Assert.AreEqual(3, navigation.childCount);
-                Assert.IsTrue(actions.ClassListContains(
-                    DeucarianEditorWorkbenchToolbar.ActionGroupClass));
-                Assert.IsTrue(actions.ClassListContains(
-                    DeucarianEditorCommandBar.ActionGroupClass));
-                Assert.AreSame(secondary, actions.ElementAt(0).ElementAt(0));
-                Assert.AreSame(discard, actions.ElementAt(1).ElementAt(0));
-                Assert.AreEqual(Visibility.Hidden, actions.ElementAt(0).style.visibility.value);
-                Assert.AreEqual(Visibility.Visible, actions.ElementAt(1).style.visibility.value);
-                Assert.AreEqual(
-                    !EditorApplication.isPlayingOrWillChangePlaymode,
-                    discard.enabledSelf);
-                Assert.AreEqual(
-                    EditorApplication.isPlayingOrWillChangePlaymode
-                        ? "Exit Play Mode before discarding staged changes."
-                        : "Restore the active project theme and clear every unapplied draft.",
-                    discard.tooltip);
-                Assert.AreEqual(132f, actions.ElementAt(0).style.width.value.value);
-                Assert.AreEqual(148f, actions.ElementAt(1).style.width.value.value);
-                Assert.AreEqual(168f, actions.ElementAt(2).style.width.value.value);
-                if (primary != null)
-                {
-                    Assert.IsTrue(primary.ClassListContains(
-                        DeucarianEditorWorkbenchToolbar.EmphasizedActionClass));
-                }
-                else
-                {
-                    Assert.IsTrue(primaryStatus.ClassListContains(
-                        DeucarianEditorWorkbenchToolbar.StatusPillClass));
-                }
-                Assert.IsTrue(window.DeveloperToolsDrawerForTests.Root.ClassListContains(
-                    DeucarianEditorWorkbenchSurfaces.DrawerCollapsedClass));
-                Assert.AreEqual(3, window.DeveloperToolsDrawerForTests.Content.Q<VisualElement>(
-                    className: DeucarianEditorWorkbenchSurfaces.DrawerColumnsClass).childCount);
-                Assert.AreEqual(new Vector2(520f, 420f), window.minSize);
-
-                Assert.AreEqual(
-                    DeucarianEditorLayoutMode.Narrow,
-                    workbench.ApplyResponsiveLayout(899f));
-                Assert.IsTrue(workbench.ShellContent.ClassListContains(
-                    DeucarianEditorResponsiveLayout.NarrowClass));
-                Assert.AreEqual(
-                    DeucarianEditorLayoutMode.Compact,
-                    workbench.ApplyResponsiveLayout(900f));
-                Assert.IsTrue(workbench.ShellContent.ClassListContains(
-                    DeucarianEditorResponsiveLayout.CompactClass));
-                Assert.AreEqual(
-                    DeucarianEditorLayoutMode.Wide,
-                    workbench.ApplyResponsiveLayout(1180f));
-                Assert.IsTrue(workbench.ShellContent.ClassListContains(
-                    DeucarianEditorResponsiveLayout.WideClass));
+                var workspace = window.WorkspaceForTests;
+                Assert.NotNull(workspace);
+                Assert.AreEqual("Theme Manager", workspace.Title.text);
+                Assert.NotNull(workspace.Root.Q("workspace-navigation"));
+                Assert.NotNull(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-theme"));
+                Assert.NotNull(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-style"));
+                Assert.NotNull(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-runtime-settings"));
+                Assert.NotNull(workspace.PageActions.Q<Button>("deucarian-theme-manager-toolbar-primary"));
+                Assert.NotNull(workspace.Content.Q("theme-family"));
+                Assert.NotNull(workspace.Content.Q("theme-live-specimen"));
+                Assert.NotNull(workspace.Content.Q("theme-project-setup"));
+                Assert.NotNull(workspace.Content.Q("theme-style-composer"));
+                Assert.AreSame(workspace.Footer, window.FooterForTests.Root.parent);
+                Assert.AreSame(workspace.Drawer, window.DeveloperToolsDrawerForTests.Root.parent);
+                Assert.IsTrue(window.DeveloperToolsDrawerForTests.Root.ClassListContains(DeucarianEditorWorkbenchSurfaces.DrawerCollapsedClass));
+                workspace.ApplyWidth(600);
+                Assert.IsTrue(workspace.Root.ClassListContains("dw-narrow"));
+                workspace.ApplyWidth(1200);
+                Assert.IsFalse(workspace.Root.ClassListContains("dw-narrow"));
             }
-            finally
-            {
-                UnityEngine.Object.DestroyImmediate(window);
-            }
+            finally { UnityEngine.Object.DestroyImmediate(window); }
         }
 
         [Test]
@@ -1204,13 +1068,13 @@ namespace Deucarian.Theming.Editor.Tests
                     source += Environment.NewLine + File.ReadAllText(
                         Path.Combine(Path.GetDirectoryName(absolutePath), presenter));
 
-                StringAssert.Contains("DeucarianEditorWorkbench.Create", source);
+                StringAssert.Contains("new DeucarianEditorWorkspace", source);
                 StringAssert.Contains("DeucarianEditorCommandBar", source);
-                StringAssert.Contains("DeucarianEditorCommandBar.CreateLanes", source);
-                StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawCompactIconAction", source);
+                StringAssert.Contains("new DeucarianEditorChoiceBar", source);
+                StringAssert.Contains("DeucarianEditorWorkspaceControls.Button", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.BeginEmbeddedPage", source);
                 StringAssert.DoesNotContain("DrawWorkbenchAction", source);
-                StringAssert.Contains("// IncludeHeader = true", source);
+                StringAssert.Contains("Preview selection", source);
                 StringAssert.Contains("DrawFlatSplit", source);
                 StringAssert.Contains("DrawThemePreview", source);
                 StringAssert.Contains("DiscardAllChanges", source);
@@ -1219,12 +1083,12 @@ namespace Deucarian.Theming.Editor.Tests
                 StringAssert.Contains("ApplyComposerPreview", source);
                 StringAssert.Contains("ShouldKeepCurrentComposerDraft", source);
                 StringAssert.Contains("Back to Theme", source);
-                StringAssert.Contains("Runtime Setup", source);
+                StringAssert.Contains("Connect the project", source);
                 StringAssert.DoesNotContain("Project Setup", source);
-                StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawPanel", source);
+                StringAssert.Contains("new DeucarianEditorWorkspaceForm", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.DrawReadOnlyRow", source);
                 StringAssert.Contains("BuildDeveloperToolsDrawer", source);
-                StringAssert.Contains("SetReservedVisible", source);
+                StringAssert.Contains("DeucarianEditorWorkspaceControls.Show", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.BoldLabelStyle", source);
                 StringAssert.Contains("DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle", source);
                 StringAssert.Contains("DrawWorkbenchObjectField", source);

@@ -47,7 +47,7 @@ namespace Deucarian.Theming.Editor
                 }
 
                 DeucarianEditorStatusBadge.Draw(label, visualStatus, GUILayout.Width(112f));
-                EditorGUILayout.LabelField(status.Message, DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
+                DeucarianEditorTextGUI.LabelField(status.Message, DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
             }
         }
 
@@ -71,7 +71,7 @@ namespace Deucarian.Theming.Editor
             }
 
             GUILayout.Space(2f);
-            EditorGUILayout.LabelField("Appearance", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            DeucarianEditorTextGUI.LabelField("Appearance", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
             const string tooltip = "This value is composed by the selected visual style. Use Style Composer to change it.";
             DeucarianEditorWorkbenchGUI.DrawReadOnlyRow(
                 "Surface",
@@ -110,19 +110,19 @@ namespace Deucarian.Theming.Editor
             int warningCount = set != null ? set.GetValidationWarnings().Count : 1;
 
             GUILayout.Space(8f);
-            EditorGUILayout.LabelField("Audio Palette", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            EditorGUILayout.LabelField(
+            DeucarianEditorTextGUI.LabelField("Audio Palette", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
+            DeucarianEditorTextGUI.LabelField(
                 set != null
                     ? $"{set.name} · {previewExperience} · "
                       + (resolved != null ? resolved.DisplayName : "Missing palette")
                     : "No Audio Palette Set is linked to the resolved theme.",
                 DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
-            EditorGUILayout.LabelField(
+            DeucarianEditorTextGUI.LabelField(
                 warningCount == 0 ? "Audio validation: ready" : $"Audio validation: {warningCount} issue(s)",
                 DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
             using (new EditorGUI.DisabledScope(set == null))
             {
-                if (GUILayout.Button("Open Audio Palette Lab"))
+                if (DeucarianEditorActionGUI.Button("Open Audio Palette Lab"))
                 {
                     DeucarianAudioPaletteLabWindow.Open(set);
                 }

@@ -85,7 +85,7 @@ namespace Deucarian.Theming.Editor
             if (!drewList)
             {
                 state?.SetVisibleIndices(Array.Empty<int>());
-                EditorGUILayout.HelpBox(
+                DeucarianEditorTextGUI.HelpBox(
                     $"Serialized list '{listPropertyName}' could not be found.",
                     MessageType.Error);
             }
@@ -105,7 +105,7 @@ namespace Deucarian.Theming.Editor
             if (listProperty == null || !listProperty.isArray)
             {
                 state.SetVisibleIndices(Array.Empty<int>());
-                EditorGUILayout.HelpBox("The serialized list is unavailable.", MessageType.Error);
+                DeucarianEditorTextGUI.HelpBox("The serialized list is unavailable.", MessageType.Error);
                 return;
             }
 
@@ -122,7 +122,7 @@ namespace Deucarian.Theming.Editor
                 state.SelectedCategory = AllCategories;
             }
 
-            categoryIndex = EditorGUILayout.Popup(
+            categoryIndex = DeucarianEditorInputGUI.Popup(
                 "Category",
                 categoryIndex,
                 ToDisplayLabels(categories));
@@ -141,13 +141,13 @@ namespace Deucarian.Theming.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField(
+            DeucarianEditorTextGUI.LabelField(
                 $"Showing {visibleIndices.Count} of {listProperty.arraySize}",
-                EditorStyles.miniLabel);
+                DeucarianEditorWorkbenchGUI.MiniLabelStyle);
 
             if (visibleIndices.Count == 0)
             {
-                EditorGUILayout.HelpBox("No serialized items match the current filter.", MessageType.Info);
+                DeucarianEditorTextGUI.HelpBox("No serialized items match the current filter.", MessageType.Info);
             }
             else
             {
@@ -155,12 +155,12 @@ namespace Deucarian.Theming.Editor
                 {
                     int originalIndex = visibleIndices[i];
                     SerializedProperty element = listProperty.GetArrayElementAtIndex(originalIndex);
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    using (new EditorGUILayout.VerticalScope(DeucarianEditorStyles.SectionBox))
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.LabelField($"Element {originalIndex}", EditorStyles.miniBoldLabel);
-                            if (GUILayout.Button(
+                            DeucarianEditorTextGUI.LabelField($"Element {originalIndex}", DeucarianEditorWorkbenchGUI.RowTitleStyle);
+                            if (DeucarianEditorActionGUI.Button(
                                     new GUIContent("Remove", "Remove this item from the underlying serialized list."),
                                     GUILayout.Width(64f)))
                             {
@@ -174,7 +174,7 @@ namespace Deucarian.Theming.Editor
                 }
             }
 
-            EditorGUILayout.HelpBox(
+            DeucarianEditorTextGUI.HelpBox(
                 "Clear the search and category filter to add or reorder items.",
                 MessageType.None);
         }
