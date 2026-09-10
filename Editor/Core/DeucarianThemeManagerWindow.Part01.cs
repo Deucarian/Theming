@@ -65,6 +65,8 @@ namespace Deucarian.Theming.Editor
 
         private void OnDisable()
         {
+            featureGate?.Dispose();
+            featureGate = null;
             navigation?.Dispose();
             navigation = null;
             EditorApplication.projectChanged -= HandleProjectChanged;
@@ -91,11 +93,13 @@ namespace Deucarian.Theming.Editor
         }
 
         private DeucarianEditorPageSession navigation;
+        private DeucarianThemingEditorFeatureGate featureGate;
         private VisualElement pageRoot;
         private VisualElement PageRoot => pageRoot ?? rootVisualElement;
 
         private void BuildPage(VisualElement root)
         {
+            featureGate?.Dispose();
             pageRoot = root;
             workspace?.Dispose();
             PageRoot.Clear();
@@ -108,6 +112,8 @@ namespace Deucarian.Theming.Editor
             workspaceContent = new ThemeWorkspaceContent(this, workspace);
             BuildDeveloperToolsDrawer();
             BuildWorkbenchFooter();
+            featureGate = DeucarianThemingEditorFeatureGate.Wrap(workspace, false,
+                () => DeucarianThemeManagerWorkflow.ClearPreview());
             UpdateWorkbenchToolbar();
         }
 
@@ -211,6 +217,7 @@ namespace Deucarian.Theming.Editor
 
             UpdateWorkbenchFooter();
             workspaceContent?.Refresh();
+            featureGate?.Refresh();
         }
     }
 }

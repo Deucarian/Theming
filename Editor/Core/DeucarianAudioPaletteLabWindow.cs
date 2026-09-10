@@ -121,6 +121,12 @@ namespace Deucarian.Theming.Editor
 
         private void Play(DeucarianAudioCue cue, bool processed = true)
         {
+            if (!DeucarianThemeRuntimeResolver.UseAudio)
+            {
+                StopPreview();
+                feedback = "Audio is off in Project setup.";
+                return;
+            }
             previewSequence++;
             if (!cue.TrySelectVariant(
                     previewSequence,

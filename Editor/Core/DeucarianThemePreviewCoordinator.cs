@@ -67,6 +67,8 @@ namespace Deucarian.Theming.Editor
         {
             CancelQueuedPreviewApplication();
             CancelPlayStartupPreviewApplication();
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling)
+                return DeucarianThemeManagerWorkflow.ClearPreview();
             if (buildSuspended || saveSuspended || BuildPipeline.isBuildingPlayer)
             {
                 return 0;

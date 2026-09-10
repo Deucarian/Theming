@@ -73,6 +73,7 @@ namespace Deucarian.Theming.Editor
 
         public bool Play(AudioClip clip)
         {
+            if (!DeucarianThemeRuntimeResolver.UseAudio) { Stop(); return false; }
             if (!IsAvailable || clip == null)
             {
                 return false;
@@ -88,6 +89,10 @@ namespace Deucarian.Theming.Editor
                         ? new object[] { clip, 0 }
                         : new object[] { clip, 0, false };
                 playMethod.Invoke(null, arguments);
+                DeucarianThemeAssetChangeBus.AssetChanged += OnSettingsChanged;
+                Undo.undoRedoPerformed += CheckFeature;
+                EditorApplication.projectChanged += CheckFeature;
+                AssemblyReloadEvents.beforeAssemblyReload += Stop;
                 return true;
             }
             catch (TargetInvocationException)
@@ -106,6 +111,10 @@ namespace Deucarian.Theming.Editor
 
         public void Stop()
         {
+            DeucarianThemeAssetChangeBus.AssetChanged -= OnSettingsChanged;
+            Undo.undoRedoPerformed -= CheckFeature;
+            EditorApplication.projectChanged -= CheckFeature;
+            AssemblyReloadEvents.beforeAssemblyReload -= Stop;
             try { StopPlayback(); }
             finally
             {
@@ -116,6 +125,7 @@ namespace Deucarian.Theming.Editor
 
         public bool PlayProcessed(AudioClip clip, float volume, float pitch)
         {
+            if (!DeucarianThemeRuntimeResolver.UseAudio) { Stop(); return false; }
             LastError = null;
             if (!IsAvailable || clip == null) return false;
             Stop();
@@ -135,6 +145,13 @@ namespace Deucarian.Theming.Editor
             }
             finally { candidate?.Dispose(); }
         }
+
+        private void OnSettingsChanged(UnityEngine.Object asset)
+        {
+            if (asset is DeucarianThemeRuntimeSettings) CheckFeature();
+        }
+
+        private void CheckFeature() { if (!DeucarianThemeRuntimeResolver.UseAudio) Stop(); }
 
         private void StopPlayback()
         {
