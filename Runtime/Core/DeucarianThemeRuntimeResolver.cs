@@ -14,6 +14,15 @@ namespace Deucarian.Theming
         /// <summary>Resources name used for the runtime theming settings asset.</summary>
         public static string RuntimeSettingsResourceName => DeucarianThemeRuntimeSettings.ResourceName;
 
+        public static bool UseVisualStyling
+        {
+            get { var settings = LoadSettings(); return settings == null || settings.UseVisualStyling; }
+        }
+        public static bool UseAudio
+        {
+            get { var settings = LoadSettings(); return settings == null || settings.UseAudio; }
+        }
+
         /// <summary>Loads the runtime theming settings from Resources.</summary>
         public static DeucarianThemeRuntimeSettings LoadSettings()
         {

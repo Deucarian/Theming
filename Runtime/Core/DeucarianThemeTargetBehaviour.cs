@@ -53,6 +53,7 @@ namespace Deucarian.Theming
         /// <inheritdoc />
         public void ApplyTheme(DeucarianTheme theme)
         {
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling) return;
             DeucarianTheme resolvedTheme = ResolveTheme(theme);
             if (resolvedTheme == null)
             {
@@ -70,6 +71,7 @@ namespace Deucarian.Theming
         /// <summary>Resolves the theme from override, supplied provider theme, nearest provider, or active provider.</summary>
         protected DeucarianTheme ResolveTheme(DeucarianTheme suppliedTheme)
         {
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling) return null;
             if (themeOverride != null)
             {
                 return themeOverride;
@@ -118,6 +120,7 @@ namespace Deucarian.Theming
 
         protected virtual void OnEnable()
         {
+            DeucarianThemeAssetChangeBus.AssetChanged += OnRuntimeSettingsChanged;
             RefreshProviderSubscription();
 
             if (applyOnEnable)
@@ -128,11 +131,13 @@ namespace Deucarian.Theming
 
         protected virtual void OnDisable()
         {
+            DeucarianThemeAssetChangeBus.AssetChanged -= OnRuntimeSettingsChanged;
             UnsubscribeFromProvider();
         }
 
         protected virtual void OnDestroy()
         {
+            DeucarianThemeAssetChangeBus.AssetChanged -= OnRuntimeSettingsChanged;
             UnsubscribeFromProvider();
         }
 
@@ -187,6 +192,11 @@ namespace Deucarian.Theming
             }
 
             ApplyTheme(theme);
+        }
+
+        private void OnRuntimeSettingsChanged(UnityEngine.Object asset)
+        {
+            if (asset is DeucarianThemeRuntimeSettings && applyOnEnable) ApplyTheme();
         }
     }
 }

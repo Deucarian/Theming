@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0] - 2026-09-10
+
+- Add Theming > Project setup, with independent saved visual styling and audio switches; keep visual and audio palettes together in one package.
+- Add project audio palette/experience defaults while preserving component overrides and mixed-theme audio resolution when visual styling is off.
+- Gate runtime visual adapters and all themed audio playback entry points. Audio Off stops active player voices; palette assets and editor previews remain available.
+- Group Project setup, Visual palettes and Audio palettes in the same-window submenu using Editor 1.8 shared feature sections.
+- Report loaded button integrations and successful keyboard/warning cue observations without mistaking an assigned palette for a connection. Release observers when leaving the page.
+
 ## [1.4.4] - 2026-09-09
 
 ### Changed

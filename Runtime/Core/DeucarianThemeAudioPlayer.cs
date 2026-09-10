@@ -21,6 +21,10 @@ namespace Deucarian.Theming
         private System.Random random;
         private bool warnedMissingOutput;
 
+        public event System.Action<string> RolePlayed;
+        public IEnumerable<string> PlayedRoleIds => lastVariantByRole.Keys;
+        public DeucarianAudioPaletteSet CurrentPaletteSet => ResolvePaletteSet();
+
         public DeucarianTheme ThemeOverride
         {
             get => themeOverride;
@@ -69,8 +73,10 @@ namespace Deucarian.Theming
             DeucarianAudioRole role,
             DeucarianAudioPlaybackModifiers modifiers)
         {
-            if (paletteSetOverride != null && role != null &&
-                paletteSetOverride.TryResolve(role, ResolveExperience(), out DeucarianAudioResolution direct))
+            if (!DeucarianThemeRuntimeResolver.UseAudio) return false;
+            DeucarianAudioPaletteSet paletteSet = ResolvePaletteSet();
+            if (paletteSet != null && role != null &&
+                paletteSet.TryResolve(role, ResolveExperience(), out DeucarianAudioResolution direct))
             {
                 return Play(role.Id, direct.Cue, modifiers);
             }
@@ -94,8 +100,10 @@ namespace Deucarian.Theming
             string roleId,
             DeucarianAudioPlaybackModifiers modifiers)
         {
-            if (paletteSetOverride != null && !string.IsNullOrWhiteSpace(roleId) &&
-                paletteSetOverride.TryResolveById(
+            if (!DeucarianThemeRuntimeResolver.UseAudio) return false;
+            DeucarianAudioPaletteSet paletteSet = ResolvePaletteSet();
+            if (paletteSet != null && !string.IsNullOrWhiteSpace(roleId) &&
+                paletteSet.TryResolveById(
                     roleId,
                     ResolveExperience(),
                     out DeucarianAudioResolution direct))
@@ -152,7 +160,7 @@ namespace Deucarian.Theming
             DeucarianAudioCue cue,
             DeucarianAudioPlaybackModifiers modifiers)
         {
-            if (cue == null || cue.IntentionalSilence)
+            if (!DeucarianThemeRuntimeResolver.UseAudio || cue == null || cue.IntentionalSilence)
             {
                 return false;
             }
@@ -183,6 +191,7 @@ namespace Deucarian.Theming
             {
                 warnedMissingOutput = false;
                 lastVariantByRole[roleId] = selectedIndex;
+                NotifyRolePlayed(roleId);
             }
 
             return played;
@@ -204,12 +213,46 @@ namespace Deucarian.Theming
             return DeucarianThemeRuntimeResolver.ResolveDefaultTheme(this);
         }
 
+        private void NotifyRolePlayed(string roleId)
+        {
+            if (RolePlayed == null) return;
+            foreach (System.Action<string> subscriber in RolePlayed.GetInvocationList())
+            {
+                try { subscriber(roleId); }
+                catch (System.Exception exception)
+                {
+                    ThemingLog.General.Exception(exception, "An audio usage observer failed.", this);
+                }
+            }
+        }
+
+        private void OnEnable() => DeucarianThemeAssetChangeBus.AssetChanged += OnSettingsChanged;
+        private void OnDisable() => DeucarianThemeAssetChangeBus.AssetChanged -= OnSettingsChanged;
+        private void OnSettingsChanged(UnityEngine.Object asset)
+        {
+            if (asset is DeucarianThemeRuntimeSettings && !DeucarianThemeRuntimeResolver.UseAudio) StopAll();
+        }
+
         private DeucarianAudioExperience ResolveExperience()
         {
             DeucarianThemeProvider provider = ResolveProvider();
+            if (useProviderExperience && provider == null)
+            {
+                var settings = DeucarianThemeRuntimeResolver.LoadSettings();
+                if (settings != null && (settings.DefaultAudioPaletteSet != null ||
+                    settings.DefaultAudioExperience != DeucarianAudioExperience.Default))
+                    return settings.DefaultAudioExperience;
+            }
             return useProviderExperience && provider != null
                 ? provider.AudioExperience
                 : experienceOverride;
+        }
+
+        private DeucarianAudioPaletteSet ResolvePaletteSet()
+        {
+            if (paletteSetOverride != null) return paletteSetOverride;
+            if (themeOverride != null || ResolveProvider() != null) return null;
+            return DeucarianThemeRuntimeResolver.LoadSettings()?.DefaultAudioPaletteSet;
         }
 
         private DeucarianThemeProvider ResolveProvider()
