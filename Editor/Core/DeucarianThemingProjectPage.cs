@@ -55,7 +55,7 @@ namespace Deucarian.Theming.Editor
                 DeucarianEditorNavigation.Open(Root, DeucarianToolIds.ThemeManager));
             content.Add(visual.Root);
             audio = new DeucarianEditorFeatureSection("theming-audio", "Audio",
-                "Sounds for interactions and feedback.", "headphones",
+                "Sounds for interactions and feedback.", DeucarianEditorIconIds.Audio,
                 value => Write(settings => settings.SetFeatures(settings.UseVisualStyling, value)));
             audioForm = new DeucarianEditorWorkspaceForm(audio.Details);
             audioForm.Asset("theming-audio-palette", "Palette set", typeof(DeucarianAudioPaletteSet),
