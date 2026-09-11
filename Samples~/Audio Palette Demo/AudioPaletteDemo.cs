@@ -8,7 +8,9 @@ namespace Deucarian.Theming.Samples.AudioPalette
     [RequireComponent(typeof(DeucarianThemeAudioPlayer))]
     public sealed class AudioPaletteDemo : MonoBehaviour
     {
-        private DeucarianThemeAudioPlayer player;
+        [SerializeField] private DeucarianThemeAudioPlayer player;
+        [SerializeField] private DeucarianAudioPaletteSet paletteSet;
+        [SerializeField] private DeucarianAudioExperience experience = DeucarianAudioExperience.Default;
 
         public void UseDefault() => Use(DeucarianAudioExperience.Default);
         public void UseXR() => Use(DeucarianAudioExperience.XR);
@@ -38,19 +40,21 @@ namespace Deucarian.Theming.Samples.AudioPalette
 
             output.Template = source;
 
-            player = GetComponent<DeucarianThemeAudioPlayer>();
+            if (player == null) player = GetComponent<DeucarianThemeAudioPlayer>();
             if (player == null)
             {
                 player = gameObject.AddComponent<DeucarianThemeAudioPlayer>();
             }
 
             player.Output = output;
-            player.PaletteSetOverride = DeucarianAudioDefaults.LoadPaletteSet();
+            player.PaletteSetOverride = paletteSet != null ? paletteSet : DeucarianAudioDefaults.LoadPaletteSet();
             player.UseProviderExperience = false;
+            player.ExperienceOverride = experience;
         }
 
         private void Use(DeucarianAudioExperience experience)
         {
+            this.experience = experience;
             player.ExperienceOverride = experience;
         }
 

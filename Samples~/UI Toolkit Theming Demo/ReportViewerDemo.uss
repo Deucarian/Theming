@@ -1,10 +1,14 @@
 .viewer-root {
     flex-grow: 1;
-    padding: 16px;
+    padding: 48px;
+    justify-content: center;
+    align-items: center;
 }
 
 .viewer-panel {
-    padding: 12px;
+    padding: 32px;
+    width: 85%;
+    max-width: 900px;
     border-top-width: 1px;
     border-right-width: 1px;
     border-bottom-width: 1px;
@@ -12,18 +16,25 @@
 }
 
 .viewer-title {
-    font-size: 18px;
+    font-size: 32px;
     -unity-font-style: bold;
 }
 
 .viewer-body {
-    margin-top: 8px;
+    margin-top: 20px;
+    font-size: 18px;
+    white-space: normal;
 }
 
 .viewer-button {
-    margin-top: 12px;
+    margin-top: 24px;
+    margin-right: 12px;
+    height: 48px;
+    min-width: 150px;
+    font-size: 18px;
 }
 
-.viewer-error {
-    margin-top: 8px;
+.actions {
+    flex-direction: row;
+    flex-wrap: wrap;
 }

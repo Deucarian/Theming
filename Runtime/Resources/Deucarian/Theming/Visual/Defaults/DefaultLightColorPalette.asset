@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 870ea7616fc6ba34db1f00bf0ee2cbdf, type: 3}
+  m_Name: DefaultLightColorPalette
+  m_EditorClassIdentifier: Deucarian.Theming::Deucarian.Theming.DeucarianColorPalette
+  paletteId: deucarian.palette.default.light
+  displayName: Deucarian Default Light
+  roleLibrary: {fileID: 11400000, guid: e35e18c0079db844da3c0ea25561d7e8, type: 2}
+  hasThemeMode: 1
+  themeMode: 0
+  entries:
+  - role: {fileID: 11400000, guid: 9e6d60c6bb4804b4791faa6f3a45fc83, type: 2}
+    color: {r: 0.9647059, g: 0.972549, b: 0.98039216, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: e5319066a3f38ee40858b0f71d0bf66e, type: 2}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: db54a95fca13db747b2a2e8fcff49d09, type: 2}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: c861bd2c21d8088448ca4f0244d2c237, type: 2}
+    color: {r: 0.09019608, g: 0.2627451, b: 0.40392157, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 1163eda0b8b3b8147adf6990128acdac, type: 2}
+    color: {r: 0.043137256, g: 0.41960785, b: 0.40784314, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 877a228a7f2d17545888a74cf1702311, type: 2}
+    color: {r: 0.6039216, g: 0.3529412, b: 0.039215688, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: fa34416870b1df24582dcc30ce58b345, type: 2}
+    color: {r: 0.043137256, g: 0.06666667, b: 0.09019608, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 6dc8809fa644d424b9067389f0f9a4b2, type: 2}
+    color: {r: 0.14901961, g: 0.20392157, b: 0.25882354, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: b1b6dde475537eb4f8119644d5779de9, type: 2}
+    color: {r: 0.32156864, g: 0.3764706, b: 0.42745098, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: d1aea69878ec7464e8c66b8250bdc185, type: 2}
+    color: {r: 0.5372549, g: 0.5921569, b: 0.64705884, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: f2316ad7fb0d78449ad400d756f830b9, type: 2}
+    color: {r: 0.043137256, g: 0.41960785, b: 0.40784314, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 26f6c9fd5bf25fc4e94df955cb008fad, type: 2}
+    color: {r: 0.6039216, g: 0.3529412, b: 0.039215688, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: c65108949643d9343bc35d9170e37b34, type: 2}
+    color: {r: 0.62352943, g: 0.14117648, b: 0.101960786, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: da0bc98a8bc397b4caa22e79883f2f69, type: 2}
+    color: {r: 0.11764706, g: 0.37254903, b: 0.5529412, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 40950e2a67d753742997a7a3b99f9081, type: 2}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: caaedc1ef77480547b7f55e91d28dfcc, type: 2}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 8e106988efa28ba4a846bcb96286e99f, type: 2}
+    color: {r: 0.09019608, g: 0.2627451, b: 0.40392157, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 19ac50b7ac068834fadfbdc3c8b52f3a, type: 2}
+    color: {r: 0.043137256, g: 0.41960785, b: 0.40784314, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 0c7e8f8fffec085468c5461853bc6ee1, type: 2}
+    color: {r: 0.84313726, g: 0.87058824, b: 0.8980392, a: 1}
+    note:
+  - role: {fileID: 11400000, guid: 0d8394efa0113a44b8bbe70d91864540, type: 2}
+    color: {r: 0.11764706, g: 0.37254903, b: 0.5529412, a: 1}
+    note:
