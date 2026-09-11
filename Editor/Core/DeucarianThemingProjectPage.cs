@@ -34,6 +34,7 @@ namespace Deucarian.Theming.Editor
             workspace.Title.text = "Theming";
             workspace.Subtitle.text = "Choose what this project uses.";
             workspace.FooterLeading.text = "Project settings";
+            DeucarianEditorWorkspaceControls.Show(workspace.Footer, false);
             DeucarianEditorWorkspaceControls.Show(workspace.Tabs, false);
             DeucarianEditorWorkspaceControls.Show(workspace.Scope, false);
             DeucarianEditorWorkspaceNavigation.Populate(workspace, ToolId);

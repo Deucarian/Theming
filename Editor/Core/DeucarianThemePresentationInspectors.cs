@@ -1,7 +1,9 @@
 using Deucarian.Editor;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor
 {
@@ -112,317 +114,135 @@ namespace Deucarian.Theming.Editor
     public sealed class DeucarianThemeStyleEditor : UnityEditor.Editor
     {
         private bool legacyCompatibilityExpanded;
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-
-            DeucarianThemeStyle style = (DeucarianThemeStyle)target;
-            DrawStyleHeading(style);
-
-            switch (style.CompositionKind)
+            var style = (DeucarianThemeStyle)target;
+            var root = DeucarianEditorInspector.CreateToolkit();
+            var title = DeucarianEditorWorkspaceControls.Label(string.Empty, "dw-section-title");
+            var description = DeucarianEditorWorkspaceControls.Label(string.Empty, "dw-muted");
+            root.Add(title); root.Add(description);
+            var body = new VisualElement(); root.Add(body);
+            DeucarianThemeStyleCompositionKind? renderedKind = null;
+            DeucarianEditorInspector.Observe(root, serializedObject, () =>
             {
-                case DeucarianThemeStyleCompositionKind.CompletePreset:
-                    DrawPreset(style);
-                    break;
-                case DeucarianThemeStyleCompositionKind.CompleteCustom:
-                    DrawCustomStyle();
-                    break;
-                case DeucarianThemeStyleCompositionKind.Incomplete:
-                    DrawIncomplete(style);
-                    break;
-                default:
-                    DrawLegacyStyle();
-                    break;
-            }
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        private static void DrawStyleHeading(DeucarianThemeStyle style)
-        {
-            string heading = string.IsNullOrWhiteSpace(style.DisplayName) ? style.name : style.DisplayName;
-            DeucarianEditorTextGUI.LabelField(heading, DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            if (!string.IsNullOrWhiteSpace(style.Description))
-            {
-                DeucarianEditorTextGUI.LabelField(style.Description, DeucarianEditorWorkbenchGUI.WordWrappedMiniLabelStyle);
-            }
-
-            EditorGUILayout.Space(4f);
-        }
-
-        private void DrawPreset(DeucarianThemeStyle style)
-        {
-            DeucarianEditorTextGUI.HelpBox(
-                "Curated preset. Its reusable presentation parts are kept read-only so the preset remains stable.",
-                MessageType.Info);
-            DrawComposition(false);
-
-            EditorGUILayout.Space(4f);
-            if (DeucarianEditorActionGUI.Button("Customize in Theme Manager"))
-            {
-                DeucarianThemeManagerWindow.OpenStyleComposer(style);
-            }
-        }
-
-        private void DrawCustomStyle()
-        {
-            DrawComposition(true);
-        }
-
-        private void DrawIncomplete(DeucarianThemeStyle style)
-        {
-            IReadOnlyList<string> missing =
-                DeucarianThemeStyleInspectorPresentation.GetMissingComponentLabels(style);
-            DeucarianEditorTextGUI.HelpBox(
-                "This style is incomplete. Choose: " + string.Join(", ", missing) + ".",
-                MessageType.Error);
-            DrawComposition(false);
-
-            EditorGUILayout.Space(4f);
-            if (DeucarianEditorActionGUI.Button("Complete in Theme Manager"))
-            {
-                DeucarianThemeManagerWindow.OpenStyleComposer(style);
-            }
-        }
-
-        private void DrawLegacyStyle()
-        {
-            DeucarianEditorTextGUI.HelpBox(
-                "Legacy inline style. It remains supported, but new styles should use composed presentation profiles.",
-                MessageType.Info);
-
-            legacyCompatibilityExpanded = DeucarianEditorInputGUI.Foldout(
-                legacyCompatibilityExpanded,
-                "Legacy Compatibility",
-                true);
-            if (!legacyCompatibilityExpanded)
-            {
-                return;
-            }
-
-            EditorGUI.indentLevel++;
-            using (new EditorGUI.DisabledScope(true))
-            {
-                SerializedProperty classification = serializedObject.FindProperty(
-                    DeucarianThemeStyleInspectorPresentation.LegacyClassificationPropertyName);
-                if (classification != null)
+                if (style == null) return;
+                title.text = string.IsNullOrWhiteSpace(style.DisplayName) ? style.name : style.DisplayName;
+                description.text = style.Description;
+                if (renderedKind == style.CompositionKind)
                 {
-                    EditorGUILayout.PropertyField(classification, new GUIContent("Classification"));
+                    if (style.CompositionKind == DeucarianThemeStyleCompositionKind.Incomplete && body.Q<HelpBox>() is HelpBox warning)
+                        warning.text = "Choose: " + string.Join(", ", DeucarianThemeStyleInspectorPresentation.GetMissingComponentLabels(style)) + ".";
+                    return;
                 }
-            }
-
-            IReadOnlyList<string> properties = DeucarianThemeStyleInspectorPresentation.LegacyPropertyNames;
-            for (int i = 0; i < properties.Count; i++)
-            {
-                SerializedProperty property = serializedObject.FindProperty(properties[i]);
-                if (property != null)
+                renderedKind = style.CompositionKind;
+                body.Unbind(); body.Clear();
+                if (style.CompositionKind == DeucarianThemeStyleCompositionKind.LegacyInline)
                 {
-                    EditorGUILayout.PropertyField(property);
+                    body.Add(DeucarianEditorWorkspaceControls.Label("Legacy inline style. New styles use reusable presentation profiles.", "dw-muted"));
+                    var legacy = new Foldout { text = "Legacy compatibility", value = legacyCompatibilityExpanded };
+                    legacy.AddToClassList("dw-foldout"); legacy.RegisterValueChangedCallback(evt => legacyCompatibilityExpanded = evt.newValue);
+                    body.Add(legacy);
+                    DeucarianEditorInspector.Property(legacy, serializedObject,
+                        DeucarianThemeStyleInspectorPresentation.LegacyClassificationPropertyName, "Classification").SetEnabled(false);
+                    foreach (string name in DeucarianThemeStyleInspectorPresentation.LegacyPropertyNames)
+                        DeucarianEditorInspector.Property(legacy, serializedObject, name);
+                    return;
                 }
-            }
-
-            EditorGUI.indentLevel--;
-        }
-
-        private void DrawComposition(bool editable)
-        {
-            using (new EditorGUI.DisabledScope(!editable))
-            {
-                DrawProperty("surfaceProfile", DeucarianThemeStyleInspectorPresentation.SurfaceLabel);
-                DrawProperty("shapeProfile", DeucarianThemeStyleInspectorPresentation.CornersLabel);
-                DrawProperty("strokeProfile", DeucarianThemeStyleInspectorPresentation.BorderLabel);
-                DrawProperty("density", DeucarianThemeStyleInspectorPresentation.SizeLabel);
-                DrawProperty("typographyProfile", DeucarianThemeStyleInspectorPresentation.TypographyLabel);
-            }
-        }
-
-        private void DrawProperty(string propertyName, string label)
-        {
-            SerializedProperty property = serializedObject.FindProperty(propertyName);
-            if (property != null)
-            {
-                EditorGUILayout.PropertyField(property, new GUIContent(label));
-            }
+                bool editable = DeucarianThemeStyleInspectorPresentation.IsCompositionEditable(style.CompositionKind);
+                if (style.CompositionKind == DeucarianThemeStyleCompositionKind.Incomplete)
+                    body.Add(new HelpBox("Choose: " + string.Join(", ", DeucarianThemeStyleInspectorPresentation.GetMissingComponentLabels(style)) + ".", HelpBoxMessageType.Error));
+                else if (!editable)
+                    body.Add(DeucarianEditorWorkspaceControls.Label("Curated preset. Customize a copy to keep the preset stable.", "dw-muted"));
+                var composition = new VisualElement(); body.Add(composition);
+                string[] labels = { "Surface", "Corners", "Border", "Size", "Typography" };
+                var paths = DeucarianThemeStyleInspectorPresentation.CompositionPropertyNames;
+                for (int i = 0; i < paths.Count; i++) DeucarianEditorInspector.Property(composition, serializedObject, paths[i], labels[i]);
+                composition.SetEnabled(editable);
+                if (!editable) body.Add(DeucarianEditorWorkspaceControls.Button(
+                    style.CompositionKind == DeucarianThemeStyleCompositionKind.Incomplete ? "Complete in Theme Manager" : "Customize in Theme Manager",
+                    () => DeucarianThemeManagerWindow.OpenStyleComposer(style)));
+            });
+            return root;
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeTypographyProfile))]
     public sealed class DeucarianThemeTypographyProfileEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DeucarianEditorTextGUI.LabelField("Typography", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("fontAsset"), new GUIContent("TMP Font Asset"));
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("title"), new GUIContent("Title"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("body"), new GUIContent("Body"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("caption"), new GUIContent("Caption"), true);
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("displayName"), new GUIContent("Display Name"));
-            serializedObject.ApplyModifiedProperties();
+            var root = DeucarianEditorInspector.CreateToolkit("Typography");
+            DeucarianEditorInspector.Property(root, serializedObject, "fontAsset", "TMP font asset");
+            foreach (string path in new[] { "title", "body", "caption", "displayName" })
+                DeucarianEditorInspector.Property(root, serializedObject, path);
+            return root;
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeSurfaceProfile))]
     public sealed class DeucarianThemeSurfaceProfileEditor : UnityEditor.Editor
     {
-        private bool assetDetailsExpanded;
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-
-            DeucarianEditorTextGUI.LabelField("Surface", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            using (new EditorGUI.DisabledScope(true))
-            {
-                EditorGUILayout.PropertyField(
-                    serializedObject.FindProperty(
-                        DeucarianThemeSurfaceProfileInspectorPresentation.ClassificationPropertyName),
-                    new GUIContent("Classification"));
-            }
-
-            EditorGUILayout.Space(4f);
-            DeucarianEditorTextGUI.LabelField("Color & Transparency", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("darkSurfaceTint"), new GUIContent("Dark Surface Tint"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("lightSurfaceTint"), new GUIContent("Light Surface Tint"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("surfaceTintStrength"), new GUIContent("Tint Blend"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("surfaceAlphaMultiplier"), new GUIContent("Opacity Multiplier"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("minimumSurfaceAlpha"), new GUIContent("Minimum Opacity"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("maximumSurfaceAlpha"), new GUIContent("Maximum Opacity"));
-
-            EditorGUILayout.Space(4f);
-            DeucarianEditorTextGUI.LabelField("Texture", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            SerializedProperty useTexture = serializedObject.FindProperty("useGeneratedNoiseTexture");
-            EditorGUILayout.PropertyField(useTexture, new GUIContent("Generated Texture"));
-            using (new EditorGUI.DisabledScope(!useTexture.boolValue))
-            {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("textureTint"), new GUIContent("Texture Tint"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("generatedTextureSize"), new GUIContent("Texture Size"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("generatedTextureBlurRadius"), new GUIContent("Blur Radius"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("generatedTextureBlurStrength"), new GUIContent("Blur Blend"));
-            }
-
-            if (!useTexture.boolValue)
-            {
-                DeucarianEditorTextGUI.HelpBox("Texture settings are inactive while Generated Texture is off.", MessageType.None);
-            }
-
-            DeucarianThemeProfileInspectorGUI.DrawAssetDetails(
-                ref assetDetailsExpanded,
-                serializedObject,
-                "profileId",
-                "displayName",
-                "description");
-            serializedObject.ApplyModifiedProperties();
+            var root = DeucarianEditorInspector.CreateToolkit("Surface");
+            DeucarianEditorInspector.Property(root, serializedObject,
+                DeucarianThemeSurfaceProfileInspectorPresentation.ClassificationPropertyName, "Classification").SetEnabled(false);
+            root.Add(DeucarianEditorWorkspaceControls.Label("Color and transparency", "dw-section-title"));
+            string[] paths = { "darkSurfaceTint", "lightSurfaceTint", "surfaceTintStrength", "surfaceAlphaMultiplier", "minimumSurfaceAlpha", "maximumSurfaceAlpha" };
+            string[] labels = { "Dark surface tint", "Light surface tint", "Tint blend", "Opacity multiplier", "Minimum opacity", "Maximum opacity" };
+            for (int i = 0; i < paths.Length; i++) DeucarianEditorInspector.Property(root, serializedObject, paths[i], labels[i]);
+            root.Add(DeucarianEditorWorkspaceControls.Label("Texture", "dw-section-title"));
+            DeucarianEditorInspector.Property(root, serializedObject, "useGeneratedNoiseTexture", "Generated texture");
+            var texture = new VisualElement(); root.Add(texture);
+            foreach (string path in new[] { "textureTint", "generatedTextureSize", "generatedTextureBlurRadius", "generatedTextureBlurStrength" })
+                DeucarianEditorInspector.Property(texture, serializedObject, path);
+            DeucarianEditorInspector.Observe(root, serializedObject, () =>
+                texture.SetEnabled(serializedObject.FindProperty("useGeneratedNoiseTexture").boolValue));
+            DeucarianThemeProfileInspectorGUI.AssetDetails(root, serializedObject, "profileId", "displayName", "description");
+            return root;
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeShapeProfile))]
     public sealed class DeucarianThemeShapeProfileEditor : UnityEditor.Editor
     {
-        private bool assetDetailsExpanded;
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DeucarianEditorTextGUI.LabelField("Corners", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("cornerRadius"), new GUIContent("Corner Radius"));
-            DeucarianThemeProfileInspectorGUI.DrawAssetDetails(
-                ref assetDetailsExpanded,
-                serializedObject,
-                "profileId",
-                "displayName",
-                "description");
-            serializedObject.ApplyModifiedProperties();
+            var root = DeucarianEditorInspector.CreateToolkit("Corners");
+            DeucarianEditorInspector.Property(root, serializedObject, "cornerRadius");
+            DeucarianThemeProfileInspectorGUI.AssetDetails(root, serializedObject, "profileId", "displayName", "description");
+            return root;
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeStrokeProfile))]
     public sealed class DeucarianThemeStrokeProfileEditor : UnityEditor.Editor
     {
-        private bool assetDetailsExpanded;
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DeucarianEditorTextGUI.LabelField("Border", DeucarianEditorWorkbenchGUI.BoldLabelStyle);
-
-            SerializedProperty width = serializedObject.FindProperty("borderWidth");
-            EditorGUILayout.PropertyField(width, new GUIContent("Width"));
-            bool borderless = !width.hasMultipleDifferentValues && width.floatValue <= 0f;
-            using (new EditorGUI.DisabledScope(borderless))
+            var root = DeucarianEditorInspector.CreateToolkit("Border");
+            DeucarianEditorInspector.Property(root, serializedObject, "borderWidth", "Width");
+            var tint = new VisualElement(); root.Add(tint);
+            foreach (string path in new[] { "borderTint", "borderTintStrength", "borderAlpha" })
+                DeucarianEditorInspector.Property(tint, serializedObject, path);
+            var hint = DeucarianEditorWorkspaceControls.Label("Width is zero: this profile is borderless.", "dw-muted"); root.Add(hint);
+            DeucarianEditorInspector.Observe(root, serializedObject, () =>
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("borderTint"), new GUIContent("Tint"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("borderTintStrength"), new GUIContent("Tint Blend"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("borderAlpha"), new GUIContent("Opacity"));
-            }
-
-            if (borderless)
-            {
-                DeucarianEditorTextGUI.HelpBox("This profile is borderless. Tint and opacity are inactive while Width is 0.", MessageType.None);
-            }
-
-            DeucarianThemeProfileInspectorGUI.DrawAssetDetails(
-                ref assetDetailsExpanded,
-                serializedObject,
-                "profileId",
-                "displayName",
-                "description");
-            serializedObject.ApplyModifiedProperties();
+                var width = serializedObject.FindProperty("borderWidth");
+                bool borderless = !width.hasMultipleDifferentValues && width.floatValue <= 0;
+                tint.SetEnabled(!borderless); DeucarianEditorWorkspaceControls.Show(hint, borderless);
+            });
+            DeucarianThemeProfileInspectorGUI.AssetDetails(root, serializedObject, "profileId", "displayName", "description");
+            return root;
         }
     }
 
     internal static class DeucarianThemeProfileInspectorGUI
     {
-        internal static void DrawAssetDetails(
-            ref bool expanded,
-            SerializedObject inspectedObject,
-            params string[] propertyNames)
+        internal static void AssetDetails(VisualElement root, SerializedObject serialized, params string[] paths)
         {
-            EditorGUILayout.Space(6f);
-            expanded = DeucarianEditorInputGUI.Foldout(expanded, "Asset Details", true);
-            if (!expanded)
-            {
-                return;
-            }
-
-            EditorGUI.indentLevel++;
-            for (int i = 0; i < propertyNames.Length; i++)
-            {
-                SerializedProperty property = inspectedObject.FindProperty(propertyNames[i]);
-                if (property != null)
-                {
-                    EditorGUILayout.PropertyField(property);
-                }
-            }
-
-            EditorGUI.indentLevel--;
+            var details = new Foldout { text = "Asset details", value = false }; details.AddToClassList("dw-foldout"); root.Add(details);
+            foreach (string path in paths) DeucarianEditorInspector.Property(details, serialized, path);
         }
     }
-
 }

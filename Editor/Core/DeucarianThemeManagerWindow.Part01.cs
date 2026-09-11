@@ -104,14 +104,14 @@ namespace Deucarian.Theming.Editor
             workspace?.Dispose();
             PageRoot.Clear();
             workspace = new DeucarianEditorWorkspace(PageRoot, Application.productName, true);
-            workspace.Title.text = "Theme Manager";
-            workspace.Subtitle.text = "Preview a theme. Apply it when you’re ready.";
+            workspace.Title.text = "Visual palettes";
+            workspace.Subtitle.text = "One visual language for your app.";
             DeucarianEditorWorkspaceNavigation.Populate(workspace, DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspaceControls.Show(workspace.Scope, false);
             BuildWorkbenchToolbar();
             workspaceContent = new ThemeWorkspaceContent(this, workspace);
             BuildDeveloperToolsDrawer();
-            BuildWorkbenchFooter();
+            DeucarianEditorWorkspaceControls.Show(workspace.Footer, false);
             featureGate = DeucarianThemingEditorFeatureGate.Wrap(workspace, false,
                 () => DeucarianThemeManagerWorkflow.ClearPreview());
             UpdateWorkbenchToolbar();
@@ -153,7 +153,9 @@ namespace Deucarian.Theming.Editor
         {
             toolbarView = workspace == null ? null : new DeucarianThemeManagerToolbar(
                 workspace, NavigateToTheme, NavigateToStyleComposer, NavigateToRuntimeSettings,
-                ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction);
+                ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction,
+                value => { paletteCategory = value; NavigateToTheme(); });
+            toolbarView?.SetCategory(paletteCategory);
         }
 
         private void UpdateWorkbenchToolbar()
@@ -204,10 +206,10 @@ namespace Deucarian.Theming.Editor
                     break;
                 default:
                     toolbarView.HideSecondary();
-                    if (status.IsActive) toolbarView.ShowActive();
+                    if (status.IsActive && !(selection.ResolvedPalette != null && EditorUtility.IsDirty(selection.ResolvedPalette))) toolbarView.ShowActive();
                     else
                     {
-                        bool canActivate = status.CanActivate && !isPlaying;
+                        bool canActivate = (status.CanActivate || status.IsActive) && !isPlaying;
                         toolbarView.SetPrimary("Activate", canActivate, canActivate
                             ? "Activate the staged family, mode, and visual style."
                             : isPlaying ? "Exit Play Mode before activating a theme." : status.Message);

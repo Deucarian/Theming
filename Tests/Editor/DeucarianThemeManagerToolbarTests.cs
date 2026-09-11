@@ -16,7 +16,7 @@ namespace Deucarian.Theming.Tests
             {
                 var toolbar = Create(workspace);
                 toolbar.SetPendingChanges(count, playing);
-                var discard = workspace.PageActions.Q<Button>("deucarian-theme-manager-discard-changes");
+                var discard = workspace.Content.Q<Button>("deucarian-theme-manager-discard-changes");
                 Assert.AreEqual(enabled, discard.enabledSelf);
                 Assert.AreEqual(count > 0 ? DisplayStyle.Flex : DisplayStyle.None, discard.style.display.value);
             }
@@ -28,17 +28,19 @@ namespace Deucarian.Theming.Tests
             using (var workspace = new DeucarianEditorWorkspace(new VisualElement(), "Test"))
             {
                 var toolbar = Create(workspace);
-                var action = workspace.PageActions.Q<Button>("deucarian-theme-manager-toolbar-primary");
+                var action = workspace.Content.Q<Button>("deucarian-theme-manager-toolbar-primary");
                 toolbar.ShowActive();
-                Assert.AreSame(workspace.PageActions, action.parent);
+                Assert.AreEqual("theme-apply-actions", action.parent.name);
                 Assert.AreEqual("Active in project", action.text);
                 Assert.IsFalse(action.enabledSelf);
                 toolbar.SetPrimary("Activate", false, "Choose a theme first.");
-                Assert.AreSame(action, workspace.PageActions.Q<Button>("deucarian-theme-manager-toolbar-primary"));
+                Assert.AreSame(action, workspace.Content.Q<Button>("deucarian-theme-manager-toolbar-primary"));
                 Assert.AreEqual("Apply to project", action.text);
                 Assert.AreEqual("Choose a theme first.", action.tooltip);
                 toolbar.SetSelection(true, false, false, false);
-                Assert.IsFalse(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-style").enabledSelf);
+                Assert.IsTrue(workspace.Tabs.Q<Button>("deucarian-theme-manager-view-typography").enabledSelf);
+                toolbar.SetSelection(false, true, false, true);
+                Assert.AreEqual(DisplayStyle.None, workspace.Tabs.Q<DeucarianEditorChoiceBar>().style.display.value);
             }
         }
 
