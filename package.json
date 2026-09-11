@@ -30,12 +30,12 @@
   "samples": [
     {
       "displayName": "Basic Theming Demo",
-      "description": "Basic setup notes for role assets, palettes, and theme adapters.",
+      "description": "Playable light/dark scene with bundled defaults, background/surface roles and serialized uGUI adapters.",
       "path": "Samples~/Basic Theming Demo"
     },
     {
       "displayName": "UI Toolkit Theming Demo",
-      "description": "UI Toolkit selector, UIDocument, and variable-generation examples.",
+      "description": "Playable UIDocument with light/dark buttons, authored selector bindings and editable panel settings.",
       "path": "Samples~/UI Toolkit Theming Demo"
     },
     {

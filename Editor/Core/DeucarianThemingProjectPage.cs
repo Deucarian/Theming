@@ -152,7 +152,9 @@ namespace Deucarian.Theming.Editor
             visual.Description.text = useVisual ? "Apply Deucarian colors, fonts and shapes."
                 : "Keep the app's existing colors, fonts and shapes.";
             visual.SetState(useVisual, !useVisual ? "Deucarian visual palettes are not applied." :
-                settings?.DefaultTheme == null ? "No project default. Existing component themes remain in charge." : null);
+                settings?.DefaultTheme == null ? settings?.DefaultThemeFamily != null
+                    ? "The configured family has no usable theme."
+                    : "Using bundled Deucarian Default. Component themes can override it." : null);
             audio.SetState(useAudio, !useAudio ? "Deucarian audio feedback is not played." : null);
             visualForm.Refresh();
             audioForm.Refresh();
