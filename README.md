@@ -2,6 +2,47 @@
 
 For simple calls and setup, see [Simple usage](Documentation~/SimpleUsage.md).
 
+## Generated keys in code and the Inspector
+
+Project custom audio role definitions generate named, typed C# keys automatically. A `.g.cs` file is generated C# that Unity compiles normally. The generator runs in the editor; the player uses the compiled key code.
+
+1. Create or edit a `DeucarianAudioRole` under your project's `Assets` folder using the existing authoring workflow. Keep its stable ID unique and give it a display name, for example `Confirm`.
+2. Let Unity finish importing and compiling. The editor produces `Assets/DeucarianGeneratedKeys/AudioRoleKey/ProjectAudioRoles.g.cs` and its generated assembly definition.
+3. Configure the runtime owner once, then use the generated key in code or select the same definition from a serialized field dropdown.
+
+Add and configure a ThemeAudioHost once, enable project audio and provide a playable cue through the role or palette. Built-in roles remain available through AudioRoles; this generator projects custom project roles.
+
+After creating the `Confirm` definition, a caller can use:
+
+```csharp
+using Deucarian.Theming;
+using Deucarian.Generated;
+using UnityEngine;
+
+public sealed class GeneratedKeyExample : MonoBehaviour
+{
+    [SerializeField] private AudioRoleKey definition = ProjectAudioRoles.Confirm;
+
+    public void Play() => ThemeAudio.Play(definition);
+}
+```
+
+The `definition` field exposes existing `AudioRoleKey` choices in the Inspector. A direct code call uses the same typed value:
+
+```csharp
+ThemeAudio.Play(ProjectAudioRoles.Confirm);
+```
+
+The caller retains a typed identity, without a reference to the definition asset. Misspelled generated members and keys from another domain fail compilation. A valid key does not configure a scene or add the definition to its runtime catalog; follow [Simple usage](Documentation~/SimpleUsage.md) for scope setup.
+
+**Updating definitions:** edit the source asset. Changing its display name changes the generated member after regeneration, so update old code references. Existing serialized selections retain their stable ID. Deleting a definition removes its member and marks serialized selections as missing. Duplicate IDs or generated names must be corrected at the source. Renaming only the asset file leaves its display name and ID unchanged.
+
+**Assemblies and source control:** callers with their own asmdef reference `Deucarian.GeneratedKeys.AudioRoleKey` in addition to the package assemblies they use; `Assembly-CSharp` sees it automatically. Commit source assets, generated `.g.cs`, generated `.asmdef` files and their `.meta` files together. Edit source definitions instead of generated files.
+
+**If a key is missing or stale:** reimport a source definition and let Unity finish compilation. Check that the asset is under `Assets`, its name/ID are valid and automatic generation has not been disabled by a test harness. Inspector and build validation report missing selections and stale generated output. Custom bundle/content pipelines should invoke the shared validator for their additional content.
+
+[Shared generation, serialization and build-validation guide](https://github.com/Deucarian/Editor/blob/develop/Documentation~/TypedKeys.md).
+
 ## Choose what your app uses
 
 Open **Theming > Project setup** in the Control Center. Theming includes both visual styling and audio; either can be enabled independently. This does not change the Control Center's appearance.
@@ -40,7 +81,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.6.1` (requires Editor `1.10.6`).
+Current package version: `1.6.1` (requires Editor `1.10.8`).
 
 ## When to use it
 
