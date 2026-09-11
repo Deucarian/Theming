@@ -38,7 +38,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.6.0` (requires Editor `1.8.0`).
+Current package version: `1.6.1` (requires Editor `1.10.6`).
 
 ## When to use it
 

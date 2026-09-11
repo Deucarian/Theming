@@ -18,6 +18,7 @@ namespace Deucarian.Theming.Editor
         private const float PreviewStackBreakpoint = 760f;
 
         [SerializeField] private ViewMode viewMode;
+        [SerializeField] private int paletteCategory;
         [SerializeField] private Vector2 scrollPosition;
         private DeucarianThemingMenuActions.AssetSearchResult searchResult;
         private DeucarianThemeRuntimeSettings runtimeSettingsCandidate;

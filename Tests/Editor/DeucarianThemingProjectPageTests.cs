@@ -114,6 +114,76 @@ namespace Deucarian.Theming.Editor.Tests
             }
             finally { window.Close(); }
         }
+
+        [UnityTest]
+        public IEnumerator PaletteGatePreservesContextOrderAndLeavesSpaceForEditing()
+        {
+            int originalScale = DeucarianEditorAppearance.WorkspaceScalePercent;
+            var window = ScriptableObject.CreateInstance<AdoptionPageTestWindow>(); window.Show();
+            using (var workspace = new DeucarianEditorWorkspace(window.rootVisualElement, "Fixture"))
+            {
+                workspace.Title.text = "Visual palettes";
+                workspace.Subtitle.text = "One visual language for your app.";
+                var context = new DeucarianEditorWorkspaceForm(workspace.Scope);
+                context.ReadOnly("fixture-family", "Theme family", () => "A theme family with a longer name");
+                context.Choice("fixture-mode", "Mode", new[] { "Light", "Dark" }, () => 1, _ => { });
+                workspace.Tabs.Add(new DeucarianEditorChoiceBar(new[] { "Colors", "Typography", "Shapes" }, tabs: true));
+                workspace.SetScopeBeforeTabs();
+                var form = DeucarianEditorWorkspaceControls.Scroll("fixture-palette-body");
+                for (int i = 0; i < 12; i++) form.Add(new Label("Palette entry " + i));
+                workspace.Content.Add(form);
+                using var gate = DeucarianThemingEditorFeatureGate.Wrap(workspace, false);
+                try
+                {
+                    Assert.That(workspace.Scope.parent, Is.SameAs(workspace.Tabs.parent));
+                    Assert.That(workspace.Scope.parent.IndexOf(workspace.Scope), Is.LessThan(workspace.Tabs.parent.IndexOf(workspace.Tabs)));
+                    foreach (var size in new[] { new Vector2(1586, 940), new Vector2(820, 650), new Vector2(620, 650) })
+                    foreach (int scale in new[] { 75, 100, 125, 150 })
+                    {
+                        window.rootVisualElement.style.width = size.x; window.rootVisualElement.style.height = size.y;
+                        DeucarianEditorAppearance.WorkspaceScalePercent = scale;
+                        for (int frame = 0; frame < 12; frame++) yield return null;
+                        string label = size + " at " + scale + "%";
+                        var header = workspace.Root.Q<ScrollView>("theming-gated-context");
+                        Assert.That(header.worldBound.height, Is.GreaterThan(10), label);
+                        if (DeucarianThemeRuntimeResolver.UseVisualStyling)
+                        {
+                            Assert.That(form.worldBound.height, Is.GreaterThan(60), label);
+                            Assert.That(form.worldBound.yMin, Is.GreaterThanOrEqualTo(header.worldBound.yMax - 1), label);
+                        }
+                    }
+                }
+                finally { DeucarianEditorAppearance.WorkspaceScalePercent = originalScale; window.Close(); }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PaletteAssetSelectionSurvivesTheLivePageRefresh()
+        {
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/PaletteSelectionFixture.asset");
+            var family = ScriptableObject.CreateInstance<DeucarianThemeFamily>();
+            var prior = DeucarianThemeManagerSelection.FromEditorPrefs();
+            var window = ScriptableObject.CreateInstance<AdoptionPageTestWindow>(); window.Show();
+            AssetDatabase.CreateAsset(family, path);
+            try
+            {
+                using var session = new DeucarianEditorPageSession(window, "fixture", _ => { });
+                session.Navigate(DeucarianToolIds.ThemeManager);
+                for (int frame = 0; frame < 8; frame++) yield return null;
+                var field = window.rootVisualElement.Q<UnityEditor.UIElements.ObjectField>("theme-family");
+                field.value = family;
+                Assert.That(DeucarianThemeManagerSelection.FromEditorPrefs().Family, Is.SameAs(family));
+                for (int frame = 0; frame < 30; frame++) yield return null;
+                Assert.That(field.value, Is.SameAs(family));
+                Assert.That(DeucarianThemeManagerSelection.FromEditorPrefs().Family, Is.SameAs(family));
+            }
+            finally
+            {
+                window.Close();
+                DeucarianThemingEditorSettings.SetDraftSelection(prior.Family, prior.Mode, prior.Style);
+                AssetDatabase.DeleteAsset(path);
+            }
+        }
     }
 
     internal sealed class AdoptionPageTestWindow : EditorWindow { }

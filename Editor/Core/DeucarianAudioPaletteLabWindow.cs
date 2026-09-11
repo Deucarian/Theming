@@ -168,7 +168,7 @@ namespace Deucarian.Theming.Editor
             selectedRole = role;
             lastClip = null;
             previousVariant = -1;
-            feedback = role != null ? $"Selected {role.DisplayName}." : "No role selected.";
+            feedback = string.Empty;
         }
 
         private void HandlePaletteSetChanged(DeucarianAudioPaletteSet set)
