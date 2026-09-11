@@ -12,6 +12,11 @@ namespace Deucarian.Theming.Editor
         private readonly VisualElement[] related;
         private readonly Func<bool> enabled;
         private bool disposed;
+        private DeucarianEditorWorkspace workspace;
+        private VisualElement body;
+        private bool scopeWasStacked;
+        private DisplayStyle tabsDisplay;
+        private bool? previous;
         public VisualElement Root => gate.Root;
 
         public DeucarianThemingEditorFeatureGate(VisualElement controls, bool audio, Action whenDisabled = null,
@@ -22,8 +27,9 @@ namespace Deucarian.Theming.Editor
                 : () => DeucarianThemeRuntimeResolver.UseVisualStyling;
             string feature = audio ? "Audio" : "Visual styling";
             gate = new DeucarianEditorCapabilityGate(controls, enabled, feature + " is off",
-                "Your palettes are saved. Enable " + feature.ToLowerInvariant() + " in Project setup to use them.",
-                "Go to Project setup", () => DeucarianEditorNavigation.Open(Root, DeucarianThemingProjectPage.ToolId), whenDisabled);
+                "Enable it in Project setup to edit " + (audio ? "audio" : "visual") + " palettes.",
+                "Go to Project setup", () => DeucarianEditorNavigation.Open(Root, DeucarianThemingProjectPage.ToolId), whenDisabled,
+                audio ? DeucarianEditorIconIds.Audio : DeucarianEditorIconIds.Palette);
             Root.RegisterCallback<AttachToPanelEvent>(OnAttach);
             Root.RegisterCallback<DetachFromPanelEvent>(OnDetach);
             Refresh();
@@ -34,10 +40,23 @@ namespace Deucarian.Theming.Editor
             var controls = DeucarianEditorWorkspaceControls.Region(null, "dw-gated-content");
             controls.style.flexGrow = 1;
             controls.style.minHeight = 0;
-            while (workspace.Content.childCount > 0) controls.Add(workspace.Content[0]);
+            var body = DeucarianEditorWorkspaceControls.Region(null, "dw-gated-content");
+            body.style.flexGrow = 1;
+            body.style.minHeight = 0;
+            bool scopeFirst = workspace.Scope.parent.IndexOf(workspace.Scope) < workspace.Tabs.parent.IndexOf(workspace.Tabs);
+            var context = DeucarianEditorWorkspaceControls.Scroll("theming-gated-context");
+            context.AddToClassList("dw-context-scroll");
+            context.Add(scopeFirst ? workspace.Scope : workspace.Tabs);
+            context.Add(scopeFirst ? workspace.Tabs : workspace.Scope);
+            controls.Add(context);
+            while (workspace.Content.childCount > 0) body.Add(workspace.Content[0]);
+            controls.Add(body);
             var result = new DeucarianThemingEditorFeatureGate(controls, audio, whenDisabled,
                 workspace.Scope, workspace.Tabs, workspace.PageActions, workspace.Drawer, workspace.Footer);
             workspace.Content.Add(result.Root);
+            result.workspace = workspace;
+            result.body = body;
+            result.Refresh();
             return result;
         }
 
@@ -45,7 +64,27 @@ namespace Deucarian.Theming.Editor
         {
             if (disposed) return;
             gate.Refresh();
-            foreach (var control in related) control?.SetEnabled(enabled());
+            bool active = enabled();
+            foreach (var control in related) control?.SetEnabled(active);
+            if (workspace == null) return;
+            if (!active && previous != false)
+            {
+                scopeWasStacked = workspace.Scope.ClassListContains("dw-scope-stacked");
+                tabsDisplay = workspace.Tabs.style.display.value;
+            }
+            if (!active)
+            {
+                workspace.SetScopeStacked();
+                DeucarianEditorWorkspaceControls.Show(workspace.Tabs, false);
+                DeucarianEditorWorkspaceControls.Show(workspace.Scope, true);
+            }
+            else if (previous == false)
+            {
+                workspace.SetScopeStacked(scopeWasStacked);
+                workspace.Tabs.style.display = tabsDisplay;
+            }
+            DeucarianEditorWorkspaceControls.Show(body, active);
+            previous = active;
         }
 
         private void OnAttach(AttachToPanelEvent evt)

@@ -36,8 +36,8 @@ namespace Deucarian.Theming.Editor.Tests
                     var root = window.rootVisualElement;
                     var intensity = root.Q<Toggle>("audio-use-intensity");
                     var value = root.Q<Slider>("audio-intensity");
-                    var sections = root.Q("workspace-details").Query<Foldout>().ToList();
-                    Assert.That(sections.Count, Is.EqualTo(3));
+                    var sections = root.Q("workspace-details").Query<Foldout>(className: "dw-foldout").ToList();
+                    Assert.That(sections.ConvertAll(section => section.text), Is.EquivalentTo(new[] { "Variation", "More options", "Press intensity", "Test pad" }));
                     foreach (var section in sections) section.value = true;
                     intensity.value = true;
                     value.value = 0.73f;

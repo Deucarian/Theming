@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.1] - 2026-09-11
+
+- Match visual/audio palette pages and custom Inspectors to the reference compositions; use source-owned cue/color forms and live isolated specimens. Disabled capabilities show a clear inactive state with editing blocked.
+- Require Editor 1.10.6 for the shared native controls, typography, responsive layouts and accessible interaction states.
+
 ## [1.6.0] - 2026-09-10
 
 - Remove the redundant Project setup information strip. Disabled visual/audio palettes keep their assets but gate editing and audition, with a clear route to Project setup.

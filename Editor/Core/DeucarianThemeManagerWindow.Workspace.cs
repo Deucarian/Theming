@@ -3,6 +3,7 @@ using Deucarian.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Ui = Deucarian.Editor.DeucarianEditorWorkspaceControls;
 
 namespace Deucarian.Theming.Editor
 {
@@ -11,100 +12,125 @@ namespace Deucarian.Theming.Editor
         private sealed class ThemeWorkspaceContent
         {
             private readonly DeucarianThemeManagerWindow owner;
-            private readonly VisualElement themePage;
-            private readonly VisualElement setupPage;
-            private readonly VisualElement composerPage;
-            private readonly DeucarianEditorWorkspaceForm themeForm;
-            private readonly DeucarianEditorWorkspaceForm setupForm;
+            private readonly DeucarianEditorWorkspace workspace;
+            private readonly VisualElement formRoot, split, setupPage, composerPage;
+            private readonly DeucarianEditorWorkspaceForm context, setupForm, composerForm;
+            private readonly DeucarianThemeToolkitSpecimen specimen;
+            private readonly DeucarianThemeToolkitSpecimen composerSpecimen;
+            private DeucarianEditorWorkspaceForm visualForm;
+            private DeucarianThemePaletteForm colors;
+            private DeucarianColorPalette renderedPalette;
+            private DeucarianThemeStyle renderedStyle;
+            private int renderedCategory = -1;
 
             internal ThemeWorkspaceContent(DeucarianThemeManagerWindow owner, DeucarianEditorWorkspace workspace)
             {
-                this.owner = owner;
-                var configuration = DeucarianEditorWorkspaceControls.Scroll("theme-configuration");
-                var preview = DeucarianEditorWorkspaceControls.Scroll("theme-preview");
-                themePage = DeucarianEditorWorkspaceControls.Split(configuration, preview);
-                workspace.Content.Add(themePage);
-                themeForm = new DeucarianEditorWorkspaceForm(configuration);
-                var choice = themeForm.Section("Preview selection");
-                choice.Asset("theme-family", "Family", typeof(DeucarianThemeFamily), () => Selection.Family, value => {
+                this.owner = owner; this.workspace = workspace;
+                workspace.SetScopeBeforeTabs();
+                context = new DeucarianEditorWorkspaceForm(workspace.Scope);
+                context.Asset("theme-family", "Theme family", typeof(DeucarianThemeFamily), () => Selection.Family, value => {
                     var family = value as DeucarianThemeFamily;
-                    var selection = Selection;
-                    SetDraft(family, selection.Mode, DeucarianThemeDraftPolicy.ResolveSuggestedStyle(family, selection.Mode) ?? selection.Style);
+                    SetDraft(family, Selection.Mode, DeucarianThemeDraftPolicy.ResolveSuggestedStyle(family, Selection.Mode) ?? Selection.Style);
                 });
-                choice.Choice("theme-mode", "Mode", Enum.GetNames(typeof(DeucarianThemeMode)), () => (int)Selection.Mode,
+                context.Choice("theme-mode", "Mode", Enum.GetNames(typeof(DeucarianThemeMode)), () => (int)Selection.Mode,
                     value => SetDraft(Selection.Family, (DeucarianThemeMode)value, Selection.Style));
-                choice.Asset("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
-                    value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle));
-                choice.Note(() => Status.IsActive ? "This selection is active in the project." : Status.Message);
-                var setup = themeForm.Section("Project connection");
-                setup.ReadOnly("theme-active-settings", "Settings", () => owner.projectRuntimeSettings != null ? owner.projectRuntimeSettings.name : "Not configured");
-                setup.Action("theme-configure", "Configure project…", owner.NavigateToRuntimeSettings);
-                setup.Action("theme-create-family", "Create theme family…", owner.CreateThemeFamily,
-                    () => !EditorApplication.isPlayingOrWillChangePlaymode);
-                setup.Action("theme-repair-family", "Repair selected family", () => { DeucarianThemingMenuActions.RepairActiveThemeFamilySetup(); owner.RefreshAssets(); },
-                    () => Selection.Family != null && !Selection.Family.IsComplete && !EditorApplication.isPlayingOrWillChangePlaymode);
-                preview.Add(DeucarianEditorWorkspaceControls.Label("Live preview", "dw-section-title"));
-                preview.Add(DeucarianEditorWorkspaceControls.Label("Preview only · project assets change only when you apply.", "dw-muted"));
-                preview.Add(DeucarianEditorWorkspaceControls.Embedded(DrawPreview, "theme-live-specimen"));
-                setupPage = DeucarianEditorWorkspaceControls.Scroll("theme-project-setup");
+                formRoot = Ui.Scroll("theme-configuration");
+                var preview = Ui.Scroll("theme-preview");
+                specimen = new DeucarianThemeToolkitSpecimen(); preview.Add(specimen.Root);
+                split = Ui.Split(formRoot, preview);
+                split.AddToClassList("dw-visual-palette-split");
+                workspace.Content.Insert(0, split);
+                setupPage = Ui.Scroll("theme-project-setup");
                 setupForm = new DeucarianEditorWorkspaceForm(setupPage);
-                var settings = setupForm.Section("Connect the project");
-                settings.Note(() => "One Resources-backed runtime settings asset connects your chosen theme to builds.");
-                settings.Asset("theme-runtime-settings", "Settings", typeof(DeucarianThemeRuntimeSettings), () => owner.runtimeSettingsCandidate, value => {
+                setupPage.Add(Ui.Label("Runtime settings", "dw-section-title"));
+                setupForm.Asset("theme-runtime-settings", "Settings", typeof(DeucarianThemeRuntimeSettings), () => owner.runtimeSettingsCandidate, value => {
                     owner.runtimeSettingsCandidate = value as DeucarianThemeRuntimeSettings;
                     owner.runtimeCandidateTouched = true;
                     owner.RefreshRuntimeSettingsCandidateValidation();
                     owner.UpdateWorkbenchToolbar();
                 });
-                settings.Note(() => owner.runtimeSettingsCandidateMessage);
-                workspace.Content.Add(setupPage);
-                composerPage = DeucarianEditorWorkspaceControls.Embedded(() => {
-                    using (DeucarianEditorWorkbenchGUI.BeginEmbeddedPage(GUILayout.ExpandHeight(true)))
-                    using (var scroll = new EditorGUILayout.ScrollViewScope(owner.scrollPosition))
-                    {
-                        owner.scrollPosition = scroll.scrollPosition;
-                        owner.DrawStyleComposer();
-                        owner.UpdateWorkbenchToolbar();
-                    }
-                }, "theme-style-composer");
-                workspace.Content.Add(composerPage);
+                setupForm.Note(() => owner.runtimeSettingsCandidateMessage);
+                setupForm.Action("theme-back-to-palettes", "Back to visual palettes", owner.NavigateToTheme);
+                workspace.Content.Insert(1, setupPage);
+                composerPage = Ui.Scroll("theme-style-composer");
+                composerForm = new DeucarianEditorWorkspaceForm(composerPage);
+                composerPage.Add(Ui.Label("Compose a style", "dw-section-title"));
+                composerForm.ReadOnly("theme-composer-source", "Based on", () => owner.composer.Source != null ? owner.composer.Source.DisplayName : "Choose a style");
+                composerForm.Asset("theme-composer-surface", "Surface", typeof(DeucarianThemeSurfaceProfile), () => owner.composer.Surface,
+                    value => ChangeComposer(() => owner.composer.Surface = value as DeucarianThemeSurfaceProfile));
+                composerForm.Asset("theme-composer-corners", "Corners", typeof(DeucarianThemeShapeProfile), () => owner.composer.Corners,
+                    value => ChangeComposer(() => owner.composer.Corners = value as DeucarianThemeShapeProfile));
+                composerForm.Asset("theme-composer-border", "Border", typeof(DeucarianThemeStrokeProfile), () => owner.composer.Border,
+                    value => ChangeComposer(() => owner.composer.Border = value as DeucarianThemeStrokeProfile));
+                composerForm.Choice("theme-composer-size", "Size", Enum.GetNames(typeof(DeucarianThemeDensity)), () => (int)owner.composer.Size,
+                    value => ChangeComposer(() => owner.composer.Size = (DeucarianThemeDensity)value));
+                composerForm.Asset("theme-composer-typography", "Typography", typeof(DeucarianThemeTypographyProfile), () => owner.composer.Typography,
+                    value => ChangeComposer(() => owner.composer.Typography = value as DeucarianThemeTypographyProfile));
+                composerForm.Action("theme-composer-back", "Back to visual palettes", owner.NavigateToTheme);
+                composerSpecimen = new DeucarianThemeToolkitSpecimen();
+                composerPage.Add(composerSpecimen.Root);
+                workspace.Content.Insert(2, composerPage);
                 Refresh();
             }
 
             private DeucarianThemeManagerSelection Selection => DeucarianThemeManagerSelection.FromEditorPrefs();
-            private DeucarianThemeManagerActivationStatus Status => DeucarianThemeManagerWorkflow.Evaluate(
-                owner.projectRuntimeSettings, Selection, owner.projectRuntimeSettingsResourceReady, owner.projectRuntimeSettingsResourceMessage);
-
             internal void Refresh()
             {
-                DeucarianEditorWorkspaceControls.Show(themePage, owner.viewMode == ViewMode.Theme);
-                DeucarianEditorWorkspaceControls.Show(setupPage, owner.viewMode == ViewMode.RuntimeSettings);
-                DeucarianEditorWorkspaceControls.Show(composerPage, owner.viewMode == ViewMode.StyleComposer);
-                themeForm.Refresh();
-                setupForm.Refresh();
+                bool theme = owner.viewMode == ViewMode.Theme;
+                Ui.Show(split, theme);
+                Ui.Show(workspace.Scope, theme);
+                Ui.Show(workspace.Tabs, theme);
+                Ui.Show(setupPage, owner.viewMode == ViewMode.RuntimeSettings);
+                Ui.Show(composerPage, owner.viewMode == ViewMode.StyleComposer);
+                if (renderedPalette != Selection.ResolvedPalette || renderedStyle != Selection.Style || renderedCategory != owner.paletteCategory) BuildVisualForm();
+                context.Refresh(); setupForm.Refresh(); composerForm.Refresh(); visualForm?.Refresh(); colors?.Refresh();
+                specimen.Refresh(Selection);
+                specimen.ShowControls(theme && owner.paletteCategory > 0);
+                if (owner.viewMode == ViewMode.StyleComposer) composerSpecimen.Refresh(Selection, owner.composer);
             }
 
-            private void SetDraft(DeucarianThemeFamily family, DeucarianThemeMode mode, DeucarianThemeStyle style)
+            private void BuildVisualForm()
             {
-                DeucarianThemeDraftPolicy.SetDraft(family, mode, style);
-                owner.UpdateWorkbenchToolbar();
-                owner.Repaint();
-            }
-
-            private void DrawPreview()
-            {
-                var selection = Selection;
-                if (selection.ResolvedTheme == null)
+                formRoot.Clear();
+                renderedPalette = Selection.ResolvedPalette; renderedStyle = Selection.Style; renderedCategory = owner.paletteCategory;
+                visualForm = new DeucarianEditorWorkspaceForm(formRoot); colors = null;
+                if (renderedCategory == 0)
+                    colors = new DeucarianThemePaletteForm(formRoot, renderedPalette, () => { specimen.Refresh(Selection); owner.UpdateWorkbenchToolbar(); });
+                else
                 {
-                    DeucarianEditorTextGUI.HelpBox("Choose a theme family to preview its colours and controls.", MessageType.Info);
-                    return;
+                    visualForm.Asset("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
+                        value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle));
+                    if (renderedCategory == 1)
+                    {
+                        visualForm.ReadOnly("theme-font", "Typography", () => Selection.Style?.TypographyProfile?.DisplayName ?? "Project default");
+                        visualForm.ReadOnly("theme-font-title", "Title size", () => Selection.Style?.TypographyProfile?.Title.FontSize.ToString("0.#") ?? "Default");
+                        visualForm.ReadOnly("theme-font-body", "Body size", () => Selection.Style?.TypographyProfile?.Body.FontSize.ToString("0.#") ?? "Default");
+                    }
+                    else
+                    {
+                        visualForm.ReadOnly("theme-shape", "Corners", () => Selection.Style?.ShapeProfile?.DisplayName ?? "No profile");
+                        visualForm.ReadOnly("theme-surface", "Surface", () => Selection.Style?.SurfaceProfile?.DisplayName ?? "No profile");
+                        visualForm.ReadOnly("theme-density", "Size", () => Selection.Style != null ? Selection.Style.Density.ToString() : "Default");
+                    }
+                    visualForm.Action("theme-compose-style", "Compose style", owner.NavigateToStyleComposer, () => Selection.Style != null);
                 }
-                var style = selection.Style;
-                DeucarianThemeSpecimenRenderer.DrawThemePreview(selection.ResolvedTheme, style,
-                    style != null ? style.SurfaceProfile : null, style != null ? style.ShapeProfile : null,
-                    style != null ? style.StrokeProfile : null, style != null ? style.Density : DeucarianThemeDensity.Unspecified,
-                    style != null ? style.TypographyProfile : null);
+                var more = visualForm.Section("More options", true);
+                if (renderedCategory == 0)
+                    more.Asset("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
+                        value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle));
+                more.Action("theme-project-setup", "Project setup", () => DeucarianEditorNavigation.Open(owner.PageRoot, DeucarianThemingProjectPage.ToolId));
+                more.Action("theme-configure", "Runtime settings", owner.NavigateToRuntimeSettings);
+                more.Action("theme-create-family", "Create theme family…", owner.CreateThemeFamily, () => !EditorApplication.isPlayingOrWillChangePlaymode);
+                more.Action("theme-repair-family", "Repair selected family", () => { DeucarianThemingMenuActions.RepairActiveThemeFamilySetup(); owner.RefreshAssets(); },
+                    () => Selection.Family != null && !Selection.Family.IsComplete && !EditorApplication.isPlayingOrWillChangePlaymode);
+                more.Action("theme-developer-tools", "Asset tools", owner.ToggleDeveloperTools);
+                more.Action("theme-save-palette", "Save palette", () => AssetDatabase.SaveAssetIfDirty(renderedPalette),
+                    () => DeucarianThemePaletteForm.IsProjectOwned(renderedPalette) && EditorUtility.IsDirty(renderedPalette));
             }
+
+            private void ChangeComposer(Action change) { change(); owner.ApplyComposerPreview(); owner.UpdateWorkbenchToolbar(); }
+            private void SetDraft(DeucarianThemeFamily family, DeucarianThemeMode mode, DeucarianThemeStyle style)
+            { DeucarianThemeDraftPolicy.SetDraft(family, mode, style); owner.UpdateWorkbenchToolbar(); owner.Repaint(); }
         }
     }
 }

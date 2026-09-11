@@ -236,7 +236,12 @@ namespace Deucarian.Theming.Editor
                     UseRuntimeSettingsCandidate();
                     break;
                 default:
-                    Activate(DeucarianThemeManagerSelection.FromEditorPrefs());
+                    var selection = DeucarianThemeManagerSelection.FromEditorPrefs();
+                    var status = DeucarianThemeManagerWorkflow.Evaluate(projectRuntimeSettings, selection,
+                        projectRuntimeSettingsResourceReady, projectRuntimeSettingsResourceMessage);
+                    if (status.IsActive && DeucarianThemePaletteForm.IsProjectOwned(selection.ResolvedPalette))
+                        AssetDatabase.SaveAssetIfDirty(selection.ResolvedPalette);
+                    else Activate(selection);
                     break;
             }
 

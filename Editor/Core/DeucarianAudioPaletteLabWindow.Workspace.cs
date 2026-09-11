@@ -4,6 +4,7 @@ using Deucarian.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Ui = Deucarian.Editor.DeucarianEditorWorkspaceControls;
 
 namespace Deucarian.Theming.Editor
 {
@@ -14,139 +15,151 @@ namespace Deucarian.Theming.Editor
             private readonly DeucarianAudioPaletteLabWindow owner;
             private readonly DeucarianEditorCollectionWorkspace view;
             private readonly DeucarianEditorWorkspaceForm context;
-            private DeucarianEditorWorkspaceForm details;
-            private VisualElement emptyDetails;
-            private VisualElement paletteDetails;
-            private VisualElement roleDetails;
-            private Label selectedHeading;
             private readonly DeucarianThemingEditorFeatureGate featureGate;
+            private DeucarianEditorWorkspaceForm details;
+            private DeucarianAudioCueForm cueForm;
+            private DeucarianAudioRole renderedRole;
+            private DeucarianAudioPalette renderedPalette;
+            private bool renderedEmpty, built;
+            private Label feedback;
 
             internal AudioPaletteWorkspace(DeucarianAudioPaletteLabWindow owner)
             {
                 this.owner = owner;
                 view = new DeucarianEditorCollectionWorkspace(owner.PageRoot, Application.productName,
-                    "Audio Palette Lab", "Find a role. Hear its sound. Compare experiences.", "audio", "Search audio roles…");
-                view.Workspace.PageActions.Add(DeucarianEditorWorkspaceControls.Button("Stop audio", owner.StopPreview));
+                    "Audio palettes", "Give every interaction a familiar sound.", "audio", "Find an audio role…");
+                view.Workspace.SetScopeBeforeTabs();
+                view.Workspace.SetScopeStacked();
+                Ui.Show(view.Workspace.Footer, false);
                 var categories = new DeucarianEditorChoiceBar(new[] { "All roles", "UI", "Input", "Feedback" }, owner.categoryFilter, true);
                 categories.Changed += value => { owner.categoryFilter = value; Refresh(); };
                 view.Workspace.Tabs.Add(categories);
                 context = new DeucarianEditorWorkspaceForm(view.Workspace.Scope);
-                context.Asset("audio-palette-set", "Palette", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
+                context.Asset("audio-palette-set", "Palette set", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
                     value => { owner.HandlePaletteSetChanged(value as DeucarianAudioPaletteSet); Refresh(); });
                 context.Choice("audio-experience", "Experience", ExperienceLabels, () => (int)owner.experience,
                     value => { owner.HandleExperienceChanged((DeucarianAudioExperience)value); Refresh(); });
                 view.Workspace.SearchField.SetValueWithoutNotify(owner.search);
-                view.Workspace.SetSearchPrompt("Search audio roles…");
                 view.Workspace.SearchField.RegisterValueChangedCallback(evt => { owner.search = evt.newValue ?? ""; Refresh(); });
                 Refresh();
                 featureGate = DeucarianThemingEditorFeatureGate.Wrap(view.Workspace, true, owner.StopPreview);
+                Undo.undoRedoPerformed += Refresh;
+                DeucarianThemeAssetChangeBus.AssetChanged += OnAssetChanged;
+            }
+
+            private void OnAssetChanged(UnityEngine.Object asset)
+            {
+                if (asset is DeucarianAudioPalette || asset is DeucarianAudioPaletteSet || asset is DeucarianAudioRoleLibrary) Refresh();
             }
 
             internal void Refresh()
             {
                 context.Refresh();
+                var matching = new List<DeucarianAudioRole>();
+                foreach (var role in owner.CollectRoles()) if (owner.MatchesSearch(role)) matching.Add(role);
+                if (owner.selectedRole == null || !matching.Contains(owner.selectedRole))
+                    owner.SelectRole(matching.Count > 0 ? matching[0] : null);
                 var rows = new List<DeucarianEditorCollectionItem>();
-                foreach (var role in owner.CollectRoles())
+                foreach (var role in matching)
                 {
-                    if (!owner.MatchesSearch(role)) continue;
-                    DeucarianAudioResolution resolution = DeucarianAudioResolution.Missing;
+                    var resolution = DeucarianAudioResolution.Missing;
                     bool resolved = owner.paletteSet != null && owner.paletteSet.TryResolve(role, owner.experience, out resolution);
-                    string clip = resolved && resolution.Cue.Clip != null ? resolution.Cue.Clip.name : resolved && resolution.Cue.IntentionalSilence ? "Intentionally silent" : "No clip";
-                    string source = resolved ? resolution.Source.ToString() : "Missing";
-                    rows.Add(new DeucarianEditorCollectionItem(role.Id, role.DisplayName, clip, source,
-                        () => { owner.SelectRole(role); Refresh(); }, "Play",
+                    string clip = resolved && resolution.Cue.Clip != null ? resolution.Cue.Clip.name
+                        : resolved && resolution.Cue.IntentionalSilence ? "Intentionally silent" : "No clip";
+                    rows.Add(new DeucarianEditorCollectionItem(role.Id, role.DisplayName, clip, null,
+                        () => { owner.SelectRole(role); Refresh(); }, "Play sound",
                         () => { owner.SelectRole(role); PlaySelected(); Refresh(); },
-                        resolved && resolution.IsAudible && owner.preview != null && owner.preview.IsAvailable));
+                        resolved && resolution.IsAudible && owner.preview != null && owner.preview.IsAvailable,
+                        RoleIcon(role), DeucarianEditorIconIds.Play));
                 }
                 view.SetItems(rows, owner.selectedRole != null ? owner.selectedRole.Id : null,
-                    owner.paletteSet == null ? "Choose a project palette or try the package defaults." : "No roles match your search.");
-                if (details == null) BuildDetails();
-                DeucarianEditorWorkspaceControls.Show(emptyDetails, owner.paletteSet == null);
-                DeucarianEditorWorkspaceControls.Show(paletteDetails, owner.paletteSet != null);
-                DeucarianEditorWorkspaceControls.Show(roleDetails, owner.selectedRole != null);
-                selectedHeading.text = owner.selectedRole != null ? owner.selectedRole.DisplayName : "Select a role";
-                details.Refresh();
-                paletteForm.Refresh();
-                roleForm.Refresh();
-                view.Workspace.FooterLeading.text = owner.feedback;
-                view.Workspace.FooterTrailing.text = "Editor audition · " + owner.experience;
+                    owner.paletteSet == null ? "Choose your project's audio palette set." : "No roles match your search.");
+                var source = owner.TryResolve(out var selected) ? selected.SourcePalette : null;
+                if (!built || renderedRole != owner.selectedRole || renderedPalette != source ||
+                    renderedEmpty != (owner.paletteSet == null) || (cueForm != null && !cueForm.MatchesSource)) BuildDetails();
+                cueForm?.Refresh();
+                details?.Refresh();
+                if (feedback != null) { feedback.text = owner.feedback; Ui.Show(feedback, !string.IsNullOrEmpty(owner.feedback)); }
                 featureGate?.Refresh();
             }
 
             private void BuildDetails()
             {
-                details = new DeucarianEditorWorkspaceForm(view.Details);
+                cueForm?.Dispose(); cueForm = null; feedback = null;
+                built = true; renderedRole = owner.selectedRole; renderedEmpty = owner.paletteSet == null;
+                renderedPalette = owner.TryResolve(out var resolution) ? resolution.SourcePalette : null;
+                var root = view.Details; root.Clear();
+                details = new DeucarianEditorWorkspaceForm(root);
+                if (renderedEmpty)
                 {
-                    var empty = details.Section("Choose your audio");
-                    emptyDetails = empty.Root;
-                    empty.Note(() => "Select a project palette to hear your application’s sounds. Package defaults are an explicit audition choice.");
-                    empty.Action("audio-project-palettes", "Browse project palettes…", BrowsePalettes);
-                    empty.Action("audio-defaults", "Try package defaults", () => { owner.HandlePaletteSetChanged(DeucarianAudioDefaults.LoadPaletteSet()); Refresh(); });
+                    root.Add(Ui.Label("Choose your audio", "dw-section-title"));
+                    root.Add(Ui.Label("Use a project palette, or audition the package defaults.", "dw-muted"));
+                    root.Add(Ui.Actions(Ui.Button("Browse project palettes…", BrowsePalettes),
+                        Ui.Button("Try package defaults", () => { owner.HandlePaletteSetChanged(DeucarianAudioDefaults.LoadPaletteSet()); Refresh(); })));
+                    return;
                 }
-                paletteDetails = new VisualElement();
-                view.Details.Add(paletteDetails);
-                paletteForm = new DeucarianEditorWorkspaceForm(paletteDetails);
-                var selected = paletteForm.Section("Select a role");
-                selectedHeading = selected.Root.Q<Label>();
-                roleDetails = new VisualElement();
-                selected.Root.Add(roleDetails);
-                roleForm = new DeucarianEditorWorkspaceForm(roleDetails);
+                if (owner.selectedRole == null) { root.Add(Ui.Label("Select a role", "dw-section-title")); return; }
+                root.Add(Ui.Label(owner.selectedRole.DisplayName, "dw-detail-title"));
+                cueForm = new DeucarianAudioCueForm(root, owner.selectedRole,
+                    () => owner.TryResolve(out var current) ? current : DeucarianAudioResolution.Missing,
+                    () => { owner.StopPreview(); owner.lastClip = null; Refresh(); });
+                root.Add(Ui.Divider());
+                var play = Ui.IconButton("Play sound", DeucarianEditorIconIds.Play,
+                    () => { PlaySelected(); Refresh(); }, DeucarianEditorButtonRole.Primary);
+                play.name = "audio-play";
+                var locate = Ui.IconButton("Locate clip", DeucarianEditorIconIds.Folder,
+                    () => { if (owner.TryResolve(out var current)) DeucarianEditorSelection.SelectAndPing(current.Cue.Clip); });
+                locate.name = "audio-locate";
+                root.Add(Ui.Actions(play, locate));
+                feedback = Ui.Label(owner.feedback, "dw-muted"); root.Add(feedback);
+                play.schedule.Execute(() => { play.SetEnabled(CanPlay()); locate.SetEnabled(owner.TryResolve(out var r) && r.Cue.Clip != null); }).Every(250);
+                BuildAdvanced(details);
+            }
+
+            private void BuildAdvanced(DeucarianEditorWorkspaceForm parent)
+            {
+                var advanced = parent.Section("More options", true);
+                advanced.ReadOnly("audio-resolved-source", "Source palette", () => owner.TryResolve(out var r) ? DescribeSource(r) : "Role default");
+                advanced.Action("audio-locate-palette", "Locate source palette", () => DeucarianEditorSelection.SelectAndPing(renderedPalette));
+                advanced.Action("audio-save-palette", "Save sound changes", () =>
                 {
-                    roleForm.ReadOnly("audio-resolved-source", "Source", () => owner.TryResolve(out var resolution) ? DescribeSource(resolution) : "No matching cue");
-                    roleForm.ReadOnly("audio-resolved-clip", "Clip", () => {
-                        if (!owner.TryResolve(out var resolution)) return "No clip";
-                        var clip = owner.lastClip != null ? owner.lastClip : resolution.Cue.Clip;
-                        return clip != null ? clip.name : resolution.Cue.IntentionalSilence ? "Intentionally silent" : "No clip";
-                    });
-                    roleForm.ReadOnly("audio-cue-levels", "Volume / pitch", () => owner.TryResolve(out var r)
-                        ? $"{r.Cue.Volume:0.00} · {r.Cue.MinimumPitch:0.00}–{r.Cue.MaximumPitch:0.00}" : "—");
-                    roleForm.Note(() => owner.TryResolve(out var r) ? DescribeResolution(r) : "Assign a cue in the source palette.");
-                    roleForm.Action("audio-play", "Play processed", () => { PlaySelected(); Refresh(); }, CanPlay, true);
-                    roleForm.Action("audio-original", "Play original clip", () => { PlaySelected(false); Refresh(); }, CanPlay);
-                    roleForm.Action("audio-locate", "Locate source palette", () => DeucarianEditorSelection.SelectAndPing(owner.ResolveRelevantPalette()));
-                }
-                var modifiers = paletteForm.Section("Press intensity", true);
+                    if (CanSavePalette()) AssetDatabase.SaveAssetIfDirty(renderedPalette);
+                }, CanSavePalette);
+                advanced.Action("audio-original", "Play original clip", () => { PlaySelected(false); Refresh(); }, CanPlay);
+                advanced.Action("audio-stop", "Stop audio", owner.StopPreview);
+                var modifiers = advanced.Section("Press intensity", true);
                 modifiers.Toggle("audio-use-intensity", "Simulate intensity", () => owner.useIntensity, value => { owner.useIntensity = value; Refresh(); });
-                var intensityField = modifiers.Slider("audio-intensity", "Intensity", 0, 1, () => owner.intensity, value => { owner.intensity = float.IsNaN(value) ? 0.5f : Mathf.Clamp01(value); Refresh(); });
+                var intensityField = modifiers.Slider("audio-intensity", "Intensity", 0, 1, () => owner.intensity,
+                    value => { owner.intensity = float.IsNaN(value) ? 0.5f : Mathf.Clamp01(value); Refresh(); });
                 modifiers.VisibleWhen(intensityField, () => owner.useIntensity);
-                var pad = paletteForm.Section("Test pad", true);
+                var pad = advanced.Section("Test pad", true);
                 for (int i = 0; i < TestPadRoleIds.Length; i++)
                 {
                     string id = TestPadRoleIds[i];
-                    pad.Action("audio-pad-" + id, TestPadLabels[i], () => { owner.SelectRole(owner.FindRole(id)); PlaySelected(); Refresh(); },
-                        () => CanPlayRole(id));
+                    pad.Action("audio-pad-" + id, TestPadLabels[i], () => { owner.SelectRole(owner.FindRole(id)); PlaySelected(); Refresh(); }, () => CanPlayRole(id));
                 }
-                var assets = paletteForm.Section("Assets & coverage", true);
-                assets.Asset("audio-theme", "Theme", typeof(DeucarianTheme), () => owner.theme,
+                advanced.Asset("audio-theme", "Theme", typeof(DeucarianTheme), () => owner.theme,
                     value => { owner.HandleThemeChanged(value as DeucarianTheme); Refresh(); });
-                assets.Action("audio-browse", "Browse project palettes…", BrowsePalettes);
-                assets.Action("audio-defaults", "Try package defaults", () => { owner.HandlePaletteSetChanged(DeucarianAudioDefaults.LoadPaletteSet()); Refresh(); });
-                assets.Note(() => {
-                    if (owner.paletteSet == null) return "No palette.";
-                    var warnings = owner.paletteSet.GetValidationWarnings();
-                    var relevant = owner.ResolveRelevantPalette();
-                    if (relevant != null) warnings.AddRange(relevant.GetValidationWarnings());
-                    return warnings.Count == 0 ? "No palette validation warnings." : string.Join("\n", warnings);
-                });
-                paletteForm.Note(() => owner.preview == null || !owner.preview.IsAvailable
-                    ? Application.isBatchMode ? "Audio playback is unavailable in headless mode." : "Audio playback is unavailable in this editor."
-                    : "Selection and experience changes never play audio automatically.");
+                advanced.Action("audio-browse", "Browse project palettes…", BrowsePalettes);
+                advanced.Note(() => owner.paletteSet == null ? string.Empty : string.Join("\n", owner.paletteSet.GetValidationWarnings()));
             }
 
-            private DeucarianEditorWorkspaceForm paletteForm;
-            private DeucarianEditorWorkspaceForm roleForm;
-
-            private bool CanPlay() => owner.TryResolve(out var resolution) && resolution.IsAudible && owner.preview != null && owner.preview.IsAvailable;
+            private bool CanPlay() => DeucarianThemeRuntimeResolver.UseAudio && owner.TryResolve(out var r) && r.IsAudible && owner.preview != null && owner.preview.IsAvailable;
+            private bool CanSavePalette() => DeucarianThemeRuntimeResolver.UseAudio && renderedPalette != null &&
+                EditorUtility.IsDirty(renderedPalette) && AssetDatabase.GetAssetPath(renderedPalette).Replace('\\', '/').StartsWith("Assets/", StringComparison.Ordinal);
             private bool CanPlayRole(string id)
             {
                 var role = owner.FindRole(id);
-                return role != null && owner.paletteSet != null && owner.paletteSet.TryResolve(role, owner.experience, out var r)
-                    && r.IsAudible && owner.preview != null && owner.preview.IsAvailable;
+                return DeucarianThemeRuntimeResolver.UseAudio && role != null && owner.paletteSet != null &&
+                    owner.paletteSet.TryResolve(role, owner.experience, out var r) && r.IsAudible && owner.preview != null && owner.preview.IsAvailable;
             }
             private void PlaySelected(bool processed = true)
-            {
-                if (CanPlay() && owner.TryResolve(out var resolution)) owner.Play(resolution.Cue, processed);
-            }
+            { if (CanPlay() && owner.TryResolve(out var resolution)) owner.Play(resolution.Cue, processed); }
+            private static string RoleIcon(DeucarianAudioRole role) => role.Id == DeucarianBuiltinAudioRoleIds.Warning
+                ? DeucarianEditorIconIds.Warning : role.Id == DeucarianBuiltinAudioRoleIds.Error ? DeucarianEditorIconIds.Error
+                : role.Category == DeucarianAudioRoleCategories.Input ? DeucarianEditorIconIds.Keyboard
+                : role.Id == DeucarianBuiltinAudioRoleIds.Hover ? DeucarianEditorIconIds.Pointer : DeucarianEditorIconIds.Press;
+
             private void BrowsePalettes()
             {
                 var menu = new GenericMenu();
@@ -159,7 +172,12 @@ namespace Deucarian.Theming.Editor
                 if (guids.Length == 0) menu.AddDisabledItem(new GUIContent("No project palettes"));
                 menu.ShowAsContext();
             }
-            public void Dispose() { featureGate?.Dispose(); view.Dispose(); }
+            public void Dispose()
+            {
+                Undo.undoRedoPerformed -= Refresh;
+                DeucarianThemeAssetChangeBus.AssetChanged -= OnAssetChanged;
+                cueForm?.Dispose(); featureGate?.Dispose(); view.Dispose();
+            }
         }
     }
 }
