@@ -45,7 +45,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.7.0` (requires Editor `1.10.6`).
+Current package version: `1.7.0` (requires Editor `1.11.0`).
 
 ## When to use it
 
