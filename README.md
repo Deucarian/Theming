@@ -1,5 +1,7 @@
 # Deucarian Theming
 
+For simple calls and setup, see [Simple usage](Documentation~/SimpleUsage.md).
+
 ## Choose what your app uses
 
 Open **Theming > Project setup** in the Control Center. Theming includes both visual styling and audio; either can be enabled independently. This does not change the Control Center's appearance.

@@ -20,7 +20,7 @@
     "url": "git+https://github.com/Deucarian/Theming.git"
   },
   "dependencies": {
-    "com.deucarian.editor": "1.10.6",
+    "com.deucarian.editor": "1.10.8",
     "com.deucarian.logging": "1.0.4",
     "com.deucarian.media": "0.1.0",
     "com.unity.textmeshpro": "3.0.6",
