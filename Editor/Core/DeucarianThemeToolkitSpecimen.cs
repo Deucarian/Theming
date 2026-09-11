@@ -7,7 +7,8 @@ namespace Deucarian.Theming.Editor
 {
     internal sealed class DeucarianThemeToolkitSpecimen
     {
-        private readonly VisualElement sample;
+        private readonly VisualElement sample, backdrop;
+        private readonly Label backgroundLabel, surfaceLabel;
         private readonly Label title, body;
         private readonly Button primary, secondary;
         private readonly DeucarianEditorControlSpecimen controls;
@@ -19,13 +20,19 @@ namespace Deucarian.Theming.Editor
         {
             Root = Ui.Panel("theme-native-preview", "Preview");
             Root.Add(Ui.Label("See your changes as you edit.", "dw-muted"));
+            backdrop = Ui.Region("theme-preview-background", "dw-specimen");
+            backgroundLabel = Ui.Label("Background", "dw-muted");
+            backdrop.Add(backgroundLabel);
             sample = Ui.Region("theme-specimen", "dw-specimen");
+            surfaceLabel = Ui.Label("Surface", "dw-muted");
+            surfaceLabel.name = "theme-preview-surface-label";
             title = Ui.Label("Sample title", "dw-section-title");
             body = Ui.Label("This is how your app's interface could look with the selected palette.", "dw-muted");
             primary = Ui.Button("Primary action", null, true);
             secondary = Ui.Button("Cancel", null);
             primary.tooltip = secondary.tooltip = "Preview control · no project action";
-            sample.Add(title); sample.Add(body); sample.Add(Ui.Actions(primary, secondary)); Root.Add(sample);
+            sample.Add(surfaceLabel); sample.Add(title); sample.Add(body); sample.Add(Ui.Actions(primary, secondary));
+            backdrop.Add(sample); Root.Add(backdrop);
             controls = new DeucarianEditorControlSpecimen(); Root.Add(controls);
             Ui.Show(controls, false);
         }
@@ -38,9 +45,13 @@ namespace Deucarian.Theming.Editor
             var palette = selection.ResolvedPalette;
             hasPalette = palette != null;
             Ui.Show(controls, wantsControls && hasPalette);
-            Ui.Show(sample, palette != null);
+            Ui.Show(backdrop, palette != null);
             if (palette == null) return;
             Color surface = palette.GetColorById(DeucarianBuiltinColorRoleIds.Surface);
+            Color background = palette.GetColorById(DeucarianBuiltinColorRoleIds.Background);
+            backdrop.style.backgroundColor = background;
+            backgroundLabel.style.color = Contrast(background);
+            backdrop.tooltip = "Background · the app canvas behind surfaces";
             var style = selection.Style;
             var surfaceProfile = composer?.Surface ?? style?.SurfaceProfile;
             var shape = composer?.Corners ?? style?.ShapeProfile;
@@ -49,6 +60,12 @@ namespace Deucarian.Theming.Editor
             var density = composer?.Size ?? style?.Density ?? DeucarianThemeDensity.Standard;
             Color resolvedSurface = surfaceProfile != null ? surfaceProfile.ResolveSurfaceColor(surface) : style != null ? style.ResolveSurfaceColor(surface) : surface;
             sample.style.backgroundColor = resolvedSurface;
+            string treatment = surfaceProfile != null ? surfaceProfile.DisplayName : style != null ? style.DisplayName : null;
+            surfaceLabel.text = string.IsNullOrWhiteSpace(treatment) ? "Surface" : "Surface · " + treatment;
+            sample.tooltip = "Surface #" + ColorUtility.ToHtmlStringRGBA(surface)
+                + (surface == resolvedSurface ? " · no color treatment" : " → #" + ColorUtility.ToHtmlStringRGBA(resolvedSurface) + " after surface tint and opacity")
+                + ". The selected style also supplies border, shape, typography and density.";
+            surfaceLabel.tooltip = sample.tooltip;
             Color border = stroke != null ? stroke.ResolveBorderColor(resolvedSurface) : style != null ? style.ResolveBorderColor(resolvedSurface) : Color.clear;
             float borderWidth = stroke != null ? stroke.BorderWidth : style != null ? style.BorderWidth : 0;
             sample.style.borderTopColor = sample.style.borderBottomColor = sample.style.borderLeftColor = sample.style.borderRightColor = border;
@@ -58,6 +75,7 @@ namespace Deucarian.Theming.Editor
             sample.style.unityBackgroundImageTintColor = surfaceProfile != null ? surfaceProfile.TextureTint : style != null ? style.TextureTint : Color.clear;
             title.style.color = palette.GetColorById(DeucarianBuiltinColorRoleIds.TextPrimary);
             body.style.color = palette.TryGetColorById(DeucarianBuiltinColorRoleIds.TextSecondary, out var text) ? text : title.style.color.value;
+            surfaceLabel.style.color = body.style.color;
             primary.style.backgroundColor = palette.GetColorById(DeucarianBuiltinColorRoleIds.Primary);
             primary.style.color = Contrast(primary.style.backgroundColor.value);
             secondary.style.color = title.style.color;
@@ -76,7 +94,6 @@ namespace Deucarian.Theming.Editor
             else { title.style.fontSize = StyleKeyword.Null; body.style.fontSize = StyleKeyword.Null; title.style.unityFontStyleAndWeight = StyleKeyword.Null; body.style.unityFontStyleAndWeight = StyleKeyword.Null; }
             primary.style.height = secondary.style.height = DeucarianThemeSpecimenRenderer.ResolvePreviewControlHeight(density) * 2;
             controls.SetColors(resolvedSurface, primary.style.backgroundColor.value, title.style.color.value);
-            sample.tooltip = "Magnified theme specimen · selected surface, border, shape, type and density";
         }
 
         private static Color Contrast(Color color) => color.grayscale > .48f ? Color.black : Color.white;

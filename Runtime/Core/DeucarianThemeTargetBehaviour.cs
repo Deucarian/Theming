@@ -53,7 +53,11 @@ namespace Deucarian.Theming
         /// <inheritdoc />
         public void ApplyTheme(DeucarianTheme theme)
         {
-            if (!DeucarianThemeRuntimeResolver.UseVisualStyling) return;
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling)
+            {
+                OnVisualStylingDisabled();
+                return;
+            }
             DeucarianTheme resolvedTheme = ResolveTheme(theme);
             if (resolvedTheme == null)
             {
@@ -67,6 +71,9 @@ namespace Deucarian.Theming
 
         /// <summary>Applies an already resolved non-null theme to the concrete target.</summary>
         protected abstract void ApplyResolvedTheme(DeucarianTheme theme);
+
+        /// <summary>Releases applied presentation overrides when project visual styling is turned off.</summary>
+        protected virtual void OnVisualStylingDisabled() { }
 
         /// <summary>Resolves the theme from override, supplied provider theme, nearest provider, or active provider.</summary>
         protected DeucarianTheme ResolveTheme(DeucarianTheme suppliedTheme)
@@ -194,9 +201,11 @@ namespace Deucarian.Theming
             ApplyTheme(theme);
         }
 
-        private void OnRuntimeSettingsChanged(UnityEngine.Object asset)
+        protected virtual void OnRuntimeSettingsChanged(UnityEngine.Object asset)
         {
-            if (asset is DeucarianThemeRuntimeSettings && applyOnEnable) ApplyTheme();
+            if (!(asset is DeucarianThemeRuntimeSettings)) return;
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling) OnVisualStylingDisabled();
+            else if (applyOnEnable) ApplyTheme();
         }
     }
 }

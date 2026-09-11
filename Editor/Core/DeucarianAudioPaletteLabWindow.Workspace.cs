@@ -27,7 +27,7 @@ namespace Deucarian.Theming.Editor
             {
                 this.owner = owner;
                 view = new DeucarianEditorCollectionWorkspace(owner.PageRoot, Application.productName,
-                    "Audio palettes", "Give every interaction a familiar sound.", "audio", "Find an audio role…");
+                    "Audio palettes", "Assign and preview sounds for UI, input and feedback.", "audio", "Find an audio role…");
                 view.Workspace.SetScopeBeforeTabs();
                 view.Workspace.SetScopeStacked();
                 Ui.Show(view.Workspace.Footer, false);
