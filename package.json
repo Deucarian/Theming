@@ -1,7 +1,7 @@
 {
   "name": "com.deucarian.theming",
   "displayName": "Deucarian Theming",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "unity": "2022.3",
   "description": "Designer-friendly ScriptableObject theming for Deucarian Unity projects.",
   "keywords": [
@@ -20,9 +20,9 @@
     "url": "git+https://github.com/Deucarian/Theming.git"
   },
   "dependencies": {
-    "com.deucarian.editor": "1.11.0",
+    "com.deucarian.editor": "1.12.0",
     "com.deucarian.logging": "1.0.4",
-    "com.deucarian.media": "0.1.0",
+    "com.deucarian.media": "0.2.0",
     "com.unity.textmeshpro": "3.0.6",
     "com.unity.ugui": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"
@@ -42,6 +42,11 @@
       "displayName": "Audio Palette Demo",
       "description": "Self-contained semantic audio playback across Default, XR, WebGL, Desktop, and Mobile.",
       "path": "Samples~/Audio Palette Demo"
+    },
+    {
+      "displayName": "Definition Workflow",
+      "description": "Playable scene with typed C# calls, Inspector components, editable definitions and shared host ownership.",
+      "path": "Samples~/DefinitionWorkflow"
     }
   ]
 }

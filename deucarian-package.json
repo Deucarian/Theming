@@ -13,8 +13,10 @@
     "Deucarian.Theming.Editor"
   ],
   "sampleAssemblies": [
-    "Deucarian.Theming.Samples.BasicTheming",
+    "Deucarian.Samples.Theming.DefinitionDeclarations",
     "Deucarian.Theming.Samples.AudioPalette",
+    "Deucarian.Theming.Samples.BasicTheming",
+    "Deucarian.Theming.Samples.DefinitionWorkflow",
     "Deucarian.Theming.Samples.UIToolkit"
   ],
   "testAssemblies": [
@@ -25,9 +27,9 @@
     "com.deucarian.editor",
     "com.deucarian.logging",
     "com.deucarian.media",
-    "com.unity.modules.uielements",
     "com.unity.textmeshpro",
-    "com.unity.ugui"
+    "com.unity.ugui",
+    "com.unity.modules.uielements"
   ],
   "optionalVersionDefinedDependencies": [],
   "allowedDirectDebugCalls": [],

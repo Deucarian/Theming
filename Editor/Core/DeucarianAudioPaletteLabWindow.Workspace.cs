@@ -16,6 +16,7 @@ namespace Deucarian.Theming.Editor
             private readonly DeucarianEditorCollectionWorkspace view;
             private readonly DeucarianEditorWorkspaceForm context;
             private readonly DeucarianThemingEditorFeatureGate featureGate;
+            private readonly Deucarian.Editor.Definitions.DeucarianDefinitionPanel definitions;
             private DeucarianEditorWorkspaceForm details;
             private DeucarianAudioCueForm cueForm;
             private DeucarianAudioRole renderedRole;
@@ -34,6 +35,21 @@ namespace Deucarian.Theming.Editor
                 var categories = new DeucarianEditorChoiceBar(new[] { "All roles", "UI", "Input", "Feedback" }, owner.categoryFilter, true);
                 categories.Changed += value => { owner.categoryFilter = value; Refresh(); };
                 view.Workspace.Tabs.Add(categories);
+                var definitionRoot = Ui.Region("audio-definitions", "dw-content");
+                view.Workspace.Content.Add(definitionRoot);
+                definitions = new Deucarian.Editor.Definitions.DeucarianDefinitionPanel(definitionRoot,
+                    new Definitions.AudioRoleDefinitionSchema(), asset => owner.Play(((DeucarianAudioRole)asset).DefaultCue));
+                Ui.Show(definitionRoot, false);
+                var mode = new DeucarianEditorChoiceBar(new[] { "Palettes", "Definitions" }, 0, true);
+                mode.Changed += value =>
+                {
+                    owner.StopPreview();
+                    Ui.Show(view.Collection, value == 0);
+                    Ui.Show(view.Workspace.Scope, value == 0);
+                    Ui.Show(categories, value == 0);
+                    Ui.Show(definitionRoot, value == 1);
+                };
+                view.Workspace.Tabs.Insert(0, mode);
                 context = new DeucarianEditorWorkspaceForm(view.Workspace.Scope);
                 context.Asset("audio-palette-set", "Palette set", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
                     value => { owner.HandlePaletteSetChanged(value as DeucarianAudioPaletteSet); Refresh(); });
@@ -176,7 +192,7 @@ namespace Deucarian.Theming.Editor
             {
                 Undo.undoRedoPerformed -= Refresh;
                 DeucarianThemeAssetChangeBus.AssetChanged -= OnAssetChanged;
-                cueForm?.Dispose(); featureGate?.Dispose(); view.Dispose();
+                definitions.Dispose(); cueForm?.Dispose(); featureGate?.Dispose(); view.Dispose();
             }
         }
     }

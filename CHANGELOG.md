@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0] - 2026-09-11
+
+- Add editable audio-role declarations, generated project-role lookup and typed Inspector playback. Audio-only hosts can use project roles without a visual theme.
+- Include a playable Definition Workflow sample with configured hosts, short callers and usage documentation.
+- Align declared package dependencies with the definition-authoring development wave.
+
+
 ## [1.7.0] - 2026-09-11
 
 - Require Editor 1.11.0 for the integrated shared editor workspace; preserve the typed audio role APIs from develop.

@@ -118,7 +118,7 @@ namespace Deucarian.Theming
                     ResolveExperience(),
                     out DeucarianAudioResolution resolution))
             {
-                return false;
+                return TryPlayProjectRole(roleId, paletteSet, theme, modifiers);
             }
 
             return Play(DeucarianAudioRole.NormalizeId(roleId), resolution.Cue, modifiers);
@@ -210,7 +210,9 @@ namespace Deucarian.Theming
                 return provider.CurrentTheme;
             }
 
-            return DeucarianThemeRuntimeResolver.ResolveDefaultTheme(this);
+            // An audio-only host can resolve project roles without a visual theme.
+            return DeucarianThemeRuntimeResolver.LoadSettings() != null
+                ? DeucarianThemeRuntimeResolver.ResolveDefaultTheme(this) : null;
         }
 
         private void NotifyRolePlayed(string roleId)
@@ -252,7 +254,16 @@ namespace Deucarian.Theming
         {
             if (paletteSetOverride != null) return paletteSetOverride;
             if (themeOverride != null || ResolveProvider() != null) return null;
-            return DeucarianThemeRuntimeResolver.LoadSettings()?.DefaultAudioPaletteSet;
+            return DeucarianThemeRuntimeResolver.LoadSettings()?.DefaultAudioPaletteSet ?? DeucarianAudioDefaults.LoadPaletteSet();
+        }
+
+        private bool TryPlayProjectRole(string roleId, DeucarianAudioPaletteSet paletteSet, DeucarianTheme theme, DeucarianAudioPlaybackModifiers modifiers)
+        {
+            var library = Resources.Load<DeucarianAudioRoleLibrary>("Deucarian/Theming/ProjectAudioRoles");
+            if (library == null || !library.TryGetRoleById(roleId, out var role)) return false;
+            if (paletteSet != null && paletteSet.TryResolve(role, ResolveExperience(), out var direct)) return Play(role.Id, direct.Cue, modifiers);
+            if (theme != null && theme.TryResolveAudio(role, ResolveExperience(), out var themed)) return Play(role.Id, themed.Cue, modifiers);
+            return Play(role.Id, role.DefaultCue, modifiers);
         }
 
         private DeucarianThemeProvider ResolveProvider()
