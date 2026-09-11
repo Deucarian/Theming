@@ -4,7 +4,9 @@ namespace Deucarian.Theming.Samples.SimpleUsage
 {
     public sealed class SimpleUsageExample : MonoBehaviour
     {
-        public void Click() => ThemeAudio.Play("deucarian.ui.audio.activate");
-        public void Warning() => ThemeAudio.Play("deucarian.feedback.audio.warning");
+        [SerializeField] private AudioRoleKey clickSound = AudioRoles.UI.Activate;
+
+        public void Click() => ThemeAudio.Play(clickSound);
+        public void Warning() => ThemeAudio.Play(AudioRoles.Feedback.Warning);
     }
 }
