@@ -82,14 +82,25 @@ namespace Deucarian.Theming.Editor
         internal void CreateGUI()
         {
             navigation?.Dispose();
-            navigation = new DeucarianEditorPageSession(this, DeucarianToolIds.ThemeManager, BuildPage);
+            navigation = new DeucarianEditorPageSession(this, DeucarianToolIds.ThemeManager, BuildPage, ActivatePage);
         }
 
         internal static IDeucarianEditorPage CreatePage()
         {
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             return DeucarianEditorWindowPages.Create<DeucarianThemeManagerWindow>(
-                (window, root) => window.BuildPage(root), update: window => window.UpdateWorkbenchToolbar());
+                (window, root) => window.BuildPage(root), activate: (window, route) => window.ActivatePage(route),
+                update: window => window.UpdateWorkbenchToolbar());
+        }
+
+        private void ActivatePage(string route)
+        {
+            if (route != DeucarianThemeProjectNavigation.ProjectPaletteRoute) return;
+            var settings = new DeucarianThemingProjectSettingsStore().Read();
+            if (!DeucarianThemeProjectNavigation.TrySelectProjectPalette(settings, composer.IsDirty)) return;
+            paletteCategory = 0;
+            toolbarView?.SetCategory(paletteCategory);
+            NavigateToTheme();
         }
 
         private DeucarianEditorPageSession navigation;
@@ -105,7 +116,7 @@ namespace Deucarian.Theming.Editor
             PageRoot.Clear();
             workspace = new DeucarianEditorWorkspace(PageRoot, Application.productName, true);
             workspace.Title.text = "Visual palettes";
-            workspace.Subtitle.text = "One visual language for your app.";
+            workspace.Subtitle.text = "Edit and preview the visual palettes used by your app.";
             DeucarianEditorWorkspaceNavigation.Populate(workspace, DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspaceControls.Show(workspace.Scope, false);
             BuildWorkbenchToolbar();

@@ -77,6 +77,9 @@ namespace Deucarian.Theming.Editor
             internal void Refresh()
             {
                 bool theme = owner.viewMode == ViewMode.Theme;
+                workspace.Subtitle.text = theme ? "Edit and preview the visual palettes used by your app."
+                    : owner.viewMode == ViewMode.StyleComposer ? "Combine surface, shape, border and typography profiles into a style."
+                    : "Choose the runtime settings asset used by project theming.";
                 Ui.Show(split, theme);
                 Ui.Show(workspace.Scope, theme);
                 Ui.Show(workspace.Tabs, theme);

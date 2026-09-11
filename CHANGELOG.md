@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0] - 2026-09-11
+
+- Require Editor 1.11.0 for the integrated shared editor workspace; preserve the typed audio role APIs from develop.
+
+- Add package-owned Simultria DS and RP palette factories with authored light/dark colors, HoloHelmet-compatible DS control roles and non-overwriting project copies.
+- Show Background behind Surface in the visual specimen and use descriptive palette page captions.
+- Expose a visual-styling-disabled lifecycle hook for adapters to restore authored presentation or release scoped registrations.
+
 ## [1.6.1] - 2026-09-11
 
 - Match visual/audio palette pages and custom Inspectors to the reference compositions; use source-owned cue/color forms and live isolated specimens. Disabled capabilities show a clear inactive state with editing blocked.

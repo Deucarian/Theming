@@ -206,6 +206,19 @@ namespace Deucarian.Theming.Editor.Tests
             Assert.That(preview.Plays, Is.Zero);
         }
 
+        [Test]
+        public void RuntimeFeatureSwitchNotifiesTargetsToReleaseTheirPresentation()
+        {
+            settings.Configure(Asset<DeucarianTheme>());
+            var target = GameObject("Visual lifecycle").AddComponent<ProjectAdoptionVisualTarget>();
+            int applied = target.Applied;
+            settings.SetFeatures(false, true);
+            Assert.That(target.Disabled, Is.EqualTo(1));
+            Assert.That(target.Applied, Is.EqualTo(applied));
+            settings.SetFeatures(true, true);
+            Assert.That(target.Applied, Is.GreaterThan(applied));
+        }
+
         private sealed class Preview : IDeucarianAudioPreviewService
         {
             internal int Plays;
@@ -233,6 +246,8 @@ namespace Deucarian.Theming.Editor.Tests
     public sealed class ProjectAdoptionVisualTarget : DeucarianThemeTargetBehaviour
     {
         public int Applied { get; private set; }
+        public int Disabled { get; private set; }
         protected override void ApplyResolvedTheme(DeucarianTheme theme) => Applied++;
+        protected override void OnVisualStylingDisabled() => Disabled++;
     }
 }

@@ -32,7 +32,7 @@ namespace Deucarian.Theming.Editor
             Root = new VisualElement();
             workspace = new DeucarianEditorWorkspace(Root, Application.productName);
             workspace.Title.text = "Theming";
-            workspace.Subtitle.text = "Choose what this project uses.";
+            workspace.Subtitle.text = "Choose visual styling and audio for this project.";
             workspace.FooterLeading.text = "Project settings";
             DeucarianEditorWorkspaceControls.Show(workspace.Footer, false);
             DeucarianEditorWorkspaceControls.Show(workspace.Tabs, false);
@@ -53,7 +53,11 @@ namespace Deucarian.Theming.Editor
                 () => (int)(Settings?.DefaultThemeMode ?? DeucarianThemeMode.Dark),
                 value => Write(settings => settings.SetDefaultThemeMode((DeucarianThemeMode)value)));
             visualForm.Action("theming-open-visual", "Open Visual Palettes", () =>
-                DeucarianEditorNavigation.Open(Root, DeucarianToolIds.ThemeManager));
+                DeucarianEditorNavigation.Open(Root, DeucarianToolIds.ThemeManager, DeucarianThemeProjectNavigation.ProjectPaletteRoute));
+            var presets = visualForm.Section("Simultria presets", true);
+            presets.Action("theming-preset-ds", "Use Design & Sales · purple / pink", () => UsePreset(true), () => store.CanWrite);
+            presets.Action("theming-preset-rp", "Use Realisation & Progress · green", () => UsePreset(false), () => store.CanWrite);
+            presets.Note(() => "Creates editable project palettes. Existing copies keep your changes.");
             content.Add(visual.Root);
             audio = new DeucarianEditorFeatureSection("theming-audio", "Audio",
                 "Sounds for interactions and feedback.", DeucarianEditorIconIds.Audio,
@@ -128,6 +132,15 @@ namespace Deucarian.Theming.Editor
             string path = palette != null ? AssetDatabase.GetAssetPath(palette) : null;
             string route = string.IsNullOrEmpty(path) ? null : "palette:" + AssetDatabase.AssetPathToGUID(path);
             DeucarianEditorNavigation.Open(Root, DeucarianEditorWorkspaceNavigation.AudioToolId, route);
+        }
+
+        private void UsePreset(bool designAndSales)
+        {
+            var assets = designAndSales ? DeucarianSimultriaThemeAssets.CreateDesignAndSales()
+                : DeucarianSimultriaThemeAssets.CreateRealisationAndProgress();
+            Write(settings => settings.Configure(assets.ThemeFamily, DeucarianThemeMode.Dark));
+            if (Settings?.DefaultThemeFamily == assets.ThemeFamily)
+                Selection.activeObject = assets.ThemeFamily;
         }
         private void Refresh()
         {

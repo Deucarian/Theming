@@ -6,6 +6,7 @@
     "Deucarian.Theming",
     "Deucarian.Theming.Editor",
     "Deucarian.Media.Unity",
+    "UnityEngine.UI",
     "Unity.TextMeshPro",
     "UnityEngine.UIElementsModule"
   ],
