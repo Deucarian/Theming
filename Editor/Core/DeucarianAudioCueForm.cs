@@ -33,7 +33,7 @@ namespace Deucarian.Theming.Editor
             palette = resolve().SourcePalette;
             fields = new VisualElement(); root.Add(fields);
             form = new DeucarianEditorWorkspaceForm(fields);
-            form.Asset("audio-resolved-clip", clipLabel, typeof(AudioClip), () => Cue.Clip,
+            form.AssetWithActions("audio-resolved-clip", clipLabel, typeof(AudioClip), () => Cue.Clip,
                 value => Write(cue => cue.FindPropertyRelative("clip").objectReferenceValue = value));
             form.Slider("audio-cue-volume", "Volume", 0, Mathf.Max(1, Cue.Volume), () => Cue.Volume,
                 value => WriteFinite(value, cue => cue.FindPropertyRelative("volume").floatValue = Mathf.Max(0, value)));

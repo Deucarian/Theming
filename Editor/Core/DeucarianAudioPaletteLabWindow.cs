@@ -203,8 +203,7 @@ namespace Deucarian.Theming.Editor
             }
             if (paletteSet == null)
             {
-                string[] guids = AssetDatabase.FindAssets("t:DeucarianAudioPaletteSet", new[] { "Assets" });
-                if (guids.Length == 1) paletteSet = AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(AssetDatabase.GUIDToAssetPath(guids[0]));
+                paletteSet = DeucarianThemeRuntimeResolver.LoadSettings()?.DefaultAudioPaletteSet ?? DeucarianAudioDefaults.LoadPaletteSet();
             }
         }
 

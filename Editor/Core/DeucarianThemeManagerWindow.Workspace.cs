@@ -28,12 +28,17 @@ namespace Deucarian.Theming.Editor
                 this.owner = owner; this.workspace = workspace;
                 workspace.SetScopeBeforeTabs();
                 context = new DeucarianEditorWorkspaceForm(workspace.Scope);
-                context.Asset("theme-family", "Theme family", typeof(DeucarianThemeFamily), () => Selection.Family, value => {
+                if (Selection.Family == null && Selection.ResolvedPalette == null)
+                    DeucarianThemeDraftPolicy.SetDraft(DeucarianVisualDefaults.LoadFamily(), Selection.Mode, DeucarianVisualDefaults.LoadTheme(Selection.Mode)?.VisualStyle);
+                context.AssetWithActions("theme-family", "Theme family", typeof(DeucarianThemeFamily), () => Selection.Family, value => {
                     var family = value as DeucarianThemeFamily;
                     SetDraft(family, Selection.Mode, DeucarianThemeDraftPolicy.ResolveSuggestedStyle(family, Selection.Mode) ?? Selection.Style);
-                });
+                }, DeucarianThemeAssetCustomization.CreateFamily, DeucarianThemeAssetCustomization.Customize, DeucarianVisualDefaults.LoadFamily);
                 context.Choice("theme-mode", "Mode", Enum.GetNames(typeof(DeucarianThemeMode)), () => (int)Selection.Mode,
                     value => SetDraft(Selection.Family, (DeucarianThemeMode)value, Selection.Style));
+                context.AssetWithActions("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
+                    value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle),
+                    customize: DeucarianThemeAssetCustomization.Customize);
                 formRoot = Ui.Scroll("theme-configuration");
                 var preview = Ui.Scroll("theme-preview");
                 specimen = new DeucarianThemeToolkitSpecimen(); preview.Add(specimen.Root);
@@ -43,7 +48,7 @@ namespace Deucarian.Theming.Editor
                 setupPage = Ui.Scroll("theme-project-setup");
                 setupForm = new DeucarianEditorWorkspaceForm(setupPage);
                 setupPage.Add(Ui.Label("Runtime settings", "dw-section-title"));
-                setupForm.Asset("theme-runtime-settings", "Settings", typeof(DeucarianThemeRuntimeSettings), () => owner.runtimeSettingsCandidate, value => {
+                setupForm.AssetWithActions("theme-runtime-settings", "Settings", typeof(DeucarianThemeRuntimeSettings), () => owner.runtimeSettingsCandidate, value => {
                     owner.runtimeSettingsCandidate = value as DeucarianThemeRuntimeSettings;
                     owner.runtimeCandidateTouched = true;
                     owner.RefreshRuntimeSettingsCandidateValidation();
@@ -56,16 +61,16 @@ namespace Deucarian.Theming.Editor
                 composerForm = new DeucarianEditorWorkspaceForm(composerPage);
                 composerPage.Add(Ui.Label("Compose a style", "dw-section-title"));
                 composerForm.ReadOnly("theme-composer-source", "Based on", () => owner.composer.Source != null ? owner.composer.Source.DisplayName : "Choose a style");
-                composerForm.Asset("theme-composer-surface", "Surface", typeof(DeucarianThemeSurfaceProfile), () => owner.composer.Surface,
-                    value => ChangeComposer(() => owner.composer.Surface = value as DeucarianThemeSurfaceProfile));
-                composerForm.Asset("theme-composer-corners", "Corners", typeof(DeucarianThemeShapeProfile), () => owner.composer.Corners,
-                    value => ChangeComposer(() => owner.composer.Corners = value as DeucarianThemeShapeProfile));
-                composerForm.Asset("theme-composer-border", "Border", typeof(DeucarianThemeStrokeProfile), () => owner.composer.Border,
-                    value => ChangeComposer(() => owner.composer.Border = value as DeucarianThemeStrokeProfile));
+                composerForm.AssetWithActions("theme-composer-surface", "Surface", typeof(DeucarianThemeSurfaceProfile), () => owner.composer.Surface,
+                    value => ChangeComposer(() => owner.composer.Surface = value as DeucarianThemeSurfaceProfile), customize: DeucarianThemeAssetCustomization.Customize);
+                composerForm.AssetWithActions("theme-composer-corners", "Corners", typeof(DeucarianThemeShapeProfile), () => owner.composer.Corners,
+                    value => ChangeComposer(() => owner.composer.Corners = value as DeucarianThemeShapeProfile), customize: DeucarianThemeAssetCustomization.Customize);
+                composerForm.AssetWithActions("theme-composer-border", "Border", typeof(DeucarianThemeStrokeProfile), () => owner.composer.Border,
+                    value => ChangeComposer(() => owner.composer.Border = value as DeucarianThemeStrokeProfile), customize: DeucarianThemeAssetCustomization.Customize);
                 composerForm.Choice("theme-composer-size", "Size", Enum.GetNames(typeof(DeucarianThemeDensity)), () => (int)owner.composer.Size,
                     value => ChangeComposer(() => owner.composer.Size = (DeucarianThemeDensity)value));
-                composerForm.Asset("theme-composer-typography", "Typography", typeof(DeucarianThemeTypographyProfile), () => owner.composer.Typography,
-                    value => ChangeComposer(() => owner.composer.Typography = value as DeucarianThemeTypographyProfile));
+                composerForm.AssetWithActions("theme-composer-typography", "Typography", typeof(DeucarianThemeTypographyProfile), () => owner.composer.Typography,
+                    value => ChangeComposer(() => owner.composer.Typography = value as DeucarianThemeTypographyProfile), customize: DeucarianThemeAssetCustomization.Customize);
                 composerForm.Action("theme-composer-back", "Back to visual palettes", owner.NavigateToTheme);
                 composerSpecimen = new DeucarianThemeToolkitSpecimen();
                 composerPage.Add(composerSpecimen.Root);
@@ -101,8 +106,6 @@ namespace Deucarian.Theming.Editor
                     colors = new DeucarianThemePaletteForm(formRoot, renderedPalette, () => { specimen.Refresh(Selection); owner.UpdateWorkbenchToolbar(); });
                 else
                 {
-                    visualForm.Asset("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
-                        value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle));
                     if (renderedCategory == 1)
                     {
                         visualForm.ReadOnly("theme-font", "Typography", () => Selection.Style?.TypographyProfile?.DisplayName ?? "Project default");
@@ -118,9 +121,6 @@ namespace Deucarian.Theming.Editor
                     visualForm.Action("theme-compose-style", "Compose style", owner.NavigateToStyleComposer, () => Selection.Style != null);
                 }
                 var more = visualForm.Section("More options", true);
-                if (renderedCategory == 0)
-                    more.Asset("theme-style", "Style", typeof(DeucarianThemeStyle), () => Selection.Style,
-                        value => SetDraft(Selection.Family, Selection.Mode, value as DeucarianThemeStyle));
                 more.Action("theme-project-setup", "Project setup", () => DeucarianEditorNavigation.Open(owner.PageRoot, DeucarianThemingProjectPage.ToolId));
                 more.Action("theme-configure", "Runtime settings", owner.NavigateToRuntimeSettings);
                 more.Action("theme-create-family", "Create theme family…", owner.CreateThemeFamily, () => !EditorApplication.isPlayingOrWillChangePlaymode);

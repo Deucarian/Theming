@@ -1,5 +1,9 @@
 # Changelog
 
+## Asset workflow — Unreleased
+
+- Show authoritative project/bundled defaults in asset selectors and offer project-owned customization with copied editable palettes/profiles and preserved shared roles/media.
+
 ## [1.8.0] - Unreleased
 
 - Add editable audio-role declarations, generated project-role lookup and typed Inspector playback. Audio-only hosts can use project roles without a visual theme.

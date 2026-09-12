@@ -47,8 +47,10 @@ namespace Deucarian.Theming.Editor
                 "Keep the app's existing colors, fonts and shapes.", DeucarianEditorIconIds.Palette,
                 value => Write(settings => settings.SetFeatures(value, settings.UseAudio)));
             visualForm = new DeucarianEditorWorkspaceForm(visual.Details);
-            visualForm.Asset("theming-visual-family", "Theme family", typeof(DeucarianThemeFamily),
-                () => Settings?.DefaultThemeFamily, value => Write(settings => settings.Configure(value as DeucarianThemeFamily, settings.DefaultThemeMode)));
+            visualForm.AssetWithActions("theming-visual-family", "Theme family", typeof(DeucarianThemeFamily),
+                () => Settings?.DefaultThemeFamily ?? (Settings?.LegacyDefaultTheme == null ? DeucarianVisualDefaults.LoadFamily() : null),
+                value => Write(settings => settings.Configure(value as DeucarianThemeFamily, settings.DefaultThemeMode)),
+                DeucarianThemeAssetCustomization.CreateFamily, DeucarianThemeAssetCustomization.Customize, DeucarianVisualDefaults.LoadFamily);
             visualForm.Choice("theming-visual-mode", "Mode", Enum.GetNames(typeof(DeucarianThemeMode)),
                 () => (int)(Settings?.DefaultThemeMode ?? DeucarianThemeMode.Dark),
                 value => Write(settings => settings.SetDefaultThemeMode((DeucarianThemeMode)value)));
@@ -63,9 +65,10 @@ namespace Deucarian.Theming.Editor
                 "Sounds for interactions and feedback.", DeucarianEditorIconIds.Audio,
                 value => Write(settings => settings.SetFeatures(settings.UseVisualStyling, value)));
             audioForm = new DeucarianEditorWorkspaceForm(audio.Details);
-            audioForm.Asset("theming-audio-palette", "Palette set", typeof(DeucarianAudioPaletteSet),
-                () => Settings?.DefaultAudioPaletteSet,
-                value => Write(settings => settings.ConfigureAudio(value as DeucarianAudioPaletteSet, settings.DefaultAudioExperience)));
+            audioForm.AssetWithActions("theming-audio-palette", "Palette set", typeof(DeucarianAudioPaletteSet),
+                () => Settings?.DefaultAudioPaletteSet ?? DeucarianAudioDefaults.LoadPaletteSet(),
+                value => Write(settings => settings.ConfigureAudio(value as DeucarianAudioPaletteSet, settings.DefaultAudioExperience)),
+                DeucarianThemeAssetCustomization.CreateAudio, DeucarianThemeAssetCustomization.Customize, DeucarianAudioDefaults.LoadPaletteSet);
             audioForm.Choice("theming-audio-experience", "Experience", Enum.GetNames(typeof(DeucarianAudioExperience)),
                 () => (int)(Settings?.DefaultAudioExperience ?? DeucarianAudioExperience.Default),
                 value => Write(settings => settings.ConfigureAudio(settings.DefaultAudioPaletteSet, (DeucarianAudioExperience)value)));

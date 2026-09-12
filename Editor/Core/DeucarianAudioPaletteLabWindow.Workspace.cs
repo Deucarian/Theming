@@ -51,8 +51,9 @@ namespace Deucarian.Theming.Editor
                 };
                 view.Workspace.Tabs.Insert(0, mode);
                 context = new DeucarianEditorWorkspaceForm(view.Workspace.Scope);
-                context.Asset("audio-palette-set", "Palette set", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
-                    value => { owner.HandlePaletteSetChanged(value as DeucarianAudioPaletteSet); Refresh(); });
+                context.AssetWithActions("audio-palette-set", "Palette set", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
+                    value => { owner.HandlePaletteSetChanged(value as DeucarianAudioPaletteSet); Refresh(); },
+                    DeucarianThemeAssetCustomization.CreateAudio, DeucarianThemeAssetCustomization.Customize, DeucarianAudioDefaults.LoadPaletteSet);
                 context.Choice("audio-experience", "Experience", ExperienceLabels, () => (int)owner.experience,
                     value => { owner.HandleExperienceChanged((DeucarianAudioExperience)value); Refresh(); });
                 view.Workspace.SearchField.SetValueWithoutNotify(owner.search);
@@ -154,8 +155,8 @@ namespace Deucarian.Theming.Editor
                     string id = TestPadRoleIds[i];
                     pad.Action("audio-pad-" + id, TestPadLabels[i], () => { owner.SelectRole(owner.FindRole(id)); PlaySelected(); Refresh(); }, () => CanPlayRole(id));
                 }
-                advanced.Asset("audio-theme", "Theme", typeof(DeucarianTheme), () => owner.theme,
-                    value => { owner.HandleThemeChanged(value as DeucarianTheme); Refresh(); });
+                advanced.AssetWithActions("audio-theme", "Theme", typeof(DeucarianTheme), () => owner.theme,
+                    value => { owner.HandleThemeChanged(value as DeucarianTheme); Refresh(); }, customize: DeucarianThemeAssetCustomization.Customize);
                 advanced.Action("audio-browse", "Browse project palettes…", BrowsePalettes);
                 advanced.Note(() => owner.paletteSet == null ? string.Empty : string.Join("\n", owner.paletteSet.GetValidationWarnings()));
             }
@@ -179,7 +180,7 @@ namespace Deucarian.Theming.Editor
             private void BrowsePalettes()
             {
                 var menu = new GenericMenu();
-                string[] guids = AssetDatabase.FindAssets("t:DeucarianAudioPaletteSet", new[] { "Assets" });
+                string[] guids = AssetDatabase.FindAssets("t:DeucarianAudioPaletteSet");
                 foreach (string guid in guids)
                 {
                     string path = AssetDatabase.GUIDToAssetPath(guid);
