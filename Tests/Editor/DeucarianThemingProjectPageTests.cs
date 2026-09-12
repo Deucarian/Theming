@@ -34,6 +34,7 @@ namespace Deucarian.Theming.Editor.Tests
                 Assert.That(store.Writes, Is.Zero);
                 Assert.That(page.Root.Q<Toggle>("theming-visual-enabled").value, Is.True);
                 Assert.That(page.Root.Q<Toggle>("theming-audio-enabled").value, Is.True);
+                Assert.That(page.Root.Query<Label>().ToList().Exists(label => label.text.Contains("Using bundled Deucarian Default")), Is.True);
                 page.Dispose();
                 page.Activate(null);
                 Assert.That(store.Writes, Is.Zero);

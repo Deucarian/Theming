@@ -1,6 +1,10 @@
 # UI Toolkit Theming Demo
 
-This sample documents the recommended UIDocument setup for UI Toolkit.
+Open **UIToolkitThemingDemo.unity** and press Play. Light theme / Dark theme update
+the background, panel, text and buttons together. Select **Theme demo** to inspect
+the provider, UIDocument, serialized selector bindings and sample controller.
+The scene uses the bundled family and includes its own editable PanelSettings.
+Visual styling must be enabled in Theming > Project setup.
 
 ## Demo Hierarchy
 
@@ -18,8 +22,9 @@ Example VisualElement structure:
   .viewer-panel
     #viewer-title.viewer-title
     .viewer-body
-    #viewer-button.viewer-button
-    .viewer-error
+    .actions
+      #light.viewer-button
+      #dark.viewer-button
 ```
 
 Example bindings:
@@ -29,7 +34,7 @@ Example bindings:
 - `.viewer-panel` -> `BorderColor`
 - `.viewer-title` -> `TextColor`
 - `.viewer-button` -> `BackgroundColor`
-- `.viewer-error` -> `TextColor`
+- `.viewer-body` -> `TextColor`
 
 Open `Tools/Deucarian/Control Center`, then choose **Experience > Theme Manager** to create a theme family, preview Light/Dark, and use **Apply Preview To Scene**. Use the Theme Manager's **Create UI Toolkit Demo Assets** action to create project demo files in `Assets/Deucarian/Theming/UIToolkitDemo/`.
 

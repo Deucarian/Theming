@@ -1,7 +1,5 @@
 using System;
 using System.Reflection;
-using Deucarian.Media;
-using Deucarian.Media.Unity;
 using UnityEditor;
 using UnityEngine;
 
@@ -28,7 +26,7 @@ namespace Deucarian.Theming.Editor
         private readonly MethodInfo playMethod;
         private readonly MethodInfo stopMethod;
         private readonly MethodInfo isPlayingMethod;
-        private IMediaResourceLease<AudioClip> processedClip;
+        private readonly DeucarianAudioPreviewSource processedSource = new DeucarianAudioPreviewSource();
         public string LastError { get; private set; }
 
         public DeucarianAudioPreviewService()
@@ -55,6 +53,7 @@ namespace Deucarian.Theming.Editor
         {
             get
             {
+                if (processedSource.IsPlaying) return true;
                 if (isPlayingMethod == null)
                 {
                     return false;
@@ -73,6 +72,7 @@ namespace Deucarian.Theming.Editor
 
         public bool Play(AudioClip clip)
         {
+            LastError = null;
             if (!DeucarianThemeRuntimeResolver.UseAudio) { Stop(); return false; }
             if (!IsAvailable || clip == null)
             {
@@ -89,14 +89,12 @@ namespace Deucarian.Theming.Editor
                         ? new object[] { clip, 0 }
                         : new object[] { clip, 0, false };
                 playMethod.Invoke(null, arguments);
-                DeucarianThemeAssetChangeBus.AssetChanged += OnSettingsChanged;
-                Undo.undoRedoPerformed += CheckFeature;
-                EditorApplication.projectChanged += CheckFeature;
-                AssemblyReloadEvents.beforeAssemblyReload += Stop;
+                Subscribe();
                 return true;
             }
-            catch (TargetInvocationException)
+            catch (TargetInvocationException exception)
             {
+                LastError = exception.InnerException?.Message ?? exception.Message;
                 return false;
             }
             catch (TargetParameterCountException)
@@ -116,34 +114,35 @@ namespace Deucarian.Theming.Editor
             EditorApplication.projectChanged -= CheckFeature;
             AssemblyReloadEvents.beforeAssemblyReload -= Stop;
             try { StopPlayback(); }
-            finally
-            {
-                processedClip?.Dispose();
-                processedClip = null;
-            }
+            finally { processedSource.Dispose(); }
         }
 
         public bool PlayProcessed(AudioClip clip, float volume, float pitch)
         {
-            if (!DeucarianThemeRuntimeResolver.UseAudio) { Stop(); return false; }
             LastError = null;
+            if (!DeucarianThemeRuntimeResolver.UseAudio) { Stop(); return false; }
             if (!IsAvailable || clip == null) return false;
             Stop();
-            IMediaResourceLease<AudioClip> candidate = null;
             try
             {
-                candidate = UnityMediaResourceLease.CreateOwned(DeucarianAudioPreviewBuffer.Create(clip, volume, pitch));
-                if (!Play(candidate.Resource)) return false;
-                processedClip = candidate;
-                candidate = null;
+                processedSource.Play(clip, volume, pitch);
+                Subscribe();
                 return true;
             }
             catch (Exception exception)
             {
                 LastError = exception.Message;
+                Stop();
                 return false;
             }
-            finally { candidate?.Dispose(); }
+        }
+
+        private void Subscribe()
+        {
+            DeucarianThemeAssetChangeBus.AssetChanged += OnSettingsChanged;
+            Undo.undoRedoPerformed += CheckFeature;
+            EditorApplication.projectChanged += CheckFeature;
+            AssemblyReloadEvents.beforeAssemblyReload += Stop;
         }
 
         private void OnSettingsChanged(UnityEngine.Object asset)

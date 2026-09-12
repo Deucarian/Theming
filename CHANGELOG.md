@@ -1,10 +1,17 @@
 # Changelog
 
-## [1.8.0] - 2026-09-11
+## [1.8.0] - Unreleased
 
 - Add editable audio-role declarations, generated project-role lookup and typed Inspector playback. Audio-only hosts can use project roles without a visual theme.
 - Include a playable Definition Workflow sample with configured hosts, short callers and usage documentation.
 - Align declared package dependencies with the definition-authoring development wave.
+
+- Play processed editor auditions through a temporary 2D AudioSource with native volume/pitch instead of routing a generated AudioClip through imported-asset preview. Original audition stays unchanged; no clip reimports or scene/listener edits are needed.
+- Cover audition ownership, repeated playback, modifier application and non-silent native editor output.
+
+- Include a complete Deucarian Default light/dark visual family, canonical roles/style/Inter typography and linked bundled audio palettes without importing samples.
+- Fall back to bundled visuals for unconfigured projects without replacing explicit choices or enabling disabled features.
+- Replace placeholder samples with wired visual, UI Toolkit and audio scenes; add bundled-default contract tests.
 
 
 ## [1.7.0] - 2026-09-11

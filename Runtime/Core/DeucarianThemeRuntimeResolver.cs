@@ -29,11 +29,13 @@ namespace Deucarian.Theming
             return Resources.Load<DeucarianThemeRuntimeSettings>(DeucarianThemeRuntimeSettings.ResourceName);
         }
 
-        /// <summary>Resolves the configured runtime default family, or null for legacy standalone settings.</summary>
+        /// <summary>Resolves the configured family, or the bundled family when the project has no override.</summary>
         public static DeucarianThemeFamily ResolveDefaultThemeFamily()
         {
             DeucarianThemeRuntimeSettings settings = LoadSettings();
-            return settings != null ? settings.DefaultThemeFamily : null;
+            if (settings != null && settings.LegacyDefaultTheme != null) return settings.DefaultThemeFamily;
+            return settings != null && settings.DefaultThemeFamily != null
+                ? settings.DefaultThemeFamily : DeucarianVisualDefaults.LoadFamily();
         }
 
         /// <summary>Resolves the configured runtime default mode, defaulting to dark when settings are absent.</summary>
@@ -43,7 +45,7 @@ namespace Deucarian.Theming
             return settings != null ? settings.DefaultThemeMode : DeucarianThemeMode.Dark;
         }
 
-        /// <summary>Resolves the runtime default theme from settings, or null when none is configured.</summary>
+        /// <summary>Resolves the project override, falling back to the bundled Deucarian theme when unconfigured.</summary>
         public static DeucarianTheme ResolveDefaultTheme(UnityObject context = null)
         {
             return ResolveDefaultThemeFromSettings(LoadSettings(), context);
@@ -93,6 +95,10 @@ namespace Deucarian.Theming
             {
                 return null;
             }
+
+            DeucarianTheme bundled = DeucarianVisualDefaults.LoadTheme(
+                settings != null ? settings.DefaultThemeMode : DeucarianThemeMode.Dark);
+            if (bundled != null) return bundled;
 
             if (settings == null)
             {
@@ -168,9 +174,12 @@ namespace Deucarian.Theming
             UnityObject context)
         {
             DeucarianThemeFamily family = settings != null ? settings.DefaultThemeFamily : null;
-            if (family != null && family.ResolveTheme(settings.DefaultThemeMode) != null)
+            if (family == null && (settings == null || settings.LegacyDefaultTheme == null))
+                family = DeucarianVisualDefaults.LoadFamily();
+            DeucarianThemeMode mode = settings != null ? settings.DefaultThemeMode : DeucarianThemeMode.Dark;
+            if (family != null && family.ResolveTheme(mode) != null)
             {
-                provider.SetThemeFamily(family, settings.DefaultThemeMode);
+                provider.SetThemeFamily(family, mode);
                 return true;
             }
 

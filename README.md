@@ -12,6 +12,26 @@ work in code and Inspector dropdowns.
 
 For simple calls and setup, see [Simple usage](Documentation~/SimpleUsage.md).
 
+## Included defaults and playable examples
+
+Installing Theming includes **Deucarian Default**: light/dark visual palettes,
+the default visual style and Inter typography, plus the semantic audio palette
+set for Default, XR, WebGL, Desktop and Mobile. No sample import is required.
+An unconfigured project resolves these bundled defaults; explicit project,
+provider and component choices still take precedence. Disabled visual/audio
+features stay disabled. Package assets are read-only starting points: create
+project copies with Theme Manager before customizing them.
+
+Use `DeucarianVisualDefaults.LoadFamily()` / `LoadTheme(mode)` and
+`DeucarianAudioDefaults.LoadPaletteSet()` when an explicit default reference is
+needed. These helpers do not create project assets or wire application controls.
+
+Import **Basic Theming Demo**, **UI Toolkit Theming Demo** or **Audio Palette Demo**
+from the Package Installer/Unity Package Manager Samples section. Each includes
+a runnable scene, visible controls and serialized references you can inspect.
+The uGUI examples use the built-in input module; in an Input-System-only project,
+replace the Event System's module with `InputSystemUIInputModule`.
+
 ## Generated keys in code and the Inspector
 
 Project custom audio role definitions generate named, typed C# keys automatically. A `.g.cs` file is generated C# that Unity compiles normally. The generator runs in the editor; the player uses the compiled key code.
