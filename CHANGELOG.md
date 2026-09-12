@@ -1,6 +1,6 @@
 # Changelog
 
-## Asset workflow — Unreleased
+## [1.9.0] - Unreleased
 
 - Show authoritative project/bundled defaults in asset selectors and offer project-owned customization with copied editable palettes/profiles and preserved shared roles/media.
 
