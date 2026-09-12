@@ -120,7 +120,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.9.0` (requires Editor `1.13.0`).
+Current package version: `1.10.0` (requires Editor `1.13.0`).
 
 ## When to use it
 

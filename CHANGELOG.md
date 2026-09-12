@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.10.0] - 2026-09-12
+
+- Own shared control color math and exact legacy XR compatibility defaults without altering authored themes.
+
 ## [1.9.0] - Unreleased
 
 - Show authoritative project/bundled defaults in asset selectors and offer project-owned customization with copied editable palettes/profiles and preserved shared roles/media.
