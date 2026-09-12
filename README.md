@@ -1,5 +1,9 @@
 # Deucarian Theming
 
+## Asset selection and project defaults
+
+Theming and Audio Palette Lab start from the configured project theme/audio or the bundled Deucarian defaults. Package assets are read-only. Customize creates a project-owned copy, including editable palettes, modes and style profiles; shared roles, fonts and audio clips stay referenced. Choosing a draft in a lab does not implicitly apply it to runtime. Project setup remains the explicit place to select project defaults.
+
 ## Typed definition workflow
 
 The role selects reusable audio defaults. Change its clip in Audio Definitions; callers keep the same key.
@@ -116,7 +120,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.8.0` (requires Editor `1.11.0`).
+Current package version: `1.9.0` (requires Editor `1.13.0`).
 
 ## When to use it
 
