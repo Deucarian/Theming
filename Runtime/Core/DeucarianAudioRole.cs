@@ -5,7 +5,6 @@ namespace Deucarian.Theming
     /// <summary>
     /// Defines a designer-authored audio role with a stable ID and default fallback cue.
     /// </summary>
-    [CreateAssetMenu(fileName = "Audio Role", menuName = "Deucarian/Theming/Audio Role")]
     public sealed class DeucarianAudioRole : ScriptableObject
     {
         [SerializeField] private string id = DeucarianBuiltinAudioRoleIds.Hover;
@@ -116,4 +115,3 @@ namespace Deucarian.Theming
         }
     }
 }
-

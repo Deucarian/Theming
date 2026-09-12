@@ -1,5 +1,15 @@
 # Deucarian Theming
 
+## Typed definition workflow
+
+The role selects reusable audio defaults. Change its clip in Audio Definitions; callers keep the same key.
+
+Start with the [Definition Workflow walkthrough](Documentation~/DefinitionWorkflow.md).
+Import **Definition Workflow** in Package Manager for a configured sample scene
+and short caller scripts. Definitions can be edited as assets or editable C# declarations; generated keys
+work in code and Inspector dropdowns.
+
+
 For simple calls and setup, see [Simple usage](Documentation~/SimpleUsage.md).
 
 ## Included defaults and playable examples
@@ -106,7 +116,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.7.0` (requires Editor `1.11.0`).
+Current package version: `1.8.0` (requires Editor `1.11.0`).
 
 ## When to use it
 

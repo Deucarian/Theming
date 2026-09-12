@@ -1,0 +1,5 @@
+{
+  "name": "Deucarian.Samples.Theming.DefinitionDeclarations",
+  "references": ["Deucarian.Editor", "Deucarian.Theming.Editor"],
+  "includePlatforms": ["Editor"]
+}
