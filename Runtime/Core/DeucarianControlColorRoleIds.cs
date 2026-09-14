@@ -25,5 +25,7 @@ namespace Deucarian.Theming
         public const string DropdownInvalidState = "deucarian.control.invalid-state";
         public const string KeyboardContentAccent = "deucarian.control.keyboard-content-accent";
         public const string Transparent = "deucarian.control.transparent";
+        public const string ForegroundDark = "deucarian.control.foreground-dark";
+        public const string ForegroundLight = "deucarian.control.foreground-light";
     }
 }

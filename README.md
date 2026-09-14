@@ -120,7 +120,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.11.0` (requires Editor `1.13.0`).
+Current package version: `1.12.0` (requires Editor `1.13.0`).
 
 ## When to use it
 
@@ -571,3 +571,7 @@ git diff --check
 ## License
 
 See [LICENSE.md](LICENSE.md).
+
+## Foreground palette contrast
+
+`DeucarianForegroundPalette.FromTheme(theme, normalSurface, normalText)` derives contrast candidates from existing colours and honours optional `DeucarianControlColorRoleIds.ForegroundDark` / `ForegroundLight` roles in the same palette. Add a Color Role with either ID and an entry in the existing palette to override that candidate. With no override, edits to the normal surface/text colours continue to flow through. `DeucarianForegroundContrast.Resolve(preferred, surface, palette)` preserves a sufficiently contrasting authored foreground, otherwise chooses the better exact candidate. It never invents black or white. The requested ratio is a preference: limited palettes may not contain a colour meeting it. The older overload remains available for callers that explicitly want black/white fallback.
