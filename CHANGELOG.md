@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.0 - Unreleased
+
+- Add reusable sRGB foreground contrast resolution, alpha composition and semantic text/icon thresholds for UI surface adapters.
+
 ## [1.10.0] - 2026-09-12
 
 - Own shared control color math and exact legacy XR compatibility defaults without altering authored themes.
