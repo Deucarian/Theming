@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.0 - Unreleased
+
+- Add exact palette foreground candidates, preserving existing normal surface/text colours and optional dark/light overrides.
+
 ## 1.11.0 - Unreleased
 
 - Add reusable sRGB foreground contrast resolution, alpha composition and semantic text/icon thresholds for UI surface adapters.

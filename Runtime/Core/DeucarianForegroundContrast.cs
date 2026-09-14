@@ -31,7 +31,19 @@ namespace Deucarian.Theming
                 ? Color.black : Color.white;
         }
 
-        private static float Luminance(Color color) =>
+        /// <summary>
+        /// Keeps a readable authored foreground; otherwise chooses the better palette colour.
+        /// Never invents black or white when neither authored candidate meets the requested ratio.
+        /// </summary>
+        public static Color Resolve(Color preferred, Color surface,
+            DeucarianForegroundPalette palette, float minimum = TextMinimum)
+        {
+            if (Ratio(preferred, surface) >= minimum) return preferred;
+            return Ratio(palette.Dark, surface) >= Ratio(palette.Light, surface)
+                ? palette.Dark : palette.Light;
+        }
+
+        internal static float Luminance(Color color) =>
             Linear(color.r) * 0.2126f + Linear(color.g) * 0.7152f + Linear(color.b) * 0.0722f;
 
         private static float Linear(float channel)

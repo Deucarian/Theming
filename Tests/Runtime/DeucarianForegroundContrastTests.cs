@@ -6,6 +6,56 @@ namespace Deucarian.Theming.Tests
     public sealed class DeucarianForegroundContrastTests
     {
         [Test]
+        public void PaletteContrastUsesExactTintedColoursInBothDirections()
+        {
+            var dark = new Color(0.20f, 0.27f, 0.32f);
+            var light = new Color(0.91f, 0.94f, 0.96f);
+            var palette = new DeucarianForegroundPalette(light, dark);
+            Assert.That(DeucarianForegroundContrast.Resolve(light, light, palette), Is.EqualTo(dark));
+            Assert.That(DeucarianForegroundContrast.Resolve(dark, dark, palette), Is.EqualTo(light));
+            Assert.That(DeucarianForegroundContrast.Resolve(light, dark, palette), Is.EqualTo(light));
+        }
+
+        [Test]
+        public void LimitedPaletteKeepsItsBestAuthoredColourInsteadOfInventingBlackOrWhite()
+        {
+            var dark = new Color(0.3f, 0.4f, 0.5f);
+            var light = new Color(0.6f, 0.7f, 0.8f);
+            var surface = new Color(0.5f, 0.5f, 0.5f);
+            var actual = DeucarianForegroundContrast.Resolve(surface, surface,
+                new DeucarianForegroundPalette(dark, light));
+            Assert.That(actual, Is.EqualTo(dark).Or.EqualTo(light));
+            Assert.That(DeucarianForegroundContrast.Ratio(actual, surface), Is.EqualTo(Mathf.Max(
+                DeucarianForegroundContrast.Ratio(dark, surface),
+                DeucarianForegroundContrast.Ratio(light, surface))));
+        }
+
+        [Test]
+        public void OptionalForegroundOverrideLivesInTheExistingPalette()
+        {
+            var role = ScriptableObject.CreateInstance<DeucarianColorRole>();
+            var colours = ScriptableObject.CreateInstance<DeucarianColorPalette>();
+            var theme = ScriptableObject.CreateInstance<DeucarianTheme>();
+            try
+            {
+                var authored = new Color(0.1f, 0.2f, 0.15f);
+                role.Configure(DeucarianControlColorRoleIds.ForegroundDark, "Dark foreground",
+                    DeucarianColorRoleCategories.UiState, "", authored, false);
+                colours.SetColor(role, authored);
+                theme.Configure("test.foreground", "Foreground", colours);
+                var palette = DeucarianForegroundPalette.FromTheme(theme, Color.gray, Color.white);
+                Assert.That(palette.Dark, Is.EqualTo(authored));
+                Assert.That(palette.Light, Is.EqualTo(Color.white));
+            }
+            finally
+            {
+                Object.DestroyImmediate(theme);
+                Object.DestroyImmediate(colours);
+                Object.DestroyImmediate(role);
+            }
+        }
+
+        [Test]
         public void BlackAndWhiteHaveExpectedContrastAndAlphaIsComposited()
         {
             Assert.That(DeucarianForegroundContrast.Ratio(Color.white, Color.black), Is.EqualTo(21f).Within(0.001f));
