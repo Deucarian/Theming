@@ -147,6 +147,8 @@ namespace Deucarian.Theming.Editor
             feedbackType = result.Succeeded ? MessageType.Info : MessageType.Error;
             if (result.Succeeded)
             {
+                if (DeucarianThemePaletteForm.IsProjectOwned(selection.ResolvedPalette))
+                    AssetDatabase.SaveAssetIfDirty(selection.ResolvedPalette);
                 RefreshAssets();
                 CaptureBaseline();
             }

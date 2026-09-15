@@ -1,8 +1,17 @@
 # Basic Theming Demo
 
-This sample is intentionally lightweight for v0.4.2.
+Open **BasicThemingDemo.unity** and press Play. Use Light theme / Dark theme.
+The scene is fully wired to the bundled Deucarian family and distinguishes the
+outer Background role from the inner Surface role. Select **Example canvas** to
+inspect the family/provider and select a graphic to inspect its role adapter.
 
-Open `Tools/Deucarian/Control Center`, then choose **Experience > Theme Manager** and use **Create Theme Family**, then preview Light/Dark and choose **Apply Preview To Scene**. Add one of the theme color adapters to a TMP text, uGUI Graphic, Selectable, SpriteRenderer, or Renderer object, then assign color role assets.
+Visual styling must be enabled in Theming > Project setup. The sample respects
+that switch and never changes project settings. For an Input-System-only project,
+replace the Event System's built-in module with InputSystemUIInputModule.
+
+To customize, open Control Center > Theming > Visual palettes and create a project
+theme family. Assign it to the demo's Family and provider. Keep bundled assets
+unchanged so future package updates remain safe.
 
 ## Demo Hierarchy
 

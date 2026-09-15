@@ -1,5 +1,61 @@
 # Changelog
 
+## 1.12.0 - Unreleased
+
+- Add exact palette foreground candidates, preserving existing normal surface/text colours and optional dark/light overrides.
+
+## 1.11.0 - Unreleased
+
+- Add reusable sRGB foreground contrast resolution, alpha composition and semantic text/icon thresholds for UI surface adapters.
+
+## [1.10.0] - 2026-09-12
+
+- Own shared control color math and exact legacy XR compatibility defaults without altering authored themes.
+
+## [1.9.0] - Unreleased
+
+- Show authoritative project/bundled defaults in asset selectors and offer project-owned customization with copied editable palettes/profiles and preserved shared roles/media.
+
+## [1.8.0] - Unreleased
+
+- Add editable audio-role declarations, generated project-role lookup and typed Inspector playback. Audio-only hosts can use project roles without a visual theme.
+- Include a playable Definition Workflow sample with configured hosts, short callers and usage documentation.
+- Align declared package dependencies with the definition-authoring development wave.
+
+- Play processed editor auditions through a temporary 2D AudioSource with native volume/pitch instead of routing a generated AudioClip through imported-asset preview. Original audition stays unchanged; no clip reimports or scene/listener edits are needed.
+- Cover audition ownership, repeated playback, modifier application and non-silent native editor output.
+
+- Include a complete Deucarian Default light/dark visual family, canonical roles/style/Inter typography and linked bundled audio palettes without importing samples.
+- Fall back to bundled visuals for unconfigured projects without replacing explicit choices or enabling disabled features.
+- Replace placeholder samples with wired visual, UI Toolkit and audio scenes; add bundled-default contract tests.
+
+
+## [1.7.0] - 2026-09-11
+
+- Require Editor 1.11.0 for the integrated shared editor workspace; preserve the typed audio role APIs from develop.
+
+- Add package-owned Simultria DS and RP palette factories with authored light/dark colors, HoloHelmet-compatible DS control roles and non-overwriting project copies.
+- Show Background behind Surface in the visual specimen and use descriptive palette page captions.
+- Expose a visual-styling-disabled lifecycle hook for adapters to restore authored presentation or release scoped registrations.
+
+## [1.6.1] - 2026-09-11
+
+- Match visual/audio palette pages and custom Inspectors to the reference compositions; use source-owned cue/color forms and live isolated specimens. Disabled capabilities show a clear inactive state with editing blocked.
+- Require Editor 1.10.6 for the shared native controls, typography, responsive layouts and accessible interaction states.
+
+## [1.6.0] - 2026-09-10
+
+- Remove the redundant Project setup information strip. Disabled visual/audio palettes keep their assets but gate editing and audition, with a clear route to Project setup.
+- Stop editor audio when project audio is disabled and use shared intensity sliders.
+
+## [1.5.0] - 2026-09-10
+
+- Add Theming > Project setup, with independent saved visual styling and audio switches; keep visual and audio palettes together in one package.
+- Add project audio palette/experience defaults while preserving component overrides and mixed-theme audio resolution when visual styling is off.
+- Gate runtime visual adapters and all themed audio playback entry points. Audio Off stops active player voices; palette assets and editor previews remain available.
+- Group Project setup, Visual palettes and Audio palettes in the same-window submenu using Editor 1.8 shared feature sections.
+- Report loaded button integrations and successful keyboard/warning cue observations without mistaking an assigned palette for a connection. Release observers when leaving the page.
+
 ## [1.4.4] - 2026-09-09
 
 ### Changed

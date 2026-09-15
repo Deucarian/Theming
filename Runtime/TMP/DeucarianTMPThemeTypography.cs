@@ -19,6 +19,7 @@ namespace Deucarian.Theming
 
         public void ApplyStyle(DeucarianThemeStyle style)
         {
+            if (!DeucarianThemeRuntimeResolver.UseVisualStyling) return;
             CacheTarget();
             if (target == null)
             {

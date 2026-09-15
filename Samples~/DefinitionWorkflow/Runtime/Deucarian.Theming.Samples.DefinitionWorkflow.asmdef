@@ -1,0 +1,6 @@
+{
+  "name": "Deucarian.Theming.Samples.DefinitionWorkflow",
+  "references": [
+    "Deucarian.Theming"
+  ]
+}

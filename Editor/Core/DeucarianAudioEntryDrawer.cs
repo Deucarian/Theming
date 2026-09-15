@@ -2,12 +2,25 @@ using Deucarian.Editor;
 using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor
 {
     [CustomPropertyDrawer(typeof(DeucarianAudioEntry))]
     public sealed class DeucarianAudioEntryDrawer : PropertyDrawer
     {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            var root = new VisualElement();
+            foreach (string name in new[] { "role", "cue", "note" })
+                DeucarianEditorInspector.Property(root, property.serializedObject, property.FindPropertyRelative(name).propertyPath);
+            var role = property.FindPropertyRelative("role");
+            var metadata = DeucarianEditorWorkspaceControls.Label(GetRoleMetadata(role), "dw-muted"); root.Add(metadata);
+            root.TrackPropertyValue(role, changed => metadata.text = GetRoleMetadata(changed));
+            return root;
+        }
+
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
             SerializedProperty cueProperty = property.FindPropertyRelative("cue");

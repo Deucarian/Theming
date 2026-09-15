@@ -2,10 +2,13 @@
   <Style src="ReportViewerDemo.uss" />
   <ui:VisualElement class="viewer-root">
     <ui:VisualElement class="viewer-panel">
-      <ui:Label name="viewer-title" class="viewer-title" text="3D Report Viewer" />
-      <ui:Label class="viewer-body" text="Theme this UIDocument with DeucarianUIToolkitThemeApplier." />
-      <ui:Button name="viewer-button" class="viewer-button" text="Open Report" />
-      <ui:Label class="viewer-error" text="No report selected" />
+      <ui:Label name="viewer-title" class="viewer-title" text="Deucarian · UI Toolkit" />
+      <ui:Label class="viewer-body" text="Switch the theme. Background, surface, text and button roles update together." />
+      <ui:VisualElement class="actions">
+        <ui:Button name="light" class="viewer-button" text="Light theme" />
+        <ui:Button name="dark" class="viewer-button" text="Dark theme" />
+      </ui:VisualElement>
+      <ui:Label class="viewer-body" text="Select Theme demo in the Hierarchy to inspect the provider, UIDocument and role bindings." />
     </ui:VisualElement>
   </ui:VisualElement>
 </ui:UXML>

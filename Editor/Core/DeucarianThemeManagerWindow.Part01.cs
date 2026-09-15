@@ -65,6 +65,8 @@ namespace Deucarian.Theming.Editor
 
         private void OnDisable()
         {
+            featureGate?.Dispose();
+            featureGate = null;
             navigation?.Dispose();
             navigation = null;
             EditorApplication.projectChanged -= HandleProjectChanged;
@@ -80,34 +82,49 @@ namespace Deucarian.Theming.Editor
         internal void CreateGUI()
         {
             navigation?.Dispose();
-            navigation = new DeucarianEditorPageSession(this, DeucarianToolIds.ThemeManager, BuildPage);
+            navigation = new DeucarianEditorPageSession(this, DeucarianToolIds.ThemeManager, BuildPage, ActivatePage);
         }
 
         internal static IDeucarianEditorPage CreatePage()
         {
             DeucarianThemeManagerStartupGuard.MarkExplicitOpen();
             return DeucarianEditorWindowPages.Create<DeucarianThemeManagerWindow>(
-                (window, root) => window.BuildPage(root), update: window => window.UpdateWorkbenchToolbar());
+                (window, root) => window.BuildPage(root), activate: (window, route) => window.ActivatePage(route),
+                update: window => window.UpdateWorkbenchToolbar());
+        }
+
+        private void ActivatePage(string route)
+        {
+            if (route != DeucarianThemeProjectNavigation.ProjectPaletteRoute) return;
+            var settings = new DeucarianThemingProjectSettingsStore().Read();
+            if (!DeucarianThemeProjectNavigation.TrySelectProjectPalette(settings, composer.IsDirty)) return;
+            paletteCategory = 0;
+            toolbarView?.SetCategory(paletteCategory);
+            NavigateToTheme();
         }
 
         private DeucarianEditorPageSession navigation;
+        private DeucarianThemingEditorFeatureGate featureGate;
         private VisualElement pageRoot;
         private VisualElement PageRoot => pageRoot ?? rootVisualElement;
 
         private void BuildPage(VisualElement root)
         {
+            featureGate?.Dispose();
             pageRoot = root;
             workspace?.Dispose();
             PageRoot.Clear();
             workspace = new DeucarianEditorWorkspace(PageRoot, Application.productName, true);
-            workspace.Title.text = "Theme Manager";
-            workspace.Subtitle.text = "Preview a theme. Apply it when you’re ready.";
+            workspace.Title.text = "Visual palettes";
+            workspace.Subtitle.text = "Edit and preview the visual palettes used by your app.";
             DeucarianEditorWorkspaceNavigation.Populate(workspace, DeucarianToolIds.ThemeManager);
             DeucarianEditorWorkspaceControls.Show(workspace.Scope, false);
             BuildWorkbenchToolbar();
             workspaceContent = new ThemeWorkspaceContent(this, workspace);
             BuildDeveloperToolsDrawer();
-            BuildWorkbenchFooter();
+            DeucarianEditorWorkspaceControls.Show(workspace.Footer, false);
+            featureGate = DeucarianThemingEditorFeatureGate.Wrap(workspace, false,
+                () => DeucarianThemeManagerWorkflow.ClearPreview());
             UpdateWorkbenchToolbar();
         }
 
@@ -147,7 +164,9 @@ namespace Deucarian.Theming.Editor
         {
             toolbarView = workspace == null ? null : new DeucarianThemeManagerToolbar(
                 workspace, NavigateToTheme, NavigateToStyleComposer, NavigateToRuntimeSettings,
-                ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction);
+                ExecuteToolbarSecondaryAction, DiscardAllChanges, ExecuteToolbarPrimaryAction,
+                value => { paletteCategory = value; NavigateToTheme(); });
+            toolbarView?.SetCategory(paletteCategory);
         }
 
         private void UpdateWorkbenchToolbar()
@@ -198,10 +217,10 @@ namespace Deucarian.Theming.Editor
                     break;
                 default:
                     toolbarView.HideSecondary();
-                    if (status.IsActive) toolbarView.ShowActive();
+                    if (status.IsActive && !(selection.ResolvedPalette != null && EditorUtility.IsDirty(selection.ResolvedPalette))) toolbarView.ShowActive();
                     else
                     {
-                        bool canActivate = status.CanActivate && !isPlaying;
+                        bool canActivate = (status.CanActivate || status.IsActive) && !isPlaying;
                         toolbarView.SetPrimary("Activate", canActivate, canActivate
                             ? "Activate the staged family, mode, and visual style."
                             : isPlaying ? "Exit Play Mode before activating a theme." : status.Message);
@@ -211,6 +230,7 @@ namespace Deucarian.Theming.Editor
 
             UpdateWorkbenchFooter();
             workspaceContent?.Refresh();
+            featureGate?.Refresh();
         }
     }
 }

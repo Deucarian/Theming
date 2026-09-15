@@ -35,9 +35,9 @@ namespace Deucarian.Theming.Editor.Tests
                     for (int i = 0; i < 4; i++) yield return null;
                     var root = window.rootVisualElement;
                     var intensity = root.Q<Toggle>("audio-use-intensity");
-                    var value = root.Q<FloatField>("audio-intensity");
-                    var sections = root.Q("workspace-details").Query<Foldout>().ToList();
-                    Assert.That(sections.Count, Is.EqualTo(3));
+                    var value = root.Q<Slider>("audio-intensity");
+                    var sections = root.Q("workspace-details").Query<Foldout>(className: "dw-foldout").ToList();
+                    Assert.That(sections.ConvertAll(section => section.text), Is.EquivalentTo(new[] { "Variation", "More options", "Press intensity", "Test pad" }));
                     foreach (var section in sections) section.value = true;
                     intensity.value = true;
                     value.value = 0.73f;
@@ -61,7 +61,7 @@ namespace Deucarian.Theming.Editor.Tests
                         for (int i = 0; i < 3; i++) yield return null;
                         session.Navigate(DeucarianEditorWorkspaceNavigation.AudioToolId);
                         Assert.That(root.Q<Toggle>("audio-use-intensity"), Is.SameAs(intensity));
-                        Assert.That(root.Q<FloatField>("audio-intensity"), Is.SameAs(value));
+                        Assert.That(root.Q<Slider>("audio-intensity"), Is.SameAs(value));
                         Assert.That(intensity.value, Is.True);
                         Assert.That(value.value, Is.EqualTo(0.73f));
                         foreach (var section in sections) Assert.That(section.value, Is.True);

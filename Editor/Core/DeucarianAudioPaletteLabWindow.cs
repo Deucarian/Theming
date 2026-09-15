@@ -121,6 +121,12 @@ namespace Deucarian.Theming.Editor
 
         private void Play(DeucarianAudioCue cue, bool processed = true)
         {
+            if (!DeucarianThemeRuntimeResolver.UseAudio)
+            {
+                StopPreview();
+                feedback = "Audio is off in Project setup.";
+                return;
+            }
             previewSequence++;
             if (!cue.TrySelectVariant(
                     previewSequence,
@@ -162,7 +168,7 @@ namespace Deucarian.Theming.Editor
             selectedRole = role;
             lastClip = null;
             previousVariant = -1;
-            feedback = role != null ? $"Selected {role.DisplayName}." : "No role selected.";
+            feedback = string.Empty;
         }
 
         private void HandlePaletteSetChanged(DeucarianAudioPaletteSet set)
@@ -197,8 +203,7 @@ namespace Deucarian.Theming.Editor
             }
             if (paletteSet == null)
             {
-                string[] guids = AssetDatabase.FindAssets("t:DeucarianAudioPaletteSet", new[] { "Assets" });
-                if (guids.Length == 1) paletteSet = AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(AssetDatabase.GUIDToAssetPath(guids[0]));
+                paletteSet = DeucarianThemeRuntimeResolver.LoadSettings()?.DefaultAudioPaletteSet ?? DeucarianAudioDefaults.LoadPaletteSet();
             }
         }
 

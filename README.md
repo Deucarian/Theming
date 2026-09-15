@@ -1,6 +1,101 @@
 # Deucarian Theming
 
+## Asset selection and project defaults
+
+Theming and Audio Palette Lab start from the configured project theme/audio or the bundled Deucarian defaults. Package assets are read-only. Customize creates a project-owned copy, including editable palettes, modes and style profiles; shared roles, fonts and audio clips stay referenced. Choosing a draft in a lab does not implicitly apply it to runtime. Project setup remains the explicit place to select project defaults.
+
+## Typed definition workflow
+
+The role selects reusable audio defaults. Change its clip in Audio Definitions; callers keep the same key.
+
+Start with the [Definition Workflow walkthrough](Documentation~/DefinitionWorkflow.md).
+Import **Definition Workflow** in Package Manager for a configured sample scene
+and short caller scripts. Definitions can be edited as assets or editable C# declarations; generated keys
+work in code and Inspector dropdowns.
+
+
+For simple calls and setup, see [Simple usage](Documentation~/SimpleUsage.md).
+
+## Included defaults and playable examples
+
+Installing Theming includes **Deucarian Default**: light/dark visual palettes,
+the default visual style and Inter typography, plus the semantic audio palette
+set for Default, XR, WebGL, Desktop and Mobile. No sample import is required.
+An unconfigured project resolves these bundled defaults; explicit project,
+provider and component choices still take precedence. Disabled visual/audio
+features stay disabled. Package assets are read-only starting points: create
+project copies with Theme Manager before customizing them.
+
+Use `DeucarianVisualDefaults.LoadFamily()` / `LoadTheme(mode)` and
+`DeucarianAudioDefaults.LoadPaletteSet()` when an explicit default reference is
+needed. These helpers do not create project assets or wire application controls.
+
+Import **Basic Theming Demo**, **UI Toolkit Theming Demo** or **Audio Palette Demo**
+from the Package Installer/Unity Package Manager Samples section. Each includes
+a runnable scene, visible controls and serialized references you can inspect.
+The uGUI examples use the built-in input module; in an Input-System-only project,
+replace the Event System's module with `InputSystemUIInputModule`.
+
+## Generated keys in code and the Inspector
+
+Project custom audio role definitions generate named, typed C# keys automatically. A `.g.cs` file is generated C# that Unity compiles normally. The generator runs in the editor; the player uses the compiled key code.
+
+1. Create or edit a `DeucarianAudioRole` under your project's `Assets` folder using the existing authoring workflow. Keep its stable ID unique and give it a display name, for example `Confirm`.
+2. Let Unity finish importing and compiling. The editor produces `Assets/DeucarianGeneratedKeys/AudioRoleKey/ProjectAudioRoles.g.cs` and its generated assembly definition.
+3. Configure the runtime owner once, then use the generated key in code or select the same definition from a serialized field dropdown.
+
+Add and configure a ThemeAudioHost once, enable project audio and provide a playable cue through the role or palette. Built-in roles remain available through AudioRoles; this generator projects custom project roles.
+
+After creating the `Confirm` definition, a caller can use:
+
+```csharp
+using Deucarian.Theming;
+using Deucarian.Generated;
+using UnityEngine;
+
+public sealed class GeneratedKeyExample : MonoBehaviour
+{
+    [SerializeField] private AudioRoleKey definition = ProjectAudioRoles.Confirm;
+
+    public void Play() => ThemeAudio.Play(definition);
+}
+```
+
+The `definition` field exposes existing `AudioRoleKey` choices in the Inspector. A direct code call uses the same typed value:
+
+```csharp
+ThemeAudio.Play(ProjectAudioRoles.Confirm);
+```
+
+The caller retains a typed identity, without a reference to the definition asset. Misspelled generated members and keys from another domain fail compilation. A valid key does not configure a scene or add the definition to its runtime catalog; follow [Simple usage](Documentation~/SimpleUsage.md) for scope setup.
+
+**Updating definitions:** edit the source asset. Changing its display name changes the generated member after regeneration, so update old code references. Existing serialized selections retain their stable ID. Deleting a definition removes its member and marks serialized selections as missing. Duplicate IDs or generated names must be corrected at the source. Renaming only the asset file leaves its display name and ID unchanged.
+
+**Assemblies and source control:** callers with their own asmdef reference `Deucarian.GeneratedKeys.AudioRoleKey` in addition to the package assemblies they use; `Assembly-CSharp` sees it automatically. Commit source assets, generated `.g.cs`, generated `.asmdef` files and their `.meta` files together. Edit source definitions instead of generated files.
+
+**If a key is missing or stale:** reimport a source definition and let Unity finish compilation. Check that the asset is under `Assets`, its name/ID are valid and automatic generation has not been disabled by a test harness. Inspector and build validation report missing selections and stale generated output. Custom bundle/content pipelines should invoke the shared validator for their additional content.
+
+[Shared generation, serialization and build-validation guide](https://github.com/Deucarian/Editor/blob/develop/Documentation~/TypedKeys.md).
+
+## Choose what your app uses
+
+Open **Theming > Project setup** in the Control Center. Theming includes both visual styling and audio; either can be enabled independently. This does not change the Control Center's appearance.
+
+- **Visual styling off:** package visual adapters do not apply Deucarian palettes. Notification rows restore their authored colors/typography and XR theme bridges release their scoped outputs. Other existing adapters do not universally restore previously applied values: change project adoption before entering Play Mode when using those adapters.
+- **Audio on:** themed players use their explicit overrides/providers first, then the project's audio palette set and experience. Apps can keep their own visuals while using semantic button, keyboard and warning sounds.
+- **Audio off:** themed players reject new cues, including direct overrides, and stop their active voices. This does not mute unrelated application audio.
+- **Connected in this app:** checks reflect loaded button adapters or successful cue observations in loaded scenes, not the existence of palette assets. Hover a connection for its evidence; run the app and exercise dynamic integrations to verify them.
+
+Opening this page creates nothing. An explicit edit saves the unique `DeucarianThemeRuntimeSettings` Resources asset, with Undo support. Existing projects remain enabled until they choose otherwise; absent settings preserve component-owned configuration. Editing is disabled during Play Mode or when duplicate settings assets need resolving. Switching a feature off keeps its configuration and assets, and the palette editors show an Off state with a route back to Project setup. Editing and audition are disabled until the feature is enabled. These switches do not install/uninstall packages or automatically wire application controls.
+
+The **Open Audio Palette Lab** action stays in the current window and selects the saved palette set. Keyboard and warning integrations can be observed through each player's `RolePlayed` event and `PlayedRoleIds` history; failed or intentionally silent playback is not reported as successful audio.
+
 ## In-window navigation
+
+Simultria projects can create reusable **Design & Sales** (purple/pink) or
+**Realisation & Progress** (green) families from Project setup's Visual styling
+section. [Preset provenance and XR compatibility](Documentation~/SIMULTRIA_PALETTES.md)
+explain how authored colors are preserved. Existing copies are never silently overwritten.
 
 The left sidebar changes pages in the current window, keeping each page's draft and session alive. Right-click a sidebar item and choose **Open in new window** for an independent workspace. Closing a workspace releases its pages; ordinary page changes do not reset lab messages or stop package operations.
 
@@ -25,7 +120,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.4.4`.
+Current package version: `1.12.0` (requires Editor `1.13.0`).
 
 ## When to use it
 
@@ -476,3 +571,7 @@ git diff --check
 ## License
 
 See [LICENSE.md](LICENSE.md).
+
+## Foreground palette contrast
+
+`DeucarianForegroundPalette.FromTheme(theme, normalSurface, normalText)` derives contrast candidates from existing colours and honours optional `DeucarianControlColorRoleIds.ForegroundDark` / `ForegroundLight` roles in the same palette. Add a Color Role with either ID and an entry in the existing palette to override that candidate. With no override, edits to the normal surface/text colours continue to flow through. `DeucarianForegroundContrast.Resolve(preferred, surface, palette)` preserves a sufficiently contrasting authored foreground, otherwise chooses the better exact candidate. It never invents black or white. The requested ratio is a preference: limited palettes may not contain a colour meeting it. The older overload remains available for callers that explicitly want black/white fallback.

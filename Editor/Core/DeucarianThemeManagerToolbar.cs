@@ -13,13 +13,13 @@ namespace Deucarian.Theming.Editor
 
         internal DeucarianThemeManagerToolbar(DeucarianEditorWorkspace workspace,
             Action navigateToTheme, Action navigateToStyleComposer, Action navigateToRuntimeSettings,
-            Action executeSecondary, Action discardAllChanges, Action executePrimary)
+            Action executeSecondary, Action discardAllChanges, Action executePrimary, Action<int> changeCategory = null)
         {
-            tabs = new DeucarianEditorChoiceBar(new[] { "Theme", "Style Composer", "Project setup" }, 0, true);
-            tabs.Changed += value => { if (value == 0) navigateToTheme(); else if (value == 1) navigateToStyleComposer(); else navigateToRuntimeSettings(); };
-            tabs.ElementAt(0).name = "deucarian-theme-manager-view-theme";
-            tabs.ElementAt(1).name = "deucarian-theme-manager-view-style";
-            tabs.ElementAt(2).name = "deucarian-theme-manager-view-runtime-settings";
+            tabs = new DeucarianEditorChoiceBar(new[] { "Colors", "Typography", "Shapes" }, 0, true);
+            tabs.Changed += value => changeCategory?.Invoke(value);
+            tabs.ElementAt(0).name = "deucarian-theme-manager-view-colors";
+            tabs.ElementAt(1).name = "deucarian-theme-manager-view-typography";
+            tabs.ElementAt(2).name = "deucarian-theme-manager-view-shapes";
             workspace.Tabs.Add(tabs);
             secondary = DeucarianEditorWorkspaceControls.Button("More", executeSecondary);
             secondary.name = "deucarian-theme-manager-toolbar-secondary";
@@ -27,16 +27,16 @@ namespace Deucarian.Theming.Editor
             discard.name = "deucarian-theme-manager-discard-changes";
             primary = DeucarianEditorWorkspaceControls.Button("Apply to project", executePrimary, true);
             primary.name = "deucarian-theme-manager-toolbar-primary";
-            workspace.PageActions.Add(secondary);
-            workspace.PageActions.Add(discard);
-            workspace.PageActions.Add(primary);
+            var actions = DeucarianEditorWorkspaceControls.EndActions(secondary, discard, primary);
+            actions.name = "theme-apply-actions";
+            workspace.Content.Add(actions);
         }
 
         internal void SetSelection(bool theme, bool composer, bool runtimeSettings, bool styleAvailable)
         {
-            tabs.SetValueWithoutNotify(composer ? 1 : runtimeSettings ? 2 : 0);
-            tabs.SetChoiceEnabled(1, styleAvailable, styleAvailable ? "Compose selected style" : "Choose a visual style first.");
+            DeucarianEditorWorkspaceControls.Show(tabs, theme);
         }
+        internal void SetCategory(int category) => tabs.SetValueWithoutNotify(Math.Max(0, Math.Min(2, category)));
         internal void SetSecondary(string text, bool enabled, string tooltip)
         {
             DeucarianEditorWorkspaceControls.Show(secondary, true);

@@ -1,146 +1,64 @@
-using Deucarian.Editor;
-using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor
 {
     [CustomEditor(typeof(DeucarianAudioRole))]
     public sealed class DeucarianAudioRoleEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianAudioRole role = (DeucarianAudioRole)target;
-            string warning = role.GetValidationWarning();
-            DeucarianEditorStatusPanel.DrawValidationCard(
-                "Audio role validation",
-                string.IsNullOrEmpty(warning)
-                    ? new List<string>()
-                    : new List<string> { warning },
-                string.IsNullOrEmpty(warning)
-                    ? DeucarianEditorStatus.Success
-                    : DeucarianEditorStatus.Warning);
+            var role = (DeucarianAudioRole)target;
+            var view = new DeucarianThemingInspectorView("Audio role", serializedObject);
+            view.Properties();
+            view.OnRefresh(() => view.Warn(role.GetValidationWarning()));
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianAudioRoleLibrary))]
     public sealed class DeucarianAudioRoleLibraryEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianAudioRoleLibrary library = (DeucarianAudioRoleLibrary)target;
-            List<string> warnings = library.GetValidationWarnings();
-            DeucarianEditorStatusPanel.DrawValidationCard(
-                "Audio role library validation",
-                warnings,
-                warnings.Count == 0
-                    ? DeucarianEditorStatus.Success
-                    : DeucarianEditorStatus.Warning);
-
-            EditorGUILayout.Space();
-            if (DeucarianEditorActionGUI.Button("Remove Null Roles"))
-            {
-                Undo.RecordObject(library, "Remove Null Audio Roles");
-                library.RemoveNullRoles();
-                EditorUtility.SetDirty(library);
-            }
-
-            if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
-            {
-                Undo.RecordObject(library, "Sort Audio Roles");
-                library.SortRolesByCategoryAndName();
-                EditorUtility.SetDirty(library);
-            }
+            var library = (DeucarianAudioRoleLibrary)target;
+            var view = new DeucarianThemingInspectorView("Audio role library", serializedObject);
+            view.Properties();
+            view.OnRefresh(() => view.Warnings(library.GetValidationWarnings()));
+            view.Action("Remove empty roles", () => library.RemoveNullRoles(), undo: "Remove Null Audio Roles");
+            view.Action("Sort roles", library.SortRolesByCategoryAndName, undo: "Sort Audio Roles");
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianAudioPaletteSet))]
     public sealed class DeucarianAudioPaletteSetEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianAudioPaletteSet set = (DeucarianAudioPaletteSet)target;
-            DeucarianEditorStatusPanel.DrawValidationCard(
-                "Audio profile validation",
-                set.GetValidationWarnings(),
-                set.GetValidationWarnings().Count == 0
-                    ? DeucarianEditorStatus.Success
-                    : DeucarianEditorStatus.Warning);
-
-            if (DeucarianEditorActionGUI.Button("Open Audio Palette Lab"))
-            {
-                DeucarianAudioPaletteLabWindow.Open(set);
-            }
+            var set = (DeucarianAudioPaletteSet)target;
+            var view = new DeucarianThemingInspectorView("Audio palette set", serializedObject);
+            view.Properties();
+            view.OnRefresh(() => view.Warnings(set.GetValidationWarnings()));
+            view.Action("Open audio palettes", () => DeucarianAudioPaletteLabWindow.Open(set));
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianAudioPalette))]
     public sealed class DeucarianAudioPaletteEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianAudioPalette palette = (DeucarianAudioPalette)target;
-            List<string> warnings = palette.GetValidationWarnings();
-            for (int i = 0; i < warnings.Count; i++)
-            {
-                DeucarianEditorTextGUI.HelpBox(warnings[i], MessageType.Warning);
-            }
-
-            EditorGUILayout.Space();
-            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null))
-            {
-                if (DeucarianEditorActionGUI.Button("Add Missing Roles From Library"))
-                {
-                    Undo.RecordObject(palette, "Add Missing Audio Roles");
-                    palette.AddMissingRolesFromLibrary();
-                    EditorUtility.SetDirty(palette);
-                }
-            }
-
-            if (DeucarianEditorActionGUI.Button("Remove Null Entries"))
-            {
-                Undo.RecordObject(palette, "Remove Null Audio Entries");
-                palette.RemoveNullEntries();
-                EditorUtility.SetDirty(palette);
-            }
-
-            using (new EditorGUI.DisabledScope(false))
-            {
-                if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
-                {
-                    Undo.RecordObject(palette, "Sort Audio Palette Entries");
-                    palette.SortEntriesByCategoryAndName();
-                    EditorUtility.SetDirty(palette);
-                }
-            }
+            var palette = (DeucarianAudioPalette)target;
+            var view = new DeucarianThemingInspectorView("Audio palette", serializedObject);
+            view.Properties();
+            view.OnRefresh(() => view.Warnings(palette.GetValidationWarnings()));
+            view.Action("Add missing roles", () => palette.AddMissingRolesFromLibrary(),
+                () => palette.RoleLibrary != null, "Add Missing Audio Roles");
+            view.Action("Remove empty entries", () => palette.RemoveNullEntries(), undo: "Remove Null Audio Entries");
+            view.Action("Sort entries", palette.SortEntriesByCategoryAndName, undo: "Sort Audio Palette Entries");
+            return view.Build();
         }
     }
 }

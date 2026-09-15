@@ -1,159 +1,74 @@
 using System.Collections.Generic;
 using Deucarian.Editor;
-using Deucarian.Theming;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Deucarian.Theming.Editor
 {
     [CustomEditor(typeof(DeucarianColorRole))]
     public sealed class DeucarianColorRoleEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianColorRole role = (DeucarianColorRole)target;
-            string warning = role.GetValidationWarning();
-            if (!string.IsNullOrEmpty(warning))
-            {
-                DeucarianEditorTextGUI.HelpBox(warning, MessageType.Warning);
-            }
+            var role = (DeucarianColorRole)target;
+            var view = new DeucarianThemingInspectorView("Color role", serializedObject);
+            view.Properties(); view.OnRefresh(() => view.Warn(role.GetValidationWarning()));
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianColorRoleLibrary))]
     public sealed class DeucarianColorRoleLibraryEditor : UnityEditor.Editor
     {
-        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        private readonly DeucarianThemingInspectorListFilterState rolesFilter = new DeucarianThemingInspectorListFilterState();
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, "roles");
-            DeucarianThemingInspectorListFilter.Draw(
-                serializedObject.FindProperty("roles"),
-                DeucarianThemingInspectorListKind.ColorRoleLibraryRoles,
-                rolesFilter,
-                "Search roles");
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianColorRoleLibrary library = (DeucarianColorRoleLibrary)target;
-            DrawDuplicateRoleIds(library);
-            DrawWarnings(library.GetValidationWarnings());
-
-            EditorGUILayout.Space();
-            if (DeucarianEditorActionGUI.Button("Remove Null Roles"))
+            var library = (DeucarianColorRoleLibrary)target;
+            var view = new DeucarianThemingInspectorView("Color role library", serializedObject);
+            view.Properties("roles");
+            var list = new DeucarianThemingInspectorList(serializedObject, "roles",
+                DeucarianThemingInspectorListKind.ColorRoleLibraryRoles, rolesFilter, "Search roles", view.Refresh);
+            view.Fields.Add(list.Root);
+            view.OnRefresh(() =>
             {
-                Undo.RecordObject(library, "Remove Null Color Roles");
-                library.RemoveNullRoles();
-                EditorUtility.SetDirty(library);
-            }
-
-            using (new EditorGUI.DisabledScope(rolesFilter.IsFiltering))
-            {
-                if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
-                {
-                    Undo.RecordObject(library, "Sort Color Roles");
-                    library.SortRolesByCategoryAndName();
-                    EditorUtility.SetDirty(library);
-                }
-            }
-        }
-
-        private static void DrawDuplicateRoleIds(DeucarianColorRoleLibrary library)
-        {
-            List<string> duplicateIds = library.GetDuplicateRoleIds();
-            if (duplicateIds.Count == 0)
-            {
-                return;
-            }
-
-            DeucarianEditorTextGUI.HelpBox("Duplicate role IDs:\n" + string.Join("\n", duplicateIds), MessageType.Error);
-        }
-
-        private static void DrawWarnings(List<string> warnings)
-        {
-            for (int i = 0; i < warnings.Count; i++)
-            {
-                DeucarianEditorTextGUI.HelpBox(warnings[i], MessageType.Warning);
-            }
+                list.Refresh();
+                var duplicateIds = library.GetDuplicateRoleIds();
+                if (duplicateIds.Count > 0) view.Warn("Duplicate role IDs:\n" + string.Join("\n", duplicateIds), HelpBoxMessageType.Error);
+                view.Warnings(library.GetValidationWarnings());
+            });
+            view.Action("Remove empty roles", () => library.RemoveNullRoles(), undo: "Remove Null Color Roles");
+            view.Action("Sort roles", library.SortRolesByCategoryAndName, () => !rolesFilter.IsFiltering, "Sort Color Roles");
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianColorPalette))]
     public sealed class DeucarianColorPaletteEditor : UnityEditor.Editor
     {
-        private readonly DeucarianThemingInspectorListFilterState entriesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        private readonly DeucarianThemingInspectorListFilterState entriesFilter = new DeucarianThemingInspectorListFilterState();
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, "entries");
-            DeucarianThemingInspectorListFilter.Draw(
-                serializedObject.FindProperty("entries"),
-                DeucarianThemingInspectorListKind.ColorPaletteEntries,
-                entriesFilter,
-                "Search palette entries");
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianColorPalette palette = (DeucarianColorPalette)target;
-            DrawWarnings(palette.GetValidationWarnings());
-
-            EditorGUILayout.Space();
-            using (new EditorGUI.DisabledScope(palette.RoleLibrary == null || entriesFilter.IsFiltering))
+            var palette = (DeucarianColorPalette)target;
+            var view = new DeucarianThemingInspectorView("Color palette", serializedObject);
+            view.Properties("entries");
+            var list = new DeucarianThemingInspectorList(serializedObject, "entries",
+                DeucarianThemingInspectorListKind.ColorPaletteEntries, entriesFilter, "Search entries", view.Refresh);
+            view.Fields.Add(list.Root);
+            view.OnRefresh(() => { list.Refresh(); view.Warnings(palette.GetValidationWarnings()); });
+            view.Action("Add missing roles", () =>
             {
-                if (DeucarianEditorActionGUI.Button("Add Missing Roles From Library"))
-                {
-                    Undo.RecordObject(palette, "Add Missing Palette Roles");
-                    int added = palette.AddMissingRolesFromLibrary();
-                    EditorUtility.SetDirty(palette);
-                    ThemingLog.Editor.Info($"Added {added} missing role entries to {palette.name}.", palette);
-                }
-            }
-
-            if (DeucarianEditorActionGUI.Button("Remove Null Entries"))
+                int added = palette.AddMissingRolesFromLibrary();
+                ThemingLog.Editor.Info($"Added {added} missing role entries to {palette.name}.", palette);
+            }, () => palette.RoleLibrary != null && !entriesFilter.IsFiltering, "Add Missing Palette Roles");
+            view.Action("Remove empty entries", () =>
             {
-                Undo.RecordObject(palette, "Remove Null Palette Entries");
                 int removed = palette.RemoveNullEntries();
-                EditorUtility.SetDirty(palette);
                 ThemingLog.Editor.Info($"Removed {removed} null entries from {palette.name}.", palette);
-            }
-
-            using (new EditorGUI.DisabledScope(entriesFilter.IsFiltering))
-            {
-                if (DeucarianEditorActionGUI.Button("Sort By Category Then Display Name"))
-                {
-                    Undo.RecordObject(palette, "Sort Palette Entries");
-                    palette.SortEntriesByCategoryAndName();
-                    EditorUtility.SetDirty(palette);
-                }
-            }
-
-            using (new EditorGUI.DisabledScope(palette.Entries.Count == 0))
-            {
-                if (DeucarianEditorActionGUI.Button("Reset Entry To Role Default"))
-                {
-                    ShowResetEntryMenu(palette);
-                }
-            }
+            }, undo: "Remove Null Palette Entries");
+            view.Action("Sort entries", palette.SortEntriesByCategoryAndName, () => !entriesFilter.IsFiltering, "Sort Palette Entries");
+            view.Action("Reset entry to role default", () => ShowResetEntryMenu(palette), () => palette.Entries.Count > 0);
+            return view.Build();
         }
 
         private static void ShowResetEntryMenu(DeucarianColorPalette palette)
@@ -172,218 +87,117 @@ namespace Deucarian.Theming.Editor
                     continue;
                 }
 
-                int entryIndex = i;
                 string label = $"{role.Category}/{role.DisplayName} ({role.Id})";
-                menu.AddItem(new GUIContent(label), false, () =>
-                {
-                    Undo.RecordObject(palette, "Reset Palette Entry To Role Default");
-                    palette.ResetEntryToRoleDefault(entryIndex);
-                    EditorUtility.SetDirty(palette);
-                });
+                menu.AddItem(new GUIContent(label), false, () => ResetEntry(palette, entry, role));
             }
 
             menu.ShowAsContext();
         }
 
-        private static void DrawWarnings(List<string> warnings)
+        internal static bool ResetEntry(DeucarianColorPalette palette, DeucarianColorEntry entry, DeucarianColorRole role)
         {
-            for (int i = 0; i < warnings.Count; i++)
+            if (palette == null || entry == null || role == null || entry.Role != role) return false;
+            for (int index = 0; index < palette.Entries.Count; index++)
             {
-                DeucarianEditorTextGUI.HelpBox(warnings[i], MessageType.Warning);
+                if (!ReferenceEquals(palette.Entries[index], entry)) continue;
+                Undo.RecordObject(palette, "Reset Palette Entry To Role Default");
+                palette.ResetEntryToRoleDefault(index);
+                EditorUtility.SetDirty(palette);
+                return true;
             }
+            return false;
         }
+
     }
 
     [CustomEditor(typeof(DeucarianThemePack))]
     [CanEditMultipleObjects]
     public sealed class DeucarianThemePackEditor : UnityEditor.Editor
     {
-        private readonly DeucarianThemingInspectorListFilterState rolesFilter =
-            new DeucarianThemingInspectorListFilterState();
-
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-
-        public override void OnInspectorGUI()
+        private readonly DeucarianThemingInspectorListFilterState rolesFilter = new DeucarianThemingInspectorListFilterState();
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            if (UsesNativeUnfilteredInspector(serializedObject))
-            {
-                DrawDefaultInspector();
-            }
+            var view = new DeucarianThemingInspectorView("Theme pack", serializedObject);
+            if (UsesNativeUnfilteredInspector(serializedObject)) view.Properties();
             else
             {
-                DrawPropertiesExcluding(serializedObject, "roles");
-                DeucarianThemingInspectorListFilter.Draw(
-                    serializedObject.FindProperty("roles"),
-                    DeucarianThemingInspectorListKind.ThemePackRoles,
-                    rolesFilter,
-                    "Search theme pack roles");
+                view.Properties("roles");
+                view.Fields.Add(new DeucarianThemingInspectorList(serializedObject, "roles",
+                    DeucarianThemingInspectorListKind.ThemePackRoles, rolesFilter, "Search roles").Root);
             }
-
-            serializedObject.ApplyModifiedProperties();
+            return view.Build();
         }
-
-        internal static bool UsesNativeUnfilteredInspector(SerializedObject inspectedObject)
-        {
-            return inspectedObject != null && inspectedObject.isEditingMultipleObjects;
-        }
+        internal static bool UsesNativeUnfilteredInspector(SerializedObject inspectedObject) =>
+            inspectedObject != null && inspectedObject.isEditingMultipleObjects;
     }
 
     [CustomEditor(typeof(DeucarianTheme))]
     public sealed class DeucarianThemeEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianTheme theme = (DeucarianTheme)target;
-            if (theme.ColorPalette == null)
-            {
-                DeucarianEditorTextGUI.HelpBox("Theme has no color palette assigned.", MessageType.Warning);
-            }
-
-            using (new EditorGUI.DisabledScope(theme.ColorPalette == null))
-            {
-                if (DeucarianEditorActionGUI.Button("Select Palette"))
-                {
-                    DeucarianEditorSelection.SelectAndPing(theme.ColorPalette);
-                }
-            }
+            var theme = (DeucarianTheme)target;
+            var view = new DeucarianThemingInspectorView("Theme", serializedObject);
+            view.Properties();
+            view.OnRefresh(() => { if (theme.ColorPalette == null) view.Warn("Assign a color palette."); });
+            view.Action("Select palette", () => DeucarianEditorSelection.SelectAndPing(theme.ColorPalette), () => theme.ColorPalette != null);
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeFamily))]
     public sealed class DeucarianThemeFamilyEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            DeucarianThemeFamily family = (DeucarianThemeFamily)target;
-            if (string.IsNullOrWhiteSpace(family.FamilyId))
+            var family = (DeucarianThemeFamily)target;
+            var view = new DeucarianThemingInspectorView("Theme family", serializedObject);
+            view.Properties();
+            view.OnRefresh(() =>
             {
-                DeucarianEditorTextGUI.HelpBox("Theme family has no stable family ID.", MessageType.Warning);
-            }
-
-            if (string.IsNullOrWhiteSpace(family.DisplayName))
+                if (string.IsNullOrWhiteSpace(family.FamilyId)) view.Warn("Assign a stable family ID.");
+                if (string.IsNullOrWhiteSpace(family.DisplayName)) view.Warn("Assign a display name.");
+                if (!family.IsComplete) view.Warn("Author both a light and a dark theme. Runtime falls back to the available variant.", HelpBoxMessageType.Error);
+            });
+            view.Action("Select light theme", () => DeucarianEditorSelection.SelectAndPing(family.LightTheme), () => family.LightTheme != null);
+            view.Action("Select dark theme", () => DeucarianEditorSelection.SelectAndPing(family.DarkTheme), () => family.DarkTheme != null);
+            view.Action("Repair theme family", () =>
             {
-                DeucarianEditorTextGUI.HelpBox("Theme family has no display name.", MessageType.Warning);
-            }
-
-            if (!family.IsComplete)
-            {
-                DeucarianEditorTextGUI.HelpBox(
-                    "Theme families require both a light theme and a dark theme for authoring. Runtime will fall back to the available variant when one is missing.",
-                    MessageType.Error);
-            }
-
-            EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();
-            DrawSelectThemeButton("Select Light Theme", family.LightTheme);
-            DrawSelectThemeButton("Select Dark Theme", family.DarkTheme);
-            EditorGUILayout.EndHorizontal();
-
-            if (DeucarianEditorActionGUI.Button("Repair Theme Family"))
-            {
-                DeucarianDefaultThemeAssets assets = DeucarianDefaultThemeAssetFactory.RepairThemeFamilySetup(family);
+                var assets = DeucarianDefaultThemeAssetFactory.RepairThemeFamilySetup(family);
                 DeucarianThemingEditorSettings.ActiveThemeFamily = assets.ThemeFamily;
-            }
-        }
-
-        private static void DrawSelectThemeButton(string label, DeucarianTheme theme)
-        {
-            using (new EditorGUI.DisabledScope(theme == null))
-            {
-                if (DeucarianEditorActionGUI.Button(label))
-                {
-                    DeucarianEditorSelection.SelectAndPing(theme);
-                }
-            }
+            });
+            return view.Build();
         }
     }
 
     [CustomEditor(typeof(DeucarianThemeProvider))]
     public sealed class DeucarianThemeProviderEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            SerializedProperty standaloneTheme = serializedObject.FindProperty("currentTheme");
-            SerializedProperty familyProperty = serializedObject.FindProperty("currentThemeFamily");
-            DeucarianThemeFamily family = familyProperty != null
-                ? familyProperty.objectReferenceValue as DeucarianThemeFamily
-                : null;
-
-            if (standaloneTheme != null
-                && standaloneTheme.objectReferenceValue != null
-                && family != null)
-            {
-                DeucarianEditorTextGUI.HelpBox(
-                    "A provider cannot author both a standalone theme and a theme family. Use SetTheme or SetThemeFamily to choose one source.",
-                    MessageType.Error);
-            }
-
-            if (family != null && !family.IsComplete)
-            {
-                DeucarianEditorTextGUI.HelpBox(
-                    "The assigned theme family is incomplete. Runtime will fall back to its available variant, but authoring requires both light and dark themes.",
-                    MessageType.Error);
-            }
-        }
+        public override VisualElement CreateInspectorGUI() =>
+            DeucarianThemeSourceInspector.Build("Theme provider", serializedObject, "currentTheme", "currentThemeFamily");
     }
 
     [CustomEditor(typeof(DeucarianThemeRuntimeSettings))]
     public sealed class DeucarianThemeRuntimeSettingsEditor : UnityEditor.Editor
     {
-        public override UnityEngine.UIElements.VisualElement CreateInspectorGUI() =>
-            DeucarianEditorInspector.Create(OnInspectorGUI);
+        public override VisualElement CreateInspectorGUI() =>
+            DeucarianThemeSourceInspector.Build("Runtime theme settings", serializedObject, "defaultTheme", "defaultThemeFamily");
+    }
 
-        public override void OnInspectorGUI()
+    internal static class DeucarianThemeSourceInspector
+    {
+        internal static VisualElement Build(string title, SerializedObject serialized, string themePath, string familyPath)
         {
-            serializedObject.Update();
-            DrawDefaultInspector();
-            serializedObject.ApplyModifiedProperties();
-
-            SerializedProperty standaloneTheme = serializedObject.FindProperty("defaultTheme");
-            SerializedProperty familyProperty = serializedObject.FindProperty("defaultThemeFamily");
-            DeucarianThemeFamily family = familyProperty != null
-                ? familyProperty.objectReferenceValue as DeucarianThemeFamily
-                : null;
-
-            if (standaloneTheme != null
-                && standaloneTheme.objectReferenceValue != null
-                && family != null)
+            var view = new DeucarianThemingInspectorView(title, serialized); view.Properties();
+            view.OnRefresh(() =>
             {
-                DeucarianEditorTextGUI.HelpBox(
-                    "Runtime settings cannot author both a standalone default theme and a default theme family. Configure one source only.",
-                    MessageType.Error);
-            }
-
-            if (family != null && !family.IsComplete)
-            {
-                DeucarianEditorTextGUI.HelpBox(
-                    "The default theme family is incomplete. Runtime will fall back to its available variant, but authoring requires both light and dark themes.",
-                    MessageType.Error);
-            }
+                var family = serialized.FindProperty(familyPath)?.objectReferenceValue as DeucarianThemeFamily;
+                if (serialized.FindProperty(themePath)?.objectReferenceValue != null && family != null)
+                    view.Warn("Choose a standalone theme or a theme family, not both.", HelpBoxMessageType.Error);
+                if (family != null && !family.IsComplete)
+                    view.Warn("The family is incomplete. Author both variants; runtime falls back to the available one.", HelpBoxMessageType.Error);
+            });
+            return view.Build();
         }
     }
 }

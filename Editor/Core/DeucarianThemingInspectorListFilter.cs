@@ -538,7 +538,7 @@ namespace Deucarian.Theming.Editor
             return result;
         }
 
-        private static string GetCategoryDisplayLabel(string category)
+        internal static string GetCategoryDisplayLabel(string category)
         {
             if (string.Equals(category, AllCategories, StringComparison.Ordinal))
             {
