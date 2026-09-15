@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.14.0] - 2026-09-15
+
+- Expose the staged visual selection to editor previews, preserve visual/audio authoring drafts through reload, and flatten the audio palette asset chooser.
+
+
 ## [1.13.0] - 2026-09-15
 
 - Use package-owned hover, click and warning recordings consistently in all bundled experience palettes and role fallbacks. Include source attribution and licenses; keep asset regeneration aligned.

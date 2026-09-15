@@ -12,25 +12,30 @@ namespace Deucarian.Theming.Editor
     /// Immutable staged selection used by the Theme Manager. Creating a selection never changes
     /// theme assets or scene providers.
     /// </summary>
-    internal readonly struct DeucarianThemeManagerSelection
+    [Serializable]
+    internal struct DeucarianThemeManagerSelection
     {
+        [SerializeField] private DeucarianThemeFamily family;
+        [SerializeField] private DeucarianThemeMode mode;
+        [SerializeField] private DeucarianThemeStyle style;
+
         public DeucarianThemeManagerSelection(
             DeucarianThemeFamily family,
             DeucarianThemeMode mode,
             DeucarianThemeStyle style)
         {
-            Family = family;
-            Mode = mode == DeucarianThemeMode.Light
+            this.family = family;
+            this.mode = mode == DeucarianThemeMode.Light
                 ? DeucarianThemeMode.Light
                 : DeucarianThemeMode.Dark;
-            Style = style;
+            this.style = style;
         }
 
-        public DeucarianThemeFamily Family { get; }
+        public DeucarianThemeFamily Family => family;
 
-        public DeucarianThemeMode Mode { get; }
+        public DeucarianThemeMode Mode => mode;
 
-        public DeucarianThemeStyle Style { get; }
+        public DeucarianThemeStyle Style => style;
 
         public DeucarianTheme ResolvedTheme => Family != null ? Family.ResolveTheme(Mode) : null;
 
