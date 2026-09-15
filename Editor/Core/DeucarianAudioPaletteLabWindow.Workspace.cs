@@ -38,17 +38,20 @@ namespace Deucarian.Theming.Editor
                 var definitionRoot = Ui.Region("audio-definitions", "dw-content");
                 view.Workspace.Content.Add(definitionRoot);
                 definitions = new Deucarian.Editor.Definitions.DeucarianDefinitionPanel(definitionRoot,
-                    new Definitions.AudioRoleDefinitionSchema(), asset => owner.Play(((DeucarianAudioRole)asset).DefaultCue));
+                    new Definitions.AudioRoleDefinitionSchema(), asset => owner.Play(((DeucarianAudioRole)asset).DefaultCue), owner.definitionState);
                 Ui.Show(definitionRoot, false);
-                var mode = new DeucarianEditorChoiceBar(new[] { "Palettes", "Definitions" }, 0, true);
-                mode.Changed += value =>
+                var mode = new DeucarianEditorChoiceBar(new[] { "Palettes", "Definitions" }, owner.selectedTab, true);
+                Action<int> selectMode = value =>
                 {
+                    owner.selectedTab = value;
                     owner.StopPreview();
                     Ui.Show(view.Collection, value == 0);
                     Ui.Show(view.Workspace.Scope, value == 0);
                     Ui.Show(categories, value == 0);
                     Ui.Show(definitionRoot, value == 1);
                 };
+                mode.Changed += selectMode;
+                selectMode(owner.selectedTab);
                 view.Workspace.Tabs.Insert(0, mode);
                 context = new DeucarianEditorWorkspaceForm(view.Workspace.Scope);
                 context.AssetWithActions("audio-palette-set", "Palette set", typeof(DeucarianAudioPaletteSet), () => owner.paletteSet,
@@ -184,7 +187,9 @@ namespace Deucarian.Theming.Editor
                 foreach (string guid in guids)
                 {
                     string path = AssetDatabase.GUIDToAssetPath(guid);
-                    menu.AddItem(new GUIContent(path), false, () => { owner.HandlePaletteSetChanged(AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(path)); Refresh(); });
+                    var asset = AssetDatabase.LoadAssetAtPath<DeucarianAudioPaletteSet>(path);
+                    menu.AddItem(new GUIContent(DeucarianEditorAssetMenu.Path(path, asset != null ? asset.name : System.IO.Path.GetFileNameWithoutExtension(path))),
+                        owner.paletteSet == asset, () => { owner.HandlePaletteSetChanged(asset); Refresh(); });
                 }
                 if (guids.Length == 0) menu.AddDisabledItem(new GUIContent("No project palettes"));
                 menu.ShowAsContext();

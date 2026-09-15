@@ -4,6 +4,8 @@
 
 Theming and Audio Palette Lab start from the configured project theme/audio or the bundled Deucarian defaults. Package assets are read-only. Customize creates a project-owned copy, including editable palettes, modes and style profiles; shared roles, fonts and audio clips stay referenced. Choosing a draft in a lab does not implicitly apply it to runtime. Project setup remains the explicit place to select project defaults.
 
+Visual palettes and Audio palettes retain their tab, selection, composer choices and definition inputs through script reloads. Palette edits remain Unity assets with Undo; reload recovery never silently saves or activates them. Package sandbox previews can read `DeucarianEditorThemePreview.Capture()` to follow the selected Light/Dark mode and unsaved composer style, with `IsDraft` identifying a selection that differs from the project default.
+
 ## Typed definition workflow
 
 The role selects reusable audio defaults. Change its clip in Audio Definitions; callers keep the same key.
@@ -120,7 +122,7 @@ You do **not** need to manually create:
 
 The package can create and maintain those automatically.
 
-Current package version: `1.13.0` (requires Editor `1.13.0`).
+Current package version: `1.14.0` (requires Editor `1.15.0`).
 
 ## When to use it
 

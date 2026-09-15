@@ -59,8 +59,10 @@ namespace Deucarian.Theming.Editor
             EditorApplication.projectChanged += HandleProjectChanged;
             DeucarianThemingMenuActions.TryHydrateActiveAssetsFromProjectDefault();
             RefreshAssets();
-            CaptureBaseline(!composer.HasDraft);
-            DeucarianThemePreviewCoordinator.ApplySelectedPreview();
+            if (!baselineCaptured) CaptureBaseline(!composer.HasDraft);
+            RefreshRuntimeSettingsCandidateValidation();
+            if (viewMode == ViewMode.StyleComposer && composer.HasDraft) ApplyComposerPreview();
+            else DeucarianThemePreviewCoordinator.ApplySelectedPreview();
         }
 
         private void OnDisable()
