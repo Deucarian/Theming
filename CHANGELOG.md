@@ -2,6 +2,7 @@
 
 ## [1.14.0] - 2026-09-15
 
+- Let TMP theme targets opt into a minimum readable font size while retaining their semantic font, weight and spacing.
 - Expose the staged visual selection to editor previews, preserve visual/audio authoring drafts through reload, and flatten the audio palette asset chooser.
 
 

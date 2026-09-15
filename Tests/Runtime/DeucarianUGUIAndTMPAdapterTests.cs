@@ -81,6 +81,17 @@ namespace Deucarian.Theming.Tests
             Assert.AreEqual(FontStyles.Bold, text.fontStyle);
             Assert.AreEqual(2f, text.characterSpacing);
             Assert.AreEqual(3f, text.lineSpacing);
+            adapter.MinimumFontSize = 30;
+            adapter.ApplyStyle(style);
+            Assert.AreEqual(30f, text.fontSize);
+            Assert.AreEqual(FontStyles.Bold, text.fontStyle);
+            adapter.MinimumFontSize = 12;
+            adapter.ApplyStyle(style);
+            Assert.AreEqual(24f, text.fontSize, "The semantic role can grow beyond the readability minimum.");
+            adapter.MinimumFontSize = 0;
+            adapter.TextRole = DeucarianThemeTextRole.Body;
+            adapter.ApplyStyle(style);
+            Assert.AreEqual(15f, text.fontSize, "Zero opts back into the exact theme size.");
         }
 
         [Test]
