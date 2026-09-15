@@ -1,0 +1,13 @@
+Theming interaction audio
+
+interaction-click.wav: Button_22_click.wav from Unity XR Interaction Toolkit, Spatial Keyboard sample.
+interaction-hover.wav: ButtonHover.wav from Unity XR Interaction Toolkit, Hands Interaction Demo sample.
+XR Interaction Toolkit copyright (c) 2025 Unity Technologies.
+These two unmodified recordings are distributed under the Unity Companion License for Unity-dependent projects, not the package MIT license.
+License: https://unity.com/legal/licenses/unity-companion-license
+See Unity-XRI-LICENSE.txt, Unity-XRI-Third-Party-Notices.txt and Unity-Companion-License.txt alongside these recordings.
+
+notification-warning.ogg: drop_003.ogg from Kenney Interface Sounds 1.0 (2020), Creative Commons CC0.
+Source: https://kenney.nl/assets/interface-sounds
+License: https://creativecommons.org/publicdomain/zero/1.0/
+The original recording is unchanged.

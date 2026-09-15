@@ -8,6 +8,7 @@ namespace Deucarian.Theming
     public sealed class DeucarianTMPThemeTypography : MonoBehaviour, IDeucarianThemeStyleTarget
     {
         [SerializeField] private DeucarianThemeTextRole textRole = DeucarianThemeTextRole.Body;
+        [SerializeField, Min(0)] private float minimumFontSize;
 
         private TMP_Text target;
 
@@ -16,6 +17,9 @@ namespace Deucarian.Theming
             get => textRole;
             set => textRole = value;
         }
+
+        /// <summary>Optional readability constraint in the target canvas's units; zero follows the role size exactly.</summary>
+        public float MinimumFontSize { get => minimumFontSize; set => minimumFontSize = Mathf.Clamp(value, 0, 512); }
 
         public void ApplyStyle(DeucarianThemeStyle style)
         {
@@ -41,7 +45,7 @@ namespace Deucarian.Theming
                 target.font = font;
             }
 
-            target.fontSize = textStyle.FontSize;
+            target.fontSize = Mathf.Max(textStyle.FontSize, minimumFontSize);
             target.fontStyle = textStyle.FontStyle;
             target.characterSpacing = textStyle.CharacterSpacing;
             target.lineSpacing = textStyle.LineSpacing;

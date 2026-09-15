@@ -52,6 +52,10 @@ namespace Deucarian.Theming.Editor
         internal static DeucarianThemeStyle ComposerPreviewStyle =>
             composerPreviewActive ? composerPreviewStyle : null;
 
+        internal static DeucarianThemeManagerSelection SelectedPreview => composerPreviewActive
+            ? new DeucarianThemeManagerSelection(composerPreviewFamily, composerPreviewMode, composerPreviewStyle)
+            : DeucarianThemeManagerSelection.FromEditorPrefs();
+
         internal static void RegisterCallbacks()
         {
             EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
@@ -74,12 +78,7 @@ namespace Deucarian.Theming.Editor
                 return 0;
             }
 
-            DeucarianThemeManagerSelection selection = composerPreviewActive
-                ? new DeucarianThemeManagerSelection(
-                    composerPreviewFamily,
-                    composerPreviewMode,
-                    composerPreviewStyle)
-                : DeucarianThemeManagerSelection.FromEditorPrefs();
+            DeucarianThemeManagerSelection selection = SelectedPreview;
             return selection.Family == null
                 ? DeucarianThemeManagerWorkflow.ClearPreview()
                 : DeucarianThemeManagerWorkflow.Preview(selection);
