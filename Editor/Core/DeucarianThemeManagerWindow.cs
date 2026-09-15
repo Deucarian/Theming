@@ -12,7 +12,7 @@ namespace Deucarian.Theming.Editor
     /// <summary>
     /// Focused editor workflow for staging, composing, and explicitly activating project themes.
     /// </summary>
-    public sealed partial class DeucarianThemeManagerWindow : EditorWindow
+    public sealed partial class DeucarianThemeManagerWindow : EditorWindow, IDeucarianEditorReloadState
     {
         private const string WallpaperFadeName = "deucarian-theme-manager-top-safe-fade";
         private const float PreviewStackBreakpoint = 760f;
@@ -21,7 +21,7 @@ namespace Deucarian.Theming.Editor
         [SerializeField] private int paletteCategory;
         [SerializeField] private Vector2 scrollPosition;
         private DeucarianThemingMenuActions.AssetSearchResult searchResult;
-        private DeucarianThemeRuntimeSettings runtimeSettingsCandidate;
+        [SerializeField] private DeucarianThemeRuntimeSettings runtimeSettingsCandidate;
         private DeucarianThemeRuntimeSettings validatedRuntimeSettingsCandidate;
         private bool runtimeSettingsCandidateValid;
         private string runtimeSettingsCandidateMessage = string.Empty;
@@ -32,10 +32,10 @@ namespace Deucarian.Theming.Editor
         private MessageType feedbackType = MessageType.Info;
 
         [SerializeField] private DeucarianThemeStyleDraft composer = new DeucarianThemeStyleDraft();
-        private DeucarianThemeManagerSelection baselineSelection;
-        private DeucarianThemeRuntimeSettings baselineRuntimeSettings;
-        private bool baselineCaptured;
-        private bool runtimeCandidateTouched;
+        [SerializeField] private DeucarianThemeManagerSelection baselineSelection;
+        [SerializeField] private DeucarianThemeRuntimeSettings baselineRuntimeSettings;
+        [SerializeField] private bool baselineCaptured;
+        [SerializeField] private bool runtimeCandidateTouched;
 
         private DeucarianEditorWorkspace workspace;
         private ThemeWorkspaceContent workspaceContent;
