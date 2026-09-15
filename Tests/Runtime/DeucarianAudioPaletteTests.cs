@@ -308,7 +308,7 @@ namespace Deucarian.Theming.Tests
         }
 
         [Test]
-        public void BundledDefaultsUseCanonicalKeyClickForEveryRoleAndExperience()
+        public void BundledDefaultsProvideSemanticCuesForEveryRoleAndExperience()
         {
             DeucarianAudioPaletteSet set = DeucarianAudioDefaults.LoadPaletteSet();
             Assert.NotNull(set);
@@ -337,7 +337,7 @@ namespace Deucarian.Theming.Tests
                 DeucarianAudioExperience.Mobile
             };
 
-            AudioClip canonicalClip = null;
+            var semanticClips = new HashSet<AudioClip>();
             for (int experienceIndex = 0; experienceIndex < experiences.Length; experienceIndex++)
             {
                 DeucarianAudioExperience experience = experiences[experienceIndex];
@@ -353,11 +353,10 @@ namespace Deucarian.Theming.Tests
                     Assert.IsTrue(resolution.IsAudible, experience + ": " + ids[roleIndex]);
                     Assert.NotNull(resolution.Cue.Clip, experience + ": " + ids[roleIndex]);
 
-                    canonicalClip = canonicalClip ?? resolution.Cue.Clip;
-                    Assert.AreSame(canonicalClip, resolution.Cue.Clip,
-                        experience + ": " + ids[roleIndex]);
+                    semanticClips.Add(resolution.Cue.Clip);
                 }
             }
+            Assert.That(semanticClips.Count, Is.GreaterThan(1), "Semantic roles must retain the palette's distinct feedback cues.");
         }
 
         private static DeucarianAudioPaletteProfile CreateProfile(

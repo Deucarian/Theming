@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace Deucarian.Theming.Editor
 {
     /// <summary>Auditions semantic audio using an explicit experience, independent of build target.</summary>
-    public sealed partial class DeucarianAudioPaletteLabWindow : EditorWindow
+    public sealed partial class DeucarianAudioPaletteLabWindow : EditorWindow, IDeucarianEditorReloadState
     {
         private const string ExperiencePreferenceKey =
             "Deucarian.Theming.AudioPaletteLab.Experience";
@@ -19,6 +19,8 @@ namespace Deucarian.Theming.Editor
         [SerializeField] private DeucarianTheme theme;
         [SerializeField] private DeucarianAudioExperience experience;
         [SerializeField] private int categoryFilter;
+        [SerializeField] private int selectedTab;
+        [SerializeField] private bool selectionInitialized;
         [SerializeField] private string search = string.Empty;
         [SerializeField] private bool advanced;
         [SerializeField] private bool useIntensity;
@@ -55,12 +57,12 @@ namespace Deucarian.Theming.Editor
         private void OnEnable()
         {
             preview = new DeucarianAudioPreviewService();
-            experience = PreviewExperience;
+            if (!selectionInitialized) experience = PreviewExperience;
             AssemblyReloadEvents.beforeAssemblyReload -= StopPreview;
             AssemblyReloadEvents.beforeAssemblyReload += StopPreview;
             EditorApplication.playModeStateChanged -= HandlePlayModeChanged;
             EditorApplication.playModeStateChanged += HandlePlayModeChanged;
-            TryAdoptSelection();
+            if (!selectionInitialized) { TryAdoptSelection(); selectionInitialized = true; }
         }
 
         private void OnDisable()
