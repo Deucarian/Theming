@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.13.0] - 2026-09-15
+
+- Use package-owned hover, click and warning recordings consistently in all bundled experience palettes and role fallbacks. Include source attribution and licenses; keep asset regeneration aligned.
+
 ## 1.12.0 - Unreleased
 
 - Add exact palette foreground candidates, preserving existing normal surface/text colours and optional dark/light overrides.
